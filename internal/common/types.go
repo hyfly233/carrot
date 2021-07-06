@@ -17,3 +17,9 @@ type ApplicationID struct {
 	ClusterTimestamp int64 `json:"cluster_timestamp"`
 	ID               int32 `json:"id"`
 }
+
+// ContainerID 容器标识
+type ContainerID struct {
+	ApplicationAttemptID ApplicationAttemptID `json:"application_attempt_id"`
+	ContainerID          int64                `json:"container_id"`
+}
