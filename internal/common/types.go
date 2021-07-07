@@ -23,3 +23,9 @@ type ContainerID struct {
 	ApplicationAttemptID ApplicationAttemptID `json:"application_attempt_id"`
 	ContainerID          int64                `json:"container_id"`
 }
+
+// ApplicationAttemptID 应用程序尝试标识
+type ApplicationAttemptID struct {
+	ApplicationID ApplicationID `json:"application_id"`
+	AttemptID     int32         `json:"attempt_id"`
+}
