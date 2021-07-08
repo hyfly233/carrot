@@ -29,3 +29,11 @@ type ApplicationAttemptID struct {
 	ApplicationID ApplicationID `json:"application_id"`
 	AttemptID     int32         `json:"attempt_id"`
 }
+
+// ContainerRequest 容器请求
+type ContainerRequest struct {
+	Resource  Resource `json:"resource"`
+	Priority  int32    `json:"priority"`
+	Locality  string   `json:"locality,omitempty"`
+	NodeLabel string   `json:"node_label,omitempty"`
+}
