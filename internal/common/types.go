@@ -37,3 +37,12 @@ type ContainerRequest struct {
 	Locality  string   `json:"locality,omitempty"`
 	NodeLabel string   `json:"node_label,omitempty"`
 }
+
+// Container 容器信息
+type Container struct {
+	ID       ContainerID `json:"id"`
+	NodeID   NodeID      `json:"node_id"`
+	Resource Resource    `json:"resource"`
+	Status   string      `json:"status"`
+	State    string      `json:"state"`
+}
