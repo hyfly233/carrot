@@ -1,5 +1,7 @@
 package common
 
+import "time"
+
 // Resource 表示资源配置
 type Resource struct {
 	Memory int64 `json:"memory"` // MB
@@ -45,4 +47,19 @@ type Container struct {
 	Resource Resource    `json:"resource"`
 	Status   string      `json:"status"`
 	State    string      `json:"state"`
+}
+
+// ApplicationReport 应用程序报告
+type ApplicationReport struct {
+	ApplicationID   ApplicationID `json:"application_id"`
+	ApplicationName string        `json:"application_name"`
+	ApplicationType string        `json:"application_type"`
+	User            string        `json:"user"`
+	Queue           string        `json:"queue"`
+	StartTime       time.Time     `json:"start_time"`
+	FinishTime      time.Time     `json:"finish_time,omitempty"`
+	FinalStatus     string        `json:"final_status"`
+	State           string        `json:"state"`
+	Progress        float32       `json:"progress"`
+	TrackingURL     string        `json:"tracking_url"`
 }
