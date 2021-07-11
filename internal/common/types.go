@@ -63,3 +63,17 @@ type ApplicationReport struct {
 	Progress        float32       `json:"progress"`
 	TrackingURL     string        `json:"tracking_url"`
 }
+
+// NodeReport 节点报告
+type NodeReport struct {
+	NodeID           NodeID    `json:"node_id"`
+	HTTPAddress      string    `json:"http_address"`
+	RackName         string    `json:"rack_name"`
+	Used             Resource  `json:"used"`
+	Capability       Resource  `json:"capability"`
+	NumContainers    int32     `json:"num_containers"`
+	State            string    `json:"state"`
+	HealthReport     string    `json:"health_report"`
+	LastHealthUpdate time.Time `json:"last_health_update"`
+	NodeLabels       []string  `json:"node_labels"`
+}
