@@ -77,3 +77,15 @@ type NodeReport struct {
 	LastHealthUpdate time.Time `json:"last_health_update"`
 	NodeLabels       []string  `json:"node_labels"`
 }
+
+// ApplicationSubmissionContext 应用程序提交上下文
+type ApplicationSubmissionContext struct {
+	ApplicationID   ApplicationID          `json:"application_id"`
+	ApplicationName string                 `json:"application_name"`
+	ApplicationType string                 `json:"application_type"`
+	Queue           string                 `json:"queue"`
+	Priority        int32                  `json:"priority"`
+	AMContainerSpec ContainerLaunchContext `json:"am_container_spec"`
+	Resource        Resource               `json:"resource"`
+	MaxAppAttempts  int32                  `json:"max_app_attempts"`
+}
