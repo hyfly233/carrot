@@ -89,3 +89,12 @@ type ApplicationSubmissionContext struct {
 	Resource        Resource               `json:"resource"`
 	MaxAppAttempts  int32                  `json:"max_app_attempts"`
 }
+
+// ContainerLaunchContext 容器启动上下文
+type ContainerLaunchContext struct {
+	Commands       []string                 `json:"commands"`
+	Environment    map[string]string        `json:"environment"`
+	LocalResources map[string]LocalResource `json:"local_resources"`
+	ServiceData    map[string][]byte        `json:"service_data"`
+	Tokens         []byte                   `json:"tokens,omitempty"`
+}
