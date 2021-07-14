@@ -98,3 +98,13 @@ type ContainerLaunchContext struct {
 	ServiceData    map[string][]byte        `json:"service_data"`
 	Tokens         []byte                   `json:"tokens,omitempty"`
 }
+
+// LocalResource 本地资源
+type LocalResource struct {
+	URL        string `json:"url"`
+	Size       int64  `json:"size"`
+	Timestamp  int64  `json:"timestamp"`
+	Type       string `json:"type"`
+	Visibility string `json:"visibility"`
+	Pattern    string `json:"pattern,omitempty"`
+}
