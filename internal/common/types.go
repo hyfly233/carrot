@@ -108,3 +108,34 @@ type LocalResource struct {
 	Visibility string `json:"visibility"`
 	Pattern    string `json:"pattern,omitempty"`
 }
+
+// Constants
+const (
+	// Application States
+	ApplicationStateNew       = "NEW"
+	ApplicationStateSubmitted = "SUBMITTED"
+	ApplicationStateAccepted  = "ACCEPTED"
+	ApplicationStateRunning   = "RUNNING"
+	ApplicationStateFinished  = "FINISHED"
+	ApplicationStateFailed    = "FAILED"
+	ApplicationStateKilled    = "KILLED"
+
+	// Container States
+	ContainerStateNew      = "NEW"
+	ContainerStateRunning  = "RUNNING"
+	ContainerStateComplete = "COMPLETE"
+
+	// Node States
+	NodeStateNew            = "NEW"
+	NodeStateRunning        = "RUNNING"
+	NodeStateUnhealthy      = "UNHEALTHY"
+	NodeStateDecommissioned = "DECOMMISSIONED"
+	NodeStateLost           = "LOST"
+	NodeStateRebooted       = "REBOOTED"
+
+	// Final Application Status
+	FinalApplicationStatusUndefined = "UNDEFINED"
+	FinalApplicationStatusSucceeded = "SUCCEEDED"
+	FinalApplicationStatusFailed    = "FAILED"
+	FinalApplicationStatusKilled    = "KILLED"
+)
