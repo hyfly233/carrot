@@ -1,6 +1,7 @@
 # Carrot - Go 语言实现的 Hadoop YARN
 
-Carrot 是一个使用 Go 语言实现的 Hadoop YARN (Yet Another Resource Negotiator) 集群资源管理系统。它提供了 YARN 核心功能，包括资源管理、任务调度和容器管理。
+Carrot 是一个使用 Go 语言实现的 Hadoop YARN (Yet Another Resource Negotiator) 集群资源管理系统。它提供了 YARN
+核心功能，包括资源管理、任务调度和容器管理。
 
 ## 架构概述
 
@@ -53,16 +54,19 @@ go build -o bin/client cmd/client/main.go
 ### 启动集群
 
 1. **启动 ResourceManager**:
+
 ```bash
 ./bin/resourcemanager -port 8088
 ```
 
 2. **启动 NodeManager**:
+
 ```bash
 ./bin/nodemanager -port 8042 -host localhost -rm-url http://localhost:8088 -memory 8192 -vcores 8
 ```
 
 3. **提交应用程序**:
+
 ```bash
 ./bin/client -rm-url http://localhost:8088 -app-name "test-job" -command "echo 'Hello YARN!'"
 ```
@@ -144,6 +148,7 @@ carrot/
 ### 添加新的调度器
 
 1. 实现 `Scheduler` 接口:
+
 ```go
 type Scheduler interface {
     Schedule(app *Application) ([]*common.Container, error)
