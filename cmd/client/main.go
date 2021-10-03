@@ -2,8 +2,10 @@ package client
 
 import (
 	"carrot/internal/common"
+	"encoding/json"
 	"flag"
 	"log"
+	"net/http"
 )
 
 func main() {
@@ -57,4 +59,25 @@ func main() {
 
 	// 监控应用程序状态
 	monitorApplication(*rmURL, appID)
+}
+
+func getNewApplicationID(rmURL string) (*common.ApplicationID, error) {
+	resp, err := http.Post(rmURL+"/ws/v1/cluster/apps/new-application", "application/json", nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+
+	appIDData := result["application-id"].(map[string]interface{})
+	appID := &common.ApplicationID{
+		ClusterTimestamp: int64(appIDData["cluster_timestamp"].(float64)),
+		ID:               int32(appIDData["id"].(float64)),
+	}
+
+	return appID, nil
 }
