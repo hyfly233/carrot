@@ -1,9 +1,11 @@
 package client
 
 import (
+	"bytes"
 	"carrot/internal/common"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 )
@@ -80,4 +82,23 @@ func getNewApplicationID(rmURL string) (*common.ApplicationID, error) {
 	}
 
 	return appID, nil
+}
+
+func submitApplication(rmURL string, ctx common.ApplicationSubmissionContext) error {
+	jsonData, err := json.Marshal(ctx)
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.Post(rmURL+"/ws/v1/cluster/apps", "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("submit failed with status: %d", resp.StatusCode)
+	}
+
+	return nil
 }
