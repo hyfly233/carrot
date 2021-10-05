@@ -102,3 +102,34 @@ func submitApplication(rmURL string, ctx common.ApplicationSubmissionContext) er
 
 	return nil
 }
+
+func monitorApplication(rmURL string, appID *common.ApplicationID) {
+	log.Printf("Monitoring application status...")
+
+	// 简单的状态查询，实际应该定期查询
+	resp, err := http.Get(rmURL + "/ws/v1/cluster/apps")
+	if err != nil {
+		log.Printf("Failed to get applications: %v", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		log.Printf("Failed to decode response: %v", err)
+		return
+	}
+
+	apps := result["apps"].(map[string]interface{})["app"].([]interface{})
+	for _, appData := range apps {
+		app := appData.(map[string]interface{})
+		appIDMap := app["application_id"].(map[string]interface{})
+
+		if int64(appIDMap["cluster_timestamp"].(float64)) == appID.ClusterTimestamp &&
+			int32(appIDMap["id"].(float64)) == appID.ID {
+			log.Printf("Application state: %s", app["state"])
+			log.Printf("Application progress: %.2f%%", app["progress"].(float64)*100)
+			break
+		}
+	}
+}
