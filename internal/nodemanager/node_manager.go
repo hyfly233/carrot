@@ -33,3 +33,16 @@ type Container struct {
 	StartTime     time.Time                     `json:"start_time"`
 	FinishTime    time.Time                     `json:"finish_time,omitempty"`
 }
+
+// NewNodeManager 创建新的节点管理器
+func NewNodeManager(nodeID common.NodeID, totalResource common.Resource, rmURL string) *NodeManager {
+	return &NodeManager{
+		nodeID:             nodeID,
+		resourceManagerURL: rmURL,
+		totalResource:      totalResource,
+		usedResource:       common.Resource{Memory: 0, VCores: 0},
+		containers:         make(map[string]*Container),
+		heartbeatInterval:  3 * time.Second,
+		stopChan:           make(chan struct{}),
+	}
+}
