@@ -2,6 +2,8 @@ package nodemanager
 
 import (
 	"carrot/internal/common"
+	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"sync"
@@ -45,4 +47,31 @@ func NewNodeManager(nodeID common.NodeID, totalResource common.Resource, rmURL s
 		heartbeatInterval:  3 * time.Second,
 		stopChan:           make(chan struct{}),
 	}
+}
+
+// Start 启动节点管理器
+func (nm *NodeManager) Start(port int) error {
+	// 注册到 ResourceManager
+	if err := nm.registerWithRM(); err != nil {
+		return fmt.Errorf("failed to register with RM: %v", err)
+	}
+
+	// 启动 HTTP 服务器
+	mux := http.NewServeMux()
+	mux.HandleFunc("/ws/v1/node/containers", nm.handleContainers)
+	mux.HandleFunc("/ws/v1/node/containers/", nm.handleContainer)
+
+	nm.httpServer = &http.Server{
+		Addr:    fmt.Sprintf(":%d", port),
+		Handler: mux,
+	}
+
+	// 启动心跳
+	go nm.startHeartbeat()
+
+	// 启动容器监控
+	go nm.monitorContainers()
+
+	log.Printf("NodeManager starting on port %d", port)
+	return nm.httpServer.ListenAndServe()
 }
