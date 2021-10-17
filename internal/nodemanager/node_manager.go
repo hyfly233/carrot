@@ -2,6 +2,7 @@ package nodemanager
 
 import (
 	"carrot/internal/common"
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -74,4 +75,21 @@ func (nm *NodeManager) Start(port int) error {
 
 	log.Printf("NodeManager starting on port %d", port)
 	return nm.httpServer.ListenAndServe()
+}
+
+// Stop 停止节点管理器
+func (nm *NodeManager) Stop() error {
+	close(nm.stopChan)
+
+	// 停止所有容器
+	nm.mu.Lock()
+	for _, container := range nm.containers {
+		nm.stopContainer(container)
+	}
+	nm.mu.Unlock()
+
+	if nm.httpServer != nil {
+		return nm.httpServer.Shutdown(context.Background())
+	}
+	return nil
 }
