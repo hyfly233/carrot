@@ -93,3 +93,37 @@ func (nm *NodeManager) Stop() error {
 	}
 	return nil
 }
+
+// StartContainer 启动容器
+func (nm *NodeManager) StartContainer(containerID common.ContainerID, launchContext common.ContainerLaunchContext, resource common.Resource) error {
+	nm.mu.Lock()
+	defer nm.mu.Unlock()
+
+	containerKey := nm.getContainerKey(containerID)
+
+	// 检查资源是否足够
+	if nm.usedResource.Memory+resource.Memory > nm.totalResource.Memory ||
+		nm.usedResource.VCores+resource.VCores > nm.totalResource.VCores {
+		return fmt.Errorf("insufficient resources")
+	}
+
+	container := &Container{
+		ID:            containerID,
+		LaunchContext: launchContext,
+		Resource:      resource,
+		State:         common.ContainerStateNew,
+		StartTime:     time.Now(),
+	}
+
+	// 启动容器进程
+	if err := nm.launchContainer(container); err != nil {
+		return fmt.Errorf("failed to launch container: %v", err)
+	}
+
+	nm.containers[containerKey] = container
+	nm.usedResource.Memory += resource.Memory
+	nm.usedResource.VCores += resource.VCores
+
+	log.Printf("Started container %v", containerID)
+	return nil
+}
