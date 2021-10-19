@@ -127,3 +127,24 @@ func (nm *NodeManager) StartContainer(containerID common.ContainerID, launchCont
 	log.Printf("Started container %v", containerID)
 	return nil
 }
+
+// StopContainer 停止容器
+func (nm *NodeManager) StopContainer(containerID common.ContainerID) error {
+	nm.mu.Lock()
+	defer nm.mu.Unlock()
+
+	containerKey := nm.getContainerKey(containerID)
+	container, exists := nm.containers[containerKey]
+	if !exists {
+		return fmt.Errorf("container not found")
+	}
+
+	nm.stopContainer(container)
+	delete(nm.containers, containerKey)
+
+	nm.usedResource.Memory -= container.Resource.Memory
+	nm.usedResource.VCores -= container.Resource.VCores
+
+	log.Printf("Stopped container %v", containerID)
+	return nil
+}
