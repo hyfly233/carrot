@@ -148,3 +148,17 @@ func (nm *NodeManager) StopContainer(containerID common.ContainerID) error {
 	log.Printf("Stopped container %v", containerID)
 	return nil
 }
+
+// GetContainerStatus 获取容器状态
+func (nm *NodeManager) GetContainerStatus(containerID common.ContainerID) (*Container, error) {
+	nm.mu.RLock()
+	defer nm.mu.RUnlock()
+
+	containerKey := nm.getContainerKey(containerID)
+	container, exists := nm.containers[containerKey]
+	if !exists {
+		return nil, fmt.Errorf("container not found")
+	}
+
+	return container, nil
+}
