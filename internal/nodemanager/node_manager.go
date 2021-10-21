@@ -1,8 +1,10 @@
 package nodemanager
 
 import (
+	"bytes"
 	"carrot/internal/common"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -161,4 +163,33 @@ func (nm *NodeManager) GetContainerStatus(containerID common.ContainerID) (*Cont
 	}
 
 	return container, nil
+}
+
+func (nm *NodeManager) registerWithRM() error {
+	registrationData := map[string]interface{}{
+		"node_id":      nm.nodeID,
+		"resource":     nm.totalResource,
+		"http_address": fmt.Sprintf("http://%s:%d", nm.nodeID.Host, nm.nodeID.Port),
+	}
+
+	jsonData, err := json.Marshal(registrationData)
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.Post(
+		nm.resourceManagerURL+"/ws/v1/cluster/nodes/register",
+		"application/json",
+		bytes.NewBuffer(jsonData),
+	)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("registration failed with status: %d", resp.StatusCode)
+	}
+
+	return nil
 }
