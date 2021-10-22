@@ -193,3 +193,17 @@ func (nm *NodeManager) registerWithRM() error {
 
 	return nil
 }
+
+func (nm *NodeManager) startHeartbeat() {
+	ticker := time.NewTicker(nm.heartbeatInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			nm.sendHeartbeat()
+		case <-nm.stopChan:
+			return
+		}
+	}
+}
