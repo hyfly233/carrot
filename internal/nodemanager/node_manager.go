@@ -207,3 +207,40 @@ func (nm *NodeManager) startHeartbeat() {
 		}
 	}
 }
+
+func (nm *NodeManager) sendHeartbeat() {
+	nm.mu.RLock()
+	containers := make([]*common.Container, 0, len(nm.containers))
+	for _, container := range nm.containers {
+		containers = append(containers, &common.Container{
+			ID:       container.ID,
+			NodeID:   nm.nodeID,
+			Resource: container.Resource,
+			Status:   container.State,
+			State:    container.State,
+		})
+	}
+	usedResource := nm.usedResource
+	nm.mu.RUnlock()
+
+	heartbeatData := map[string]interface{}{
+		"node_id":       nm.nodeID,
+		"used_resource": usedResource,
+		"containers":    containers,
+	}
+
+	jsonData, err := json.Marshal(heartbeatData)
+	if err != nil {
+		log.Printf("Failed to marshal heartbeat data: %v", err)
+		return
+	}
+
+	_, err = http.Post(
+		nm.resourceManagerURL+"/ws/v1/cluster/nodes/heartbeat",
+		"application/json",
+		bytes.NewBuffer(jsonData),
+	)
+	if err != nil {
+		log.Printf("Failed to send heartbeat: %v", err)
+	}
+}
