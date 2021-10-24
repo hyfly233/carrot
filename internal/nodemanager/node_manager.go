@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"sync"
 	"time"
 )
@@ -243,4 +244,41 @@ func (nm *NodeManager) sendHeartbeat() {
 	if err != nil {
 		log.Printf("Failed to send heartbeat: %v", err)
 	}
+}
+
+func (nm *NodeManager) launchContainer(container *Container) error {
+	if len(container.LaunchContext.Commands) == 0 {
+		return fmt.Errorf("no commands specified")
+	}
+
+	// 创建容器工作目录
+	workDir := fmt.Sprintf("/tmp/yarn-containers/%s", nm.getContainerKey(container.ID))
+	if err := os.MkdirAll(workDir, 0755); err != nil {
+		return fmt.Errorf("failed to create work directory: %v", err)
+	}
+
+	// 准备命令
+	command := container.LaunchContext.Commands[0]
+	cmd := exec.Command("bash", "-c", command)
+	cmd.Dir = workDir
+
+	// 设置环境变量
+	env := os.Environ()
+	for key, value := range container.LaunchContext.Environment {
+		env = append(env, fmt.Sprintf("%s=%s", key, value))
+	}
+	cmd.Env = env
+
+	// 启动进程
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("failed to start process: %v", err)
+	}
+
+	container.Process = cmd.Process
+	container.State = common.ContainerStateRunning
+
+	// 监控进程
+	go nm.monitorContainerProcess(container, cmd)
+
+	return nil
 }
