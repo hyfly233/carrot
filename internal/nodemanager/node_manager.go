@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -281,4 +282,37 @@ func (nm *NodeManager) launchContainer(container *Container) error {
 	go nm.monitorContainerProcess(container, cmd)
 
 	return nil
+}
+
+func (nm *NodeManager) monitorContainerProcess(container *Container, cmd *exec.Cmd) {
+	err := cmd.Wait()
+
+	nm.mu.Lock()
+	defer nm.mu.Unlock()
+
+	container.FinishTime = time.Now()
+	if err != nil {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			container.ExitCode = exitError.ExitCode()
+		} else {
+			container.ExitCode = -1
+		}
+		container.Diagnostics = err.Error()
+	}
+	container.State = common.ContainerStateComplete
+}
+
+func (nm *NodeManager) stopContainer(container *Container) {
+	if container.Process != nil {
+		// 先尝试优雅关闭
+		container.Process.Signal(syscall.SIGTERM)
+
+		// 等待 5 秒
+		time.Sleep(5 * time.Second)
+
+		// 强制关闭
+		container.Process.Kill()
+	}
+	container.State = common.ContainerStateComplete
+	container.FinishTime = time.Now()
 }
