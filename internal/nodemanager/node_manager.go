@@ -316,3 +316,17 @@ func (nm *NodeManager) stopContainer(container *Container) {
 	container.State = common.ContainerStateComplete
 	container.FinishTime = time.Now()
 }
+
+func (nm *NodeManager) monitorContainers() {
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			nm.cleanupFinishedContainers()
+		case <-nm.stopChan:
+			return
+		}
+	}
+}
