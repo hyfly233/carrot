@@ -330,3 +330,19 @@ func (nm *NodeManager) monitorContainers() {
 		}
 	}
 }
+
+func (nm *NodeManager) cleanupFinishedContainers() {
+	nm.mu.Lock()
+	defer nm.mu.Unlock()
+
+	for key, container := range nm.containers {
+		if container.State == common.ContainerStateComplete {
+			// 清理完成的容器（这里可以添加更多清理逻辑）
+			workDir := fmt.Sprintf("/tmp/yarn-containers/%s", key)
+			os.RemoveAll(workDir)
+
+			// 可以选择是否立即删除容器记录，或保留一段时间用于查询
+			// delete(nm.containers, key)
+		}
+	}
+}
