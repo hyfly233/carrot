@@ -346,3 +346,10 @@ func (nm *NodeManager) cleanupFinishedContainers() {
 		}
 	}
 }
+
+func (nm *NodeManager) getContainerKey(containerID common.ContainerID) string {
+	return fmt.Sprintf("%d_%d_%d",
+		containerID.ApplicationAttemptID.ApplicationID.ClusterTimestamp,
+		containerID.ApplicationAttemptID.ApplicationID.ID,
+		containerID.ContainerID)
+}
