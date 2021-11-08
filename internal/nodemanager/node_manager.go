@@ -353,3 +353,41 @@ func (nm *NodeManager) getContainerKey(containerID common.ContainerID) string {
 		containerID.ApplicationAttemptID.ApplicationID.ID,
 		containerID.ContainerID)
 }
+
+func (nm *NodeManager) handleContainers(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		nm.mu.RLock()
+		containers := make([]*Container, 0, len(nm.containers))
+		for _, container := range nm.containers {
+			containers = append(containers, container)
+		}
+		nm.mu.RUnlock()
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"containers": containers,
+		})
+	case http.MethodPost:
+		var request struct {
+			ContainerID   common.ContainerID            `json:"container_id"`
+			LaunchContext common.ContainerLaunchContext `json:"launch_context"`
+			Resource      common.Resource               `json:"resource"`
+		}
+
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		err := nm.StartContainer(request.ContainerID, request.LaunchContext, request.Resource)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusCreated)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
