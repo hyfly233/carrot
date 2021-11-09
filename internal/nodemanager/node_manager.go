@@ -391,3 +391,8 @@ func (nm *NodeManager) handleContainers(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
 }
+
+func (nm *NodeManager) handleContainer(w http.ResponseWriter, r *http.Request) {
+	// TODO: 实现单个容器的处理
+	http.Error(w, "Not implemented", http.StatusNotImplemented)
+}
