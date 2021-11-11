@@ -15,3 +15,9 @@ type NodeInfo struct {
 	AvailableResource common.Resource `json:"available_resource"`
 	UsedResource      common.Resource `json:"used_resource"`
 }
+
+// ApplicationInfo 应用程序信息（简化版本）
+type ApplicationInfo struct {
+	ID       common.ApplicationID `json:"id"`
+	Resource common.Resource      `json:"resource"`
+}
