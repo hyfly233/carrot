@@ -74,3 +74,39 @@ func (s *FIFOScheduler) Schedule(app *ApplicationInfo) ([]*common.Container, err
 
 	return []*common.Container{container}, nil
 }
+
+// AllocateContainers 分配容器
+func (s *FIFOScheduler) AllocateContainers(requests []common.ContainerRequest) ([]*common.Container, error) {
+	var containers []*common.Container
+
+	for _, request := range requests {
+		node := s.findAvailableNode(request.Resource)
+		if node == nil {
+			log.Printf("No available node for resource request: %+v", request.Resource)
+			continue
+		}
+
+		containerID := common.ContainerID{
+			ApplicationAttemptID: common.ApplicationAttemptID{
+				ApplicationID: common.ApplicationID{
+					ClusterTimestamp: s.rm.GetClusterTimestamp(),
+					ID:               0,
+				},
+				AttemptID: 1,
+			},
+			ContainerID: int64(len(containers) + 1),
+		}
+
+		container := &common.Container{
+			ID:       containerID,
+			NodeID:   node.ID,
+			Resource: request.Resource,
+			Status:   "ALLOCATED",
+			State:    common.ContainerStateNew,
+		}
+
+		containers = append(containers, container)
+	}
+
+	return containers, nil
+}
