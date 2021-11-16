@@ -110,3 +110,21 @@ func (s *FIFOScheduler) AllocateContainers(requests []common.ContainerRequest) (
 
 	return containers, nil
 }
+
+// findAvailableNode 查找可用节点
+func (s *FIFOScheduler) findAvailableNode(resource common.Resource) *NodeInfo {
+	if s.rm == nil {
+		return nil
+	}
+
+	nodes := s.rm.GetNodesForScheduler()
+	for _, node := range nodes {
+		if node.State == common.NodeStateRunning &&
+			node.AvailableResource.Memory >= resource.Memory &&
+			node.AvailableResource.VCores >= resource.VCores {
+			return node
+		}
+	}
+
+	return nil
+}
