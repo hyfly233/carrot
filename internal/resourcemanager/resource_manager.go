@@ -56,3 +56,10 @@ type Node struct {
 	LastHeartbeat     time.Time                    `json:"last_heartbeat"`
 	Containers        map[string]*common.Container `json:"containers"`
 }
+
+// Scheduler 调度器接口
+type Scheduler interface {
+	Schedule(app *scheduler.ApplicationInfo) ([]*common.Container, error)
+	AllocateContainers(requests []common.ContainerRequest) ([]*common.Container, error)
+	SetResourceManager(rm scheduler.ResourceManagerInterface)
+}
