@@ -2,6 +2,7 @@ package resourcemanager
 
 import (
 	"carrot/internal/common"
+	"carrot/internal/resourcemanager/scheduler"
 	"net/http"
 	"sync"
 	"time"
@@ -62,4 +63,20 @@ type Scheduler interface {
 	Schedule(app *scheduler.ApplicationInfo) ([]*common.Container, error)
 	AllocateContainers(requests []common.ContainerRequest) ([]*common.Container, error)
 	SetResourceManager(rm scheduler.ResourceManagerInterface)
+}
+
+// NewResourceManager 创建新的资源管理器
+func NewResourceManager() *ResourceManager {
+	rm := &ResourceManager{
+		applications:     make(map[string]*Application),
+		nodes:            make(map[string]*Node),
+		clusterTimestamp: time.Now().Unix(),
+	}
+
+	// 创建调度器并设置资源管理器引用
+	fifoScheduler := scheduler.NewFIFOScheduler()
+	fifoScheduler.SetResourceManager(rm)
+	rm.scheduler = fifoScheduler
+
+	return rm
 }
