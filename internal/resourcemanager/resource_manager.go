@@ -3,6 +3,8 @@ package resourcemanager
 import (
 	"carrot/internal/common"
 	"carrot/internal/resourcemanager/scheduler"
+	"fmt"
+	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -79,4 +81,26 @@ func NewResourceManager() *ResourceManager {
 	rm.scheduler = fifoScheduler
 
 	return rm
+}
+
+// Start 启动资源管理器
+func (rm *ResourceManager) Start(port int) error {
+	mux := http.NewServeMux()
+
+	// REST API 端点
+	mux.HandleFunc("/ws/v1/cluster/apps", rm.handleApplications)
+	mux.HandleFunc("/ws/v1/cluster/apps/new-application", rm.handleNewApplication)
+	mux.HandleFunc("/ws/v1/cluster/apps/", rm.handleApplication)
+	mux.HandleFunc("/ws/v1/cluster/nodes", rm.handleNodes)
+	mux.HandleFunc("/ws/v1/cluster/nodes/register", rm.handleNodeRegistration)
+	mux.HandleFunc("/ws/v1/cluster/nodes/heartbeat", rm.handleNodeHeartbeat)
+	mux.HandleFunc("/ws/v1/cluster/info", rm.handleClusterInfo)
+
+	rm.httpServer = &http.Server{
+		Addr:    fmt.Sprintf(":%d", port),
+		Handler: mux,
+	}
+
+	log.Printf("ResourceManager starting on port %d", port)
+	return rm.httpServer.ListenAndServe()
 }
