@@ -3,6 +3,7 @@ package resourcemanager
 import (
 	"carrot/internal/common"
 	"carrot/internal/resourcemanager/scheduler"
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -103,4 +104,12 @@ func (rm *ResourceManager) Start(port int) error {
 
 	log.Printf("ResourceManager starting on port %d", port)
 	return rm.httpServer.ListenAndServe()
+}
+
+// Stop 停止资源管理器
+func (rm *ResourceManager) Stop() error {
+	if rm.httpServer != nil {
+		return rm.httpServer.Shutdown(context.Background())
+	}
+	return nil
 }
