@@ -113,3 +113,49 @@ func (rm *ResourceManager) Stop() error {
 	}
 	return nil
 }
+
+// SubmitApplication 提交应用程序
+func (rm *ResourceManager) SubmitApplication(ctx common.ApplicationSubmissionContext) (*common.ApplicationID, error) {
+	rm.mu.Lock()
+	defer rm.mu.Unlock()
+
+	appID := common.ApplicationID{
+		ClusterTimestamp: rm.clusterTimestamp,
+		ID:               rm.appIDCounter,
+	}
+	rm.appIDCounter++
+
+	app := &Application{
+		ID:              appID,
+		Name:            ctx.ApplicationName,
+		Type:            ctx.ApplicationType,
+		User:            "default", // TODO: 从上下文获取用户
+		Queue:           ctx.Queue,
+		State:           common.ApplicationStateSubmitted,
+		StartTime:       time.Now(),
+		AMContainerSpec: ctx.AMContainerSpec,
+		Resource:        ctx.Resource,
+		Attempts:        make([]*ApplicationAttempt, 0),
+	}
+
+	rm.applications[rm.getAppKey(appID)] = app
+
+	// 创建应用程序尝试
+	attemptID := common.ApplicationAttemptID{
+		ApplicationID: appID,
+		AttemptID:     1,
+	}
+
+	attempt := &ApplicationAttempt{
+		ID:        attemptID,
+		State:     common.ApplicationStateNew,
+		StartTime: time.Now(),
+	}
+
+	app.Attempts = append(app.Attempts, attempt)
+
+	// 启动调度
+	go rm.scheduleApplication(app)
+
+	return &appID, nil
+}
