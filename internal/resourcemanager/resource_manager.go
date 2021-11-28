@@ -159,3 +159,25 @@ func (rm *ResourceManager) SubmitApplication(ctx common.ApplicationSubmissionCon
 
 	return &appID, nil
 }
+
+// RegisterNode 注册节点
+func (rm *ResourceManager) RegisterNode(nodeID common.NodeID, resource common.Resource, httpAddress string) error {
+	rm.mu.Lock()
+	defer rm.mu.Unlock()
+
+	node := &Node{
+		ID:                nodeID,
+		HTTPAddress:       httpAddress,
+		TotalResource:     resource,
+		AvailableResource: resource,
+		UsedResource:      common.Resource{Memory: 0, VCores: 0},
+		State:             common.NodeStateRunning,
+		LastHeartbeat:     time.Now(),
+		Containers:        make(map[string]*common.Container),
+	}
+
+	rm.nodes[rm.getNodeKey(nodeID)] = node
+	log.Printf("Node registered: %s:%d", nodeID.Host, nodeID.Port)
+
+	return nil
+}
