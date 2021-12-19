@@ -12,3 +12,8 @@ build:
 	go build -o bin/client cmd/client/main.go
 	@echo "Build completed!"
 
+# 清理构建文件
+clean:
+	@echo "Cleaning build files..."
+	rm -rf bin/
+	@echo "Clean completed!"
