@@ -17,3 +17,8 @@ clean:
 	@echo "Cleaning build files..."
 	rm -rf bin/
 	@echo "Clean completed!"
+
+# 运行测试
+test:
+	@echo "Running tests..."
+	go test ./...
