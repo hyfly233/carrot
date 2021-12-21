@@ -22,3 +22,8 @@ clean:
 test:
 	@echo "Running tests..."
 	go test ./...
+
+# 运行 ResourceManager
+run-rm:
+	@echo "Starting ResourceManager..."
+	./bin/resourcemanager -port 8088
