@@ -27,3 +27,8 @@ test:
 run-rm:
 	@echo "Starting ResourceManager..."
 	./bin/resourcemanager -port 8088
+
+# 运行 NodeManager
+run-nm:
+	@echo "Starting NodeManager..."
+	./bin/nodemanager -port 8042 -host localhost -rm-url http://localhost:8088 -memory 8192 -vcores 8
