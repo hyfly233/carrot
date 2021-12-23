@@ -32,3 +32,8 @@ run-rm:
 run-nm:
 	@echo "Starting NodeManager..."
 	./bin/nodemanager -port 8042 -host localhost -rm-url http://localhost:8088 -memory 8192 -vcores 8
+
+# 运行客户端示例
+run-client:
+	@echo "Submitting test application..."
+	./bin/client -rm-url http://localhost:8088 -app-name "test-app" -command "echo 'Hello YARN from Go!'"
