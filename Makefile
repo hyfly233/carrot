@@ -37,3 +37,8 @@ run-nm:
 run-client:
 	@echo "Submitting test application..."
 	./bin/client -rm-url http://localhost:8088 -app-name "test-app" -command "echo 'Hello YARN from Go!'"
+
+# 启动集群（后台运行）
+start-cluster:
+	@echo "Starting YARN cluster..."
+	@./scripts/start-cluster.sh
