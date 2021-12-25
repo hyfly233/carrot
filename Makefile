@@ -42,3 +42,8 @@ run-client:
 start-cluster:
 	@echo "Starting YARN cluster..."
 	@./scripts/start-cluster.sh
+
+# 停止集群
+stop-cluster:
+	@echo "Stopping YARN cluster..."
+	@./scripts/stop-cluster.sh
