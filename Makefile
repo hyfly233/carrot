@@ -47,3 +47,8 @@ start-cluster:
 stop-cluster:
 	@echo "Stopping YARN cluster..."
 	@./scripts/stop-cluster.sh
+
+# 格式化代码
+fmt:
+	@echo "Formatting code..."
+	go fmt ./...
