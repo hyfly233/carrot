@@ -52,3 +52,8 @@ stop-cluster:
 fmt:
 	@echo "Formatting code..."
 	go fmt ./...
+
+# 检查代码
+lint:
+	@echo "Linting code..."
+	golangci-lint run
