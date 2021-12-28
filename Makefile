@@ -57,3 +57,9 @@ fmt:
 lint:
 	@echo "Linting code..."
 	golangci-lint run
+
+# 安装依赖
+deps:
+	@echo "Installing dependencies..."
+	go mod tidy
+	go mod download
