@@ -63,3 +63,8 @@ deps:
 	@echo "Installing dependencies..."
 	go mod tidy
 	go mod download
+
+# 构建 Docker 镜像
+docker-build:
+	@echo "Building Docker images..."
+	docker-compose -f deployments/docker/docker-compose.yml build
