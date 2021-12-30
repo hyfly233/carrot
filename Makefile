@@ -68,3 +68,8 @@ deps:
 docker-build:
 	@echo "Building Docker images..."
 	docker-compose -f deployments/docker/docker-compose.yml build
+
+# 启动 Docker 集群
+docker-up:
+	@echo "Starting Docker cluster..."
+	docker-compose -f deployments/docker/docker-compose.yml up -d
