@@ -78,3 +78,15 @@ docker-up:
 docker-down:
 	@echo "Stopping Docker cluster..."
 	docker-compose -f deployments/docker/docker-compose.yml down
+
+# 查看 Docker 日志
+docker-logs:
+	docker-compose -f deployments/docker/docker-compose.yml logs -f
+
+# 开发环境设置
+dev-setup: deps build
+	@echo "Development environment setup completed!"
+
+# 发布构建
+release: clean test build
+	@echo "Release build completed!"
