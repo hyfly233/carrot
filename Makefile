@@ -73,3 +73,8 @@ docker-build:
 docker-up:
 	@echo "Starting Docker cluster..."
 	docker-compose -f deployments/docker/docker-compose.yml up -d
+
+# 停止 Docker 集群
+docker-down:
+	@echo "Stopping Docker cluster..."
+	docker-compose -f deployments/docker/docker-compose.yml down
