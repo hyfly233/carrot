@@ -181,3 +181,30 @@ func (rm *ResourceManager) RegisterNode(nodeID common.NodeID, resource common.Re
 
 	return nil
 }
+
+// NodeHeartbeat 节点心跳
+func (rm *ResourceManager) NodeHeartbeat(nodeID common.NodeID, usedResource common.Resource, containers []*common.Container) error {
+	rm.mu.Lock()
+	defer rm.mu.Unlock()
+
+	nodeKey := rm.getNodeKey(nodeID)
+	node, exists := rm.nodes[nodeKey]
+	if !exists {
+		return fmt.Errorf("node not found: %s:%d", nodeID.Host, nodeID.Port)
+	}
+
+	node.LastHeartbeat = time.Now()
+	node.UsedResource = usedResource
+	node.AvailableResource = common.Resource{
+		Memory: node.TotalResource.Memory - usedResource.Memory,
+		VCores: node.TotalResource.VCores - usedResource.VCores,
+	}
+
+	// 更新容器信息
+	node.Containers = make(map[string]*common.Container)
+	for _, container := range containers {
+		node.Containers[rm.getContainerKey(container.ID)] = container
+	}
+
+	return nil
+}
