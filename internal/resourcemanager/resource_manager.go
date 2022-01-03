@@ -208,3 +208,27 @@ func (rm *ResourceManager) NodeHeartbeat(nodeID common.NodeID, usedResource comm
 
 	return nil
 }
+
+// GetApplications 获取应用程序列表
+func (rm *ResourceManager) GetApplications() []*common.ApplicationReport {
+	rm.mu.RLock()
+	defer rm.mu.RUnlock()
+
+	reports := make([]*common.ApplicationReport, 0, len(rm.applications))
+	for _, app := range rm.applications {
+		report := &common.ApplicationReport{
+			ApplicationID:   app.ID,
+			ApplicationName: app.Name,
+			ApplicationType: app.Type,
+			User:            app.User,
+			Queue:           app.Queue,
+			StartTime:       app.StartTime,
+			FinishTime:      app.FinishTime,
+			State:           app.State,
+			Progress:        app.Progress,
+		}
+		reports = append(reports, report)
+	}
+
+	return reports
+}
