@@ -232,3 +232,26 @@ func (rm *ResourceManager) GetApplications() []*common.ApplicationReport {
 
 	return reports
 }
+
+// GetNodes 获取节点列表
+func (rm *ResourceManager) GetNodes() []*common.NodeReport {
+	rm.mu.RLock()
+	defer rm.mu.RUnlock()
+
+	reports := make([]*common.NodeReport, 0, len(rm.nodes))
+	for _, node := range rm.nodes {
+		report := &common.NodeReport{
+			NodeID:           node.ID,
+			HTTPAddress:      node.HTTPAddress,
+			RackName:         node.RackName,
+			Used:             node.UsedResource,
+			Capability:       node.TotalResource,
+			NumContainers:    int32(len(node.Containers)),
+			State:            node.State,
+			LastHealthUpdate: node.LastHeartbeat,
+		}
+		reports = append(reports, report)
+	}
+
+	return reports
+}
