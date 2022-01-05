@@ -255,3 +255,20 @@ func (rm *ResourceManager) GetNodes() []*common.NodeReport {
 
 	return reports
 }
+
+// GetNodesForScheduler 为调度器提供节点信息（避免循环依赖）
+func (rm *ResourceManager) GetNodesForScheduler() map[string]*scheduler.NodeInfo {
+	rm.mu.RLock()
+	defer rm.mu.RUnlock()
+
+	nodeInfos := make(map[string]*scheduler.NodeInfo)
+	for key, node := range rm.nodes {
+		nodeInfos[key] = &scheduler.NodeInfo{
+			ID:                node.ID,
+			State:             node.State,
+			AvailableResource: node.AvailableResource,
+			UsedResource:      node.UsedResource,
+		}
+	}
+	return nodeInfos
+}
