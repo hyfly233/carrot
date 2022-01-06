@@ -272,3 +272,31 @@ func (rm *ResourceManager) GetNodesForScheduler() map[string]*scheduler.NodeInfo
 	}
 	return nodeInfos
 }
+
+// GetClusterTimestamp 获取集群时间戳
+func (rm *ResourceManager) GetClusterTimestamp() int64 {
+	return rm.clusterTimestamp
+}
+
+func (rm *ResourceManager) scheduleApplication(app *Application) {
+	// 将应用程序信息转换为调度器可用的格式
+	appInfo := &scheduler.ApplicationInfo{
+		ID:       app.ID,
+		Resource: app.Resource,
+	}
+
+	// 简单的调度逻辑，为 AM 分配容器
+	containers, err := rm.scheduler.Schedule(appInfo)
+	if err != nil {
+		log.Printf("Failed to schedule application %v: %v", app.ID, err)
+		return
+	}
+
+	if len(containers) > 0 {
+		app.State = common.ApplicationStateRunning
+		if len(app.Attempts) > 0 {
+			app.Attempts[0].AMContainer = containers[0]
+			app.Attempts[0].State = common.ApplicationStateRunning
+		}
+	}
+}
