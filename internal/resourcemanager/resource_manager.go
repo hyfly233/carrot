@@ -300,3 +300,11 @@ func (rm *ResourceManager) scheduleApplication(app *Application) {
 		}
 	}
 }
+
+func (rm *ResourceManager) getAppKey(appID common.ApplicationID) string {
+	return fmt.Sprintf("%d_%d", appID.ClusterTimestamp, appID.ID)
+}
+
+func (rm *ResourceManager) getNodeKey(nodeID common.NodeID) string {
+	return fmt.Sprintf("%s:%d", nodeID.Host, nodeID.Port)
+}
