@@ -308,3 +308,10 @@ func (rm *ResourceManager) getAppKey(appID common.ApplicationID) string {
 func (rm *ResourceManager) getNodeKey(nodeID common.NodeID) string {
 	return fmt.Sprintf("%s:%d", nodeID.Host, nodeID.Port)
 }
+
+func (rm *ResourceManager) getContainerKey(containerID common.ContainerID) string {
+	return fmt.Sprintf("%d_%d_%d",
+		containerID.ApplicationAttemptID.ApplicationID.ClusterTimestamp,
+		containerID.ApplicationAttemptID.ApplicationID.ID,
+		containerID.ContainerID)
+}
