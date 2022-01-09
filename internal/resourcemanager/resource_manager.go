@@ -4,6 +4,7 @@ import (
 	"carrot/internal/common"
 	"carrot/internal/resourcemanager/scheduler"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -314,4 +315,36 @@ func (rm *ResourceManager) getContainerKey(containerID common.ContainerID) strin
 		containerID.ApplicationAttemptID.ApplicationID.ClusterTimestamp,
 		containerID.ApplicationAttemptID.ApplicationID.ID,
 		containerID.ContainerID)
+}
+
+func (rm *ResourceManager) handleApplications(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		apps := rm.GetApplications()
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"apps": map[string]interface{}{
+				"app": apps,
+			},
+		})
+	case http.MethodPost:
+		var ctx common.ApplicationSubmissionContext
+		if err := json.NewDecoder(r.Body).Decode(&ctx); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		appID, err := rm.SubmitApplication(ctx)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"application-id": appID,
+		})
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
 }
