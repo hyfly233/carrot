@@ -348,3 +348,28 @@ func (rm *ResourceManager) handleApplications(w http.ResponseWriter, r *http.Req
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
 }
+
+func (rm *ResourceManager) handleNewApplication(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	rm.mu.Lock()
+	appID := common.ApplicationID{
+		ClusterTimestamp: rm.clusterTimestamp,
+		ID:               rm.appIDCounter,
+	}
+	rm.appIDCounter++
+	rm.mu.Unlock()
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"application-id": appID,
+	})
+}
+
+func (rm *ResourceManager) handleApplication(w http.ResponseWriter, r *http.Request) {
+	// TODO: 实现单个应用程序的处理
+	http.Error(w, "Not implemented", http.StatusNotImplemented)
+}
