@@ -373,3 +373,18 @@ func (rm *ResourceManager) handleApplication(w http.ResponseWriter, r *http.Requ
 	// TODO: 实现单个应用程序的处理
 	http.Error(w, "Not implemented", http.StatusNotImplemented)
 }
+
+func (rm *ResourceManager) handleNodes(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	nodes := rm.GetNodes()
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"nodes": map[string]interface{}{
+			"node": nodes,
+		},
+	})
+}
