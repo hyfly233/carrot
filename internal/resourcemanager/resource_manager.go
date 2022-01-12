@@ -388,3 +388,23 @@ func (rm *ResourceManager) handleNodes(w http.ResponseWriter, r *http.Request) {
 		},
 	})
 }
+
+func (rm *ResourceManager) handleClusterInfo(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	info := map[string]interface{}{
+		"clusterInfo": map[string]interface{}{
+			"id":                     rm.clusterTimestamp,
+			"startedOn":              time.Unix(rm.clusterTimestamp, 0),
+			"state":                  "STARTED",
+			"haState":                "ACTIVE",
+			"resourceManagerVersion": "carrot-1.0.0",
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(info)
+}
