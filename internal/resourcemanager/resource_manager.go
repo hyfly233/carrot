@@ -408,3 +408,61 @@ func (rm *ResourceManager) handleClusterInfo(w http.ResponseWriter, r *http.Requ
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(info)
 }
+
+func (rm *ResourceManager) handleNodeRegistration(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var registrationData struct {
+		NodeID      common.NodeID   `json:"node_id"`
+		Resource    common.Resource `json:"resource"`
+		HTTPAddress string          `json:"http_address"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&registrationData); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err := rm.RegisterNode(registrationData.NodeID, registrationData.Resource, registrationData.HTTPAddress)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status": "registered",
+	})
+}
+
+func (rm *ResourceManager) handleNodeHeartbeat(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var heartbeatData struct {
+		NodeID       common.NodeID       `json:"node_id"`
+		UsedResource common.Resource     `json:"used_resource"`
+		Containers   []*common.Container `json:"containers"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&heartbeatData); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err := rm.NodeHeartbeat(heartbeatData.NodeID, heartbeatData.UsedResource, heartbeatData.Containers)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status": "heartbeat_received",
+	})
+}
