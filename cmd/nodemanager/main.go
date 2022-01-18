@@ -2,6 +2,7 @@ package nodemanager
 
 import (
 	"carrot/internal/common"
+	"carrot/internal/nodemanager"
 	"flag"
 	"log"
 )
