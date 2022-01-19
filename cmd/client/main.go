@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 )
@@ -68,7 +69,12 @@ func getNewApplicationID(rmURL string) (*common.ApplicationID, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Fatalf("Failed to close response body: %v", err)
+		}
+	}(resp.Body)
 
 	var result map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -94,7 +100,12 @@ func submitApplication(rmURL string, ctx common.ApplicationSubmissionContext) er
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Fatalf("Failed to close response body: %v", err)
+		}
+	}(resp.Body)
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		return fmt.Errorf("submit failed with status: %d", resp.StatusCode)
@@ -112,7 +123,12 @@ func monitorApplication(rmURL string, appID *common.ApplicationID) {
 		log.Printf("Failed to get applications: %v", err)
 		return
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Fatalf("Failed to close response body: %v", err)
+		}
+	}(resp.Body)
 
 	var result map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
