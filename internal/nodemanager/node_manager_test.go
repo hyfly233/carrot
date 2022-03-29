@@ -103,3 +103,43 @@ func TestContainerManagement(t *testing.T) {
 		t.Errorf("Expected used vcores 0 after stopping container, got %d", nm.usedResource.VCores)
 	}
 }
+
+func TestResourceValidation(t *testing.T) {
+	nodeID := common.NodeID{Host: "test-host", Port: 8042}
+	resource := common.Resource{Memory: 2048, VCores: 2}
+	nm := NewNodeManager(nodeID, resource, "http://localhost:8088")
+
+	containerID := common.ContainerID{
+		ApplicationAttemptID: common.ApplicationAttemptID{
+			ApplicationID: common.ApplicationID{
+				ClusterTimestamp: time.Now().Unix(),
+				ID:               1,
+			},
+			AttemptID: 1,
+		},
+		ContainerID: 1,
+	}
+
+	launchContext := common.ContainerLaunchContext{
+		Commands: []string{"echo 'test'"},
+	}
+
+	// 测试资源不足的情况
+	insufficientResource := common.Resource{Memory: 4096, VCores: 4} // 超过节点总资源
+
+	err := nm.StartContainer(containerID, launchContext, insufficientResource)
+	if err == nil {
+		t.Error("Expected error for insufficient resources, but got none")
+	}
+
+	// 测试正常资源分配
+	normalResource := common.Resource{Memory: 1024, VCores: 1}
+
+	err = nm.StartContainer(containerID, launchContext, normalResource)
+	if err != nil {
+		t.Errorf("Failed to start container with sufficient resources: %v", err)
+	}
+
+	// 清理
+	nm.StopContainer(containerID)
+}
