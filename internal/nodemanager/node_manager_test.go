@@ -2,6 +2,7 @@ package nodemanager
 
 import (
 	"carrot/internal/common"
+	"net/http/httptest"
 	"testing"
 	"time"
 )
@@ -142,4 +143,26 @@ func TestResourceValidation(t *testing.T) {
 
 	// 清理
 	nm.StopContainer(containerID)
+}
+
+func TestHTTPHandlers(t *testing.T) {
+	nodeID := common.NodeID{Host: "test-host", Port: 8042}
+	resource := common.Resource{Memory: 4096, VCores: 4}
+	nm := NewNodeManager(nodeID, resource, "http://localhost:8088")
+
+	// 测试容器列表端点
+	t.Run("ContainersList", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/ws/v1/node/containers", nil)
+		w := httptest.NewRecorder()
+
+		nm.handleContainers(w, req)
+
+		if w.Code != 200 {
+			t.Errorf("Expected status 200, got %d", w.Code)
+		}
+
+		if w.Header().Get("Content-Type") != "application/json" {
+			t.Errorf("Expected Content-Type application/json, got %s", w.Header().Get("Content-Type"))
+		}
+	})
 }
