@@ -166,3 +166,27 @@ func TestHTTPHandlers(t *testing.T) {
 		}
 	})
 }
+
+func TestContainerKeyGeneration(t *testing.T) {
+	nodeID := common.NodeID{Host: "test-host", Port: 8042}
+	resource := common.Resource{Memory: 4096, VCores: 4}
+	nm := NewNodeManager(nodeID, resource, "http://localhost:8088")
+
+	containerID := common.ContainerID{
+		ApplicationAttemptID: common.ApplicationAttemptID{
+			ApplicationID: common.ApplicationID{
+				ClusterTimestamp: 1234567890,
+				ID:               123,
+			},
+			AttemptID: 1,
+		},
+		ContainerID: 456,
+	}
+
+	key := nm.getContainerKey(containerID)
+	expected := "1234567890_123_456"
+
+	if key != expected {
+		t.Errorf("Expected container key '%s', got '%s'", expected, key)
+	}
+}
