@@ -190,3 +190,41 @@ func TestContainerKeyGeneration(t *testing.T) {
 		t.Errorf("Expected container key '%s', got '%s'", expected, key)
 	}
 }
+
+// 基准测试
+func BenchmarkContainerStartStop(b *testing.B) {
+	nodeID := common.NodeID{Host: "test-host", Port: 8042}
+	resource := common.Resource{Memory: 8192, VCores: 8}
+	nm := NewNodeManager(nodeID, resource, "http://localhost:8088")
+
+	launchContext := common.ContainerLaunchContext{
+		Commands: []string{"echo 'benchmark test'"},
+	}
+
+	containerResource := common.Resource{Memory: 512, VCores: 1}
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		containerID := common.ContainerID{
+			ApplicationAttemptID: common.ApplicationAttemptID{
+				ApplicationID: common.ApplicationID{
+					ClusterTimestamp: time.Now().Unix(),
+					ID:               int32(i),
+				},
+				AttemptID: 1,
+			},
+			ContainerID: int64(i),
+		}
+
+		err := nm.StartContainer(containerID, launchContext, containerResource)
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		err = nm.StopContainer(containerID)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
