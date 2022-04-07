@@ -1,7 +1,11 @@
 package resourcemanager
 
 import (
+	"bytes"
 	"carrot/internal/common"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 )
@@ -100,4 +104,74 @@ func TestApplicationSubmission(t *testing.T) {
 	if len(apps) != 1 {
 		t.Errorf("Expected 1 application, got %d", len(apps))
 	}
+}
+
+func TestHTTPEndpoints(t *testing.T) {
+	rm := NewResourceManager()
+
+	// 测试集群信息端点
+	t.Run("ClusterInfo", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/ws/v1/cluster/info", nil)
+		w := httptest.NewRecorder()
+
+		rm.handleClusterInfo(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", w.Code)
+		}
+
+		if w.Header().Get("Content-Type") != "application/json" {
+			t.Errorf("Expected Content-Type application/json, got %s", w.Header().Get("Content-Type"))
+		}
+	})
+
+	// 测试节点列表端点
+	t.Run("NodesList", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/ws/v1/cluster/nodes", nil)
+		w := httptest.NewRecorder()
+
+		rm.handleNodes(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", w.Code)
+		}
+	})
+
+	// 测试应用程序列表端点
+	t.Run("AppsList", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/ws/v1/cluster/apps", nil)
+		w := httptest.NewRecorder()
+
+		rm.handleApplications(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", w.Code)
+		}
+	})
+
+	// 测试节点注册端点
+	t.Run("NodeRegistration", func(t *testing.T) {
+		registrationData := map[string]interface{}{
+			"node_id": map[string]interface{}{
+				"host": "test-host",
+				"port": 8042,
+			},
+			"resource": map[string]interface{}{
+				"memory": 4096,
+				"vcores": 4,
+			},
+			"http_address": "http://test-host:8042",
+		}
+
+		jsonData, _ := json.Marshal(registrationData)
+		req := httptest.NewRequest("POST", "/ws/v1/cluster/nodes/register", bytes.NewBuffer(jsonData))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+
+		rm.handleNodeRegistration(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", w.Code)
+		}
+	})
 }
