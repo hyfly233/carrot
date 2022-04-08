@@ -175,3 +175,36 @@ func TestHTTPEndpoints(t *testing.T) {
 		}
 	})
 }
+
+func TestNodeHeartbeat(t *testing.T) {
+	rm := NewResourceManager()
+
+	// 先注册节点
+	nodeID := common.NodeID{Host: "test-host", Port: 8042}
+	resource := common.Resource{Memory: 4096, VCores: 4}
+	rm.RegisterNode(nodeID, resource, "http://test-host:8042")
+
+	// 发送心跳
+	usedResource := common.Resource{Memory: 1024, VCores: 1}
+	containers := []*common.Container{}
+
+	err := rm.NodeHeartbeat(nodeID, usedResource, containers)
+	if err != nil {
+		t.Fatalf("Failed to send heartbeat: %v", err)
+	}
+
+	// 验证节点状态更新
+	nodes := rm.GetNodes()
+	if len(nodes) != 1 {
+		t.Fatalf("Expected 1 node, got %d", len(nodes))
+	}
+
+	for _, node := range nodes {
+		if node.Used.Memory != 1024 {
+			t.Errorf("Expected used memory 1024, got %d", node.Used.Memory)
+		}
+		if node.Used.VCores != 1 {
+			t.Errorf("Expected used vcores 1, got %d", node.Used.VCores)
+		}
+	}
+}
