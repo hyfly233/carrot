@@ -208,3 +208,38 @@ func TestNodeHeartbeat(t *testing.T) {
 		}
 	}
 }
+
+// 基准测试
+func BenchmarkResourceManagerScheduling(b *testing.B) {
+	rm := NewResourceManager()
+
+	// 注册测试节点
+	nodeID := common.NodeID{Host: "bench-host", Port: 8042}
+	resource := common.Resource{Memory: 8192, VCores: 8}
+	rm.RegisterNode(nodeID, resource, "http://bench-host:8042")
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		appID := common.ApplicationID{
+			ClusterTimestamp: time.Now().Unix(),
+			ID:               int32(i),
+		}
+
+		ctx := common.ApplicationSubmissionContext{
+			ApplicationID:   appID,
+			ApplicationName: "bench-app",
+			ApplicationType: "YARN",
+			Queue:           "default",
+			Resource:        common.Resource{Memory: 1024, VCores: 1},
+			AMContainerSpec: common.ContainerLaunchContext{
+				Commands: []string{"echo 'benchmark'"},
+			},
+		}
+
+		_, err := rm.SubmitApplication(ctx)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
