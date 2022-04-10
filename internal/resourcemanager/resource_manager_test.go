@@ -243,3 +243,24 @@ func BenchmarkResourceManagerScheduling(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkNodeHeartbeat(b *testing.B) {
+	rm := NewResourceManager()
+
+	// 注册测试节点
+	nodeID := common.NodeID{Host: "bench-host", Port: 8042}
+	resource := common.Resource{Memory: 8192, VCores: 8}
+	rm.RegisterNode(nodeID, resource, "http://bench-host:8042")
+
+	usedResource := common.Resource{Memory: 1024, VCores: 1}
+	containers := []*common.Container{}
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		err := rm.NodeHeartbeat(nodeID, usedResource, containers)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
