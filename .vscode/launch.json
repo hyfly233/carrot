@@ -1,0 +1,102 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug ResourceManager",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/cmd/resourcemanager/main.go",
+      "args": [
+        "-port",
+        "8088"
+      ],
+      "env": {
+        "LOG_LEVEL": "DEBUG",
+        "CARROT_DEBUG": "true"
+      },
+      "console": "integratedTerminal",
+      "stopOnEntry": false,
+      "showLog": true
+    },
+    {
+      "name": "Debug NodeManager",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/cmd/nodemanager/main.go",
+      "args": [
+        "-port",
+        "8042",
+        "-host",
+        "localhost",
+        "-rm-url",
+        "http://localhost:8088",
+        "-memory",
+        "4096",
+        "-vcores",
+        "4"
+      ],
+      "env": {
+        "LOG_LEVEL": "DEBUG",
+        "CARROT_DEBUG": "true"
+      },
+      "console": "integratedTerminal",
+      "stopOnEntry": false,
+      "showLog": true
+    },
+    {
+      "name": "Debug Client",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/cmd/client/main.go",
+      "args": [
+        "-rm-url",
+        "http://localhost:8088",
+        "-app-name",
+        "debug-test",
+        "-command",
+        "echo 'Debug test running'; sleep 10"
+      ],
+      "env": {
+        "LOG_LEVEL": "DEBUG"
+      },
+      "console": "integratedTerminal",
+      "stopOnEntry": false,
+      "showLog": true
+    },
+    {
+      "name": "Debug Tests",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceFolder}",
+      "args": [
+        "-test.v"
+      ],
+      "env": {
+        "LOG_LEVEL": "DEBUG"
+      },
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Attach to Process",
+      "type": "go",
+      "request": "attach",
+      "mode": "local",
+      "processId": 0,
+      "showLog": true
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug Full Cluster",
+      "configurations": [
+        "Debug ResourceManager",
+        "Debug NodeManager"
+      ],
+      "stopAll": true
+    }
+  ]
+}
