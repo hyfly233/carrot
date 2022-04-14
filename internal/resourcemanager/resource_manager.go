@@ -2,6 +2,8 @@ package resourcemanager
 
 import (
 	"carrot/internal/common"
+	"carrot/internal/resourcemanager/applicationmanager"
+	"carrot/internal/resourcemanager/nodemanager"
 	"carrot/internal/resourcemanager/scheduler"
 	"context"
 	"encoding/json"
@@ -15,65 +17,19 @@ import (
 // ResourceManager 资源管理器
 type ResourceManager struct {
 	mu               sync.RWMutex
-	applications     map[string]*Application
-	nodes            map[string]*Node
-	scheduler        Scheduler
+	applications     map[string]*applicationmanager.Application
+	nodes            map[string]*nodemanager.Node
+	scheduler        scheduler.Scheduler
 	appIDCounter     int32
 	clusterTimestamp int64
 	httpServer       *http.Server
 }
 
-// Application 应用程序
-type Application struct {
-	ID              common.ApplicationID          `json:"id"`
-	Name            string                        `json:"name"`
-	Type            string                        `json:"type"`
-	User            string                        `json:"user"`
-	Queue           string                        `json:"queue"`
-	State           string                        `json:"state"`
-	StartTime       time.Time                     `json:"start_time"`
-	FinishTime      time.Time                     `json:"finish_time,omitempty"`
-	Progress        float32                       `json:"progress"`
-	Attempts        []*ApplicationAttempt         `json:"attempts"`
-	AMContainerSpec common.ContainerLaunchContext `json:"am_container_spec"`
-	Resource        common.Resource               `json:"resource"`
-}
-
-// ApplicationAttempt 应用程序尝试
-type ApplicationAttempt struct {
-	ID          common.ApplicationAttemptID `json:"id"`
-	State       string                      `json:"state"`
-	StartTime   time.Time                   `json:"start_time"`
-	FinishTime  time.Time                   `json:"finish_time,omitempty"`
-	AMContainer *common.Container           `json:"am_container,omitempty"`
-	TrackingURL string                      `json:"tracking_url"`
-}
-
-// Node 节点
-type Node struct {
-	ID                common.NodeID                `json:"id"`
-	HTTPAddress       string                       `json:"http_address"`
-	RackName          string                       `json:"rack_name"`
-	TotalResource     common.Resource              `json:"total_resource"`
-	UsedResource      common.Resource              `json:"used_resource"`
-	AvailableResource common.Resource              `json:"available_resource"`
-	State             string                       `json:"state"`
-	LastHeartbeat     time.Time                    `json:"last_heartbeat"`
-	Containers        map[string]*common.Container `json:"containers"`
-}
-
-// Scheduler 调度器接口
-type Scheduler interface {
-	Schedule(app *scheduler.ApplicationInfo) ([]*common.Container, error)
-	AllocateContainers(requests []common.ContainerRequest) ([]*common.Container, error)
-	SetResourceManager(rm scheduler.ResourceManagerInterface)
-}
-
 // NewResourceManager 创建新的资源管理器
 func NewResourceManager() *ResourceManager {
 	rm := &ResourceManager{
-		applications:     make(map[string]*Application),
-		nodes:            make(map[string]*Node),
+		applications:     make(map[string]*applicationmanager.Application),
+		nodes:            make(map[string]*nodemanager.Node),
 		clusterTimestamp: time.Now().Unix(),
 	}
 
@@ -126,7 +82,7 @@ func (rm *ResourceManager) SubmitApplication(ctx common.ApplicationSubmissionCon
 	}
 	rm.appIDCounter++
 
-	app := &Application{
+	app := &applicationmanager.Application{
 		ID:              appID,
 		Name:            ctx.ApplicationName,
 		Type:            ctx.ApplicationType,
@@ -136,7 +92,7 @@ func (rm *ResourceManager) SubmitApplication(ctx common.ApplicationSubmissionCon
 		StartTime:       time.Now(),
 		AMContainerSpec: ctx.AMContainerSpec,
 		Resource:        ctx.Resource,
-		Attempts:        make([]*ApplicationAttempt, 0),
+		Attempts:        make([]*applicationmanager.ApplicationAttempt, 0),
 	}
 
 	rm.applications[rm.getAppKey(appID)] = app
@@ -147,7 +103,7 @@ func (rm *ResourceManager) SubmitApplication(ctx common.ApplicationSubmissionCon
 		AttemptID:     1,
 	}
 
-	attempt := &ApplicationAttempt{
+	attempt := &applicationmanager.ApplicationAttempt{
 		ID:        attemptID,
 		State:     common.ApplicationStateNew,
 		StartTime: time.Now(),
@@ -166,7 +122,7 @@ func (rm *ResourceManager) RegisterNode(nodeID common.NodeID, resource common.Re
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
 
-	node := &Node{
+	node := &nodemanager.Node{
 		ID:                nodeID,
 		HTTPAddress:       httpAddress,
 		TotalResource:     resource,
@@ -279,7 +235,7 @@ func (rm *ResourceManager) GetClusterTimestamp() int64 {
 	return rm.clusterTimestamp
 }
 
-func (rm *ResourceManager) scheduleApplication(app *Application) {
+func (rm *ResourceManager) scheduleApplication(app *applicationmanager.Application) {
 	// 将应用程序信息转换为调度器可用的格式
 	appInfo := &scheduler.ApplicationInfo{
 		ID:       app.ID,
