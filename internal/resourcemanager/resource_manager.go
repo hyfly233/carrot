@@ -5,6 +5,7 @@ import (
 	"carrot/internal/resourcemanager/applicationmanager"
 	"carrot/internal/resourcemanager/nodemanager"
 	"carrot/internal/resourcemanager/scheduler"
+	"carrot/internal/resourcemanager/scheduler/fifo"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -34,7 +35,7 @@ func NewResourceManager() *ResourceManager {
 	}
 
 	// 创建调度器并设置资源管理器引用
-	fifoScheduler := scheduler.NewFIFOScheduler()
+	fifoScheduler := fifo.NewFIFOScheduler()
 	fifoScheduler.SetResourceManager(rm)
 	rm.scheduler = fifoScheduler
 
