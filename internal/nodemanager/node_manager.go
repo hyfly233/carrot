@@ -3,6 +3,7 @@ package nodemanager
 import (
 	"bytes"
 	"carrot/internal/common"
+	"carrot/internal/nodemanager/containermanager"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -22,23 +23,10 @@ type NodeManager struct {
 	resourceManagerURL string
 	totalResource      common.Resource
 	usedResource       common.Resource
-	containers         map[string]*Container
+	containers         map[string]*containermanager.Container
 	httpServer         *http.Server
 	heartbeatInterval  time.Duration
 	stopChan           chan struct{}
-}
-
-// Container 容器
-type Container struct {
-	ID            common.ContainerID            `json:"id"`
-	LaunchContext common.ContainerLaunchContext `json:"launch_context"`
-	Resource      common.Resource               `json:"resource"`
-	State         string                        `json:"state"`
-	ExitCode      int                           `json:"exit_code"`
-	Diagnostics   string                        `json:"diagnostics"`
-	Process       *os.Process                   `json:"-"`
-	StartTime     time.Time                     `json:"start_time"`
-	FinishTime    time.Time                     `json:"finish_time,omitempty"`
 }
 
 // NewNodeManager 创建新的节点管理器
@@ -48,7 +36,7 @@ func NewNodeManager(nodeID common.NodeID, totalResource common.Resource, rmURL s
 		resourceManagerURL: rmURL,
 		totalResource:      totalResource,
 		usedResource:       common.Resource{Memory: 0, VCores: 0},
-		containers:         make(map[string]*Container),
+		containers:         make(map[string]*containermanager.Container),
 		heartbeatInterval:  3 * time.Second,
 		stopChan:           make(chan struct{}),
 	}
@@ -111,7 +99,7 @@ func (nm *NodeManager) StartContainer(containerID common.ContainerID, launchCont
 		return fmt.Errorf("insufficient resources")
 	}
 
-	container := &Container{
+	container := &containermanager.Container{
 		ID:            containerID,
 		LaunchContext: launchContext,
 		Resource:      resource,
@@ -154,7 +142,7 @@ func (nm *NodeManager) StopContainer(containerID common.ContainerID) error {
 }
 
 // GetContainerStatus 获取容器状态
-func (nm *NodeManager) GetContainerStatus(containerID common.ContainerID) (*Container, error) {
+func (nm *NodeManager) GetContainerStatus(containerID common.ContainerID) (*containermanager.Container, error) {
 	nm.mu.RLock()
 	defer nm.mu.RUnlock()
 
@@ -247,7 +235,7 @@ func (nm *NodeManager) sendHeartbeat() {
 	}
 }
 
-func (nm *NodeManager) launchContainer(container *Container) error {
+func (nm *NodeManager) launchContainer(container *containermanager.Container) error {
 	if len(container.LaunchContext.Commands) == 0 {
 		return fmt.Errorf("no commands specified")
 	}
@@ -284,7 +272,7 @@ func (nm *NodeManager) launchContainer(container *Container) error {
 	return nil
 }
 
-func (nm *NodeManager) monitorContainerProcess(container *Container, cmd *exec.Cmd) {
+func (nm *NodeManager) monitorContainerProcess(container *containermanager.Container, cmd *exec.Cmd) {
 	err := cmd.Wait()
 
 	nm.mu.Lock()
@@ -302,7 +290,7 @@ func (nm *NodeManager) monitorContainerProcess(container *Container, cmd *exec.C
 	container.State = common.ContainerStateComplete
 }
 
-func (nm *NodeManager) stopContainer(container *Container) {
+func (nm *NodeManager) stopContainer(container *containermanager.Container) {
 	if container.Process != nil {
 		// 先尝试优雅关闭
 		container.Process.Signal(syscall.SIGTERM)
@@ -358,7 +346,7 @@ func (nm *NodeManager) handleContainers(w http.ResponseWriter, r *http.Request) 
 	switch r.Method {
 	case http.MethodGet:
 		nm.mu.RLock()
-		containers := make([]*Container, 0, len(nm.containers))
+		containers := make([]*containermanager.Container, 0, len(nm.containers))
 		for _, container := range nm.containers {
 			containers = append(containers, container)
 		}
