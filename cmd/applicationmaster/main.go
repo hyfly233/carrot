@@ -1,1 +1,1 @@
-package applicationmaster
+package main
