@@ -1,18 +1,20 @@
 package resourcemanager
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"sync"
+	"time"
+
 	"carrot/internal/common"
 	"carrot/internal/resourcemanager/applicationmanager"
 	"carrot/internal/resourcemanager/nodemanager"
 	"carrot/internal/resourcemanager/scheduler"
-	"carrot/internal/resourcemanager/scheduler/fifo"
-	"context"
-	"encoding/json"
-	"fmt"
-	"log"
-	"net/http"
-	"sync"
-	"time"
+
+	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 )
 
 // ResourceManager 资源管理器
@@ -24,56 +26,155 @@ type ResourceManager struct {
 	appIDCounter     int32
 	clusterTimestamp int64
 	httpServer       *http.Server
+	config           *common.Config
+	logger           *zap.Logger
+	ctx              context.Context
+	cancel           context.CancelFunc
 }
 
 // NewResourceManager 创建新的资源管理器
-func NewResourceManager() *ResourceManager {
+func NewResourceManager(config *common.Config) *ResourceManager {
+	ctx, cancel := context.WithCancel(context.Background())
+
 	rm := &ResourceManager{
 		applications:     make(map[string]*applicationmanager.Application),
 		nodes:            make(map[string]*nodemanager.Node),
 		clusterTimestamp: time.Now().Unix(),
+		config:           config,
+		logger:           common.ComponentLogger("resource-manager"),
+		ctx:              ctx,
+		cancel:           cancel,
 	}
 
-	// 创建调度器并设置资源管理器引用
-	fifoScheduler := fifo.NewFIFOScheduler()
-	fifoScheduler.SetResourceManager(rm)
-	rm.scheduler = fifoScheduler
+	// 使用调度器工厂创建调度器
+	sch, err := scheduler.CreateScheduler(config)
+	if err != nil {
+		rm.logger.Error("Failed to create scheduler, falling back to FIFO",
+			zap.Error(err))
+		// 回退到FIFO调度器
+		sch, _ = scheduler.CreateScheduler(nil)
+	}
+
+	sch.SetResourceManager(rm)
+	rm.scheduler = sch
+
+	schedulerType := "fifo"
+	if config != nil && config.Scheduler.Type != "" {
+		schedulerType = config.Scheduler.Type
+	}
+
+	rm.logger.Info("Scheduler initialized",
+		zap.String("type", schedulerType))
 
 	return rm
 }
 
 // Start 启动资源管理器
 func (rm *ResourceManager) Start(port int) error {
-	mux := http.NewServeMux()
+	router := mux.NewRouter()
 
-	// REST API 端点
-	mux.HandleFunc("/ws/v1/cluster/apps", rm.handleApplications)
-	mux.HandleFunc("/ws/v1/cluster/apps/new-application", rm.handleNewApplication)
-	mux.HandleFunc("/ws/v1/cluster/apps/", rm.handleApplication)
-	mux.HandleFunc("/ws/v1/cluster/nodes", rm.handleNodes)
-	mux.HandleFunc("/ws/v1/cluster/nodes/register", rm.handleNodeRegistration)
-	mux.HandleFunc("/ws/v1/cluster/nodes/heartbeat", rm.handleNodeHeartbeat)
-	mux.HandleFunc("/ws/v1/cluster/info", rm.handleClusterInfo)
+	// API版本前缀
+	v1 := router.PathPrefix("/ws/v1").Subrouter()
+
+	// 添加中间件
+	v1.Use(rm.loggingMiddleware)
+	v1.Use(rm.corsMiddleware)
+
+	// 集群信息路由
+	cluster := v1.PathPrefix("/cluster").Subrouter()
+	cluster.HandleFunc("/info", rm.handleClusterInfo).Methods("GET")
+
+	// 应用程序路由
+	apps := cluster.PathPrefix("/apps").Subrouter()
+	apps.HandleFunc("", rm.handleApplications).Methods("GET", "POST")
+	apps.HandleFunc("/new-application", rm.handleNewApplication).Methods("POST")
+	apps.HandleFunc("/{appId}", rm.handleApplication).Methods("GET", "DELETE")
+
+	// 节点路由
+	nodes := cluster.PathPrefix("/nodes").Subrouter()
+	nodes.HandleFunc("", rm.handleNodes).Methods("GET")
+	nodes.HandleFunc("/register", rm.handleNodeRegistration).Methods("POST")
+	nodes.HandleFunc("/heartbeat", rm.handleNodeHeartbeat).Methods("POST")
 
 	rm.httpServer = &http.Server{
-		Addr:    fmt.Sprintf(":%d", port),
-		Handler: mux,
+		Addr:         fmt.Sprintf(":%d", port),
+		Handler:      router,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
 	}
 
-	log.Printf("ResourceManager starting on port %d", port)
+	rm.logger.Info("ResourceManager starting",
+		zap.Int("port", port),
+		zap.Int64("cluster_timestamp", rm.clusterTimestamp))
+
 	return rm.httpServer.ListenAndServe()
 }
 
 // Stop 停止资源管理器
 func (rm *ResourceManager) Stop() error {
+	rm.logger.Info("Stopping ResourceManager")
+
+	// 取消上下文
+	rm.cancel()
+
+	// 关闭HTTP服务器
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	if rm.httpServer != nil {
-		return rm.httpServer.Shutdown(context.Background())
+		return rm.httpServer.Shutdown(ctx)
 	}
+
 	return nil
+}
+
+// loggingMiddleware 日志中间件
+func (rm *ResourceManager) loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		// 记录请求
+		rm.logger.Debug("HTTP request",
+			zap.String("method", r.Method),
+			zap.String("path", r.URL.Path),
+			zap.String("remote_addr", r.RemoteAddr))
+
+		next.ServeHTTP(w, r)
+
+		// 记录响应
+		duration := time.Since(start)
+		rm.logger.Debug("HTTP response",
+			zap.String("method", r.Method),
+			zap.String("path", r.URL.Path),
+			zap.Duration("duration", duration))
+	})
+}
+
+// corsMiddleware CORS中间件
+func (rm *ResourceManager) corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 // SubmitApplication 提交应用程序
 func (rm *ResourceManager) SubmitApplication(ctx common.ApplicationSubmissionContext) (*common.ApplicationID, error) {
+	// 验证提交上下文
+	if err := common.ValidateApplicationSubmissionContext(ctx); err != nil {
+		rm.logger.Error("Invalid application submission context", zap.Error(err))
+		return nil, fmt.Errorf("validation failed: %w", err)
+	}
+
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
 
@@ -87,10 +188,11 @@ func (rm *ResourceManager) SubmitApplication(ctx common.ApplicationSubmissionCon
 		ID:              appID,
 		Name:            ctx.ApplicationName,
 		Type:            ctx.ApplicationType,
-		User:            "default", // TODO: 从上下文获取用户
+		User:            rm.getUserFromContext(ctx), // 改进用户获取逻辑
 		Queue:           ctx.Queue,
 		State:           common.ApplicationStateSubmitted,
 		StartTime:       time.Now(),
+		Progress:        0.0,
 		AMContainerSpec: ctx.AMContainerSpec,
 		Resource:        ctx.Resource,
 		Attempts:        make([]*applicationmanager.ApplicationAttempt, 0),
@@ -112,10 +214,21 @@ func (rm *ResourceManager) SubmitApplication(ctx common.ApplicationSubmissionCon
 
 	app.Attempts = append(app.Attempts, attempt)
 
+	rm.logger.Info("Application submitted",
+		zap.String("app_id", rm.getAppKey(appID)),
+		zap.String("app_name", ctx.ApplicationName),
+		zap.String("queue", ctx.Queue))
+
 	// 启动调度
 	go rm.scheduleApplication(app)
 
 	return &appID, nil
+}
+
+// getUserFromContext 从上下文获取用户信息
+func (rm *ResourceManager) getUserFromContext(ctx common.ApplicationSubmissionContext) string {
+	// TODO: 实现从认证令牌或请求头获取用户信息
+	return "default"
 }
 
 // RegisterNode 注册节点
@@ -135,7 +248,9 @@ func (rm *ResourceManager) RegisterNode(nodeID common.NodeID, resource common.Re
 	}
 
 	rm.nodes[rm.getNodeKey(nodeID)] = node
-	log.Printf("Node registered: %s:%d", nodeID.Host, nodeID.Port)
+	rm.logger.Info("Node registered",
+		zap.String("host", nodeID.Host),
+		zap.Int32("port", nodeID.Port))
 
 	return nil
 }
@@ -226,9 +341,31 @@ func (rm *ResourceManager) GetNodesForScheduler() map[string]*scheduler.NodeInfo
 			State:             node.State,
 			AvailableResource: node.AvailableResource,
 			UsedResource:      node.UsedResource,
+			LastHeartbeat:     node.LastHeartbeat,
 		}
 	}
 	return nodeInfos
+}
+
+// GetAvailableNodes 获取可用节点列表
+func (rm *ResourceManager) GetAvailableNodes() []scheduler.NodeInfo {
+	rm.mu.RLock()
+	defer rm.mu.RUnlock()
+
+	var availableNodes []scheduler.NodeInfo
+	for _, node := range rm.nodes {
+		if node.State == "running" {
+			availableNodes = append(availableNodes, scheduler.NodeInfo{
+				ID:                node.ID,
+				Resource:          node.TotalResource,
+				AvailableResource: node.AvailableResource,
+				State:             node.State,
+				UsedResource:      node.UsedResource,
+				LastHeartbeat:     node.LastHeartbeat,
+			})
+		}
+	}
+	return availableNodes
 }
 
 // GetClusterTimestamp 获取集群时间戳
@@ -239,23 +376,38 @@ func (rm *ResourceManager) GetClusterTimestamp() int64 {
 func (rm *ResourceManager) scheduleApplication(app *applicationmanager.Application) {
 	// 将应用程序信息转换为调度器可用的格式
 	appInfo := &scheduler.ApplicationInfo{
-		ID:       app.ID,
-		Resource: app.Resource,
+		ID:         app.ID,
+		Resource:   app.Resource,
+		SubmitTime: app.StartTime,
+		Queue:      app.Queue,
+		Priority:   0, // 默认优先级
 	}
 
 	// 简单的调度逻辑，为 AM 分配容器
-	containers, err := rm.scheduler.Schedule(appInfo)
+	allocations, err := rm.scheduler.Schedule(appInfo)
 	if err != nil {
-		log.Printf("Failed to schedule application %v: %v", app.ID, err)
+		rm.logger.Error("Failed to schedule application",
+			zap.Any("app_id", app.ID),
+			zap.Error(err))
 		return
 	}
 
-	if len(containers) > 0 {
+	if len(allocations) > 0 {
+		rm.mu.Lock()
 		app.State = common.ApplicationStateRunning
 		if len(app.Attempts) > 0 {
-			app.Attempts[0].AMContainer = containers[0]
+			// 转换 ContainerAllocation 为 Container
+			container := &common.Container{
+				ID:       allocations[0].ID,
+				NodeID:   allocations[0].NodeID,
+				Resource: allocations[0].Resource,
+				Status:   "ALLOCATED",
+				State:    common.ContainerStateNew,
+			}
+			app.Attempts[0].AMContainer = container
 			app.Attempts[0].State = common.ApplicationStateRunning
 		}
+		rm.mu.Unlock()
 	}
 }
 
