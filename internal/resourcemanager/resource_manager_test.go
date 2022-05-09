@@ -8,29 +8,24 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestResourceManagerCreation(t *testing.T) {
-	rm := NewResourceManager()
-	if rm == nil {
-		t.Fatal("Failed to create ResourceManager")
-	}
+	config := common.GetDefaultConfig()
+	rm := NewResourceManager(config)
 
-	if rm.clusterTimestamp == 0 {
-		t.Error("Cluster timestamp not set")
-	}
-
-	if rm.applications == nil {
-		t.Error("Applications map not initialized")
-	}
-
-	if rm.nodes == nil {
-		t.Error("Nodes map not initialized")
-	}
+	assert.NotNil(t, rm, "ResourceManager should not be nil")
+	assert.NotZero(t, rm.clusterTimestamp, "Cluster timestamp should be set")
+	assert.NotNil(t, rm.applications, "Applications map should be initialized")
+	assert.NotNil(t, rm.nodes, "Nodes map should be initialized")
+	assert.NotNil(t, rm.logger, "Logger should be initialized")
 }
 
 func TestNodeRegistration(t *testing.T) {
-	rm := NewResourceManager()
+	config := common.GetDefaultConfig()
+	rm := NewResourceManager(config)
 
 	nodeID := common.NodeID{
 		Host: "test-host",
@@ -70,7 +65,8 @@ func TestNodeRegistration(t *testing.T) {
 }
 
 func TestApplicationSubmission(t *testing.T) {
-	rm := NewResourceManager()
+	config := common.GetDefaultConfig()
+	rm := NewResourceManager(config)
 
 	// 先注册一个节点
 	nodeID := common.NodeID{Host: "test-host", Port: 8042}
@@ -107,7 +103,8 @@ func TestApplicationSubmission(t *testing.T) {
 }
 
 func TestHTTPEndpoints(t *testing.T) {
-	rm := NewResourceManager()
+	config := common.GetDefaultConfig()
+	rm := NewResourceManager(config)
 
 	// 测试集群信息端点
 	t.Run("ClusterInfo", func(t *testing.T) {
@@ -177,7 +174,8 @@ func TestHTTPEndpoints(t *testing.T) {
 }
 
 func TestNodeHeartbeat(t *testing.T) {
-	rm := NewResourceManager()
+	config := common.GetDefaultConfig()
+	rm := NewResourceManager(config)
 
 	// 先注册节点
 	nodeID := common.NodeID{Host: "test-host", Port: 8042}
@@ -211,7 +209,8 @@ func TestNodeHeartbeat(t *testing.T) {
 
 // 基准测试
 func BenchmarkResourceManagerScheduling(b *testing.B) {
-	rm := NewResourceManager()
+	config := common.GetDefaultConfig()
+	rm := NewResourceManager(config)
 
 	// 注册测试节点
 	nodeID := common.NodeID{Host: "bench-host", Port: 8042}
@@ -245,7 +244,8 @@ func BenchmarkResourceManagerScheduling(b *testing.B) {
 }
 
 func BenchmarkNodeHeartbeat(b *testing.B) {
-	rm := NewResourceManager()
+	config := common.GetDefaultConfig()
+	rm := NewResourceManager(config)
 
 	// 注册测试节点
 	nodeID := common.NodeID{Host: "bench-host", Port: 8042}
