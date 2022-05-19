@@ -1,0 +1,88 @@
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    - gofmt
+    - goimports
+    - govet
+    - ineffassign
+    - misspell
+    - unconvert
+    - typecheck
+    - unused
+    - staticcheck
+    - gosimple
+    - structcheck
+    - varcheck
+    - deadcode
+    - errcheck
+    - gosec
+    - gocritic
+    - gocyclo
+    - dupl
+    - gofumpt
+    - goheader
+    - gci
+    - godot
+    - godox
+    - gomnd
+    - gomodguard
+    - goprintffuncname
+    - nolintlint
+    - revive
+    - rowserrcheck
+    - exportloopref
+    - whitespace
+
+linters-settings:
+  gocyclo:
+    min-complexity: 15
+
+  gocritic:
+    enabled-tags:
+      - performance
+      - style
+      - experimental
+    disabled-checks:
+      - wrapperFunc
+      - hugeParam
+
+  gosec:
+    excludes:
+      - G204 # Subprocess launched with function call as argument or cmd arguments
+
+  gomnd:
+    settings:
+      mnd:
+        checks:
+          - argument
+          - case
+          - condition
+          - operation
+          - return
+          - assign
+
+  revive:
+    rules:
+      - name: exported
+        disabled: false
+        arguments:
+          - checkPrivateReceivers
+          - sayRepetitiveInsteadOfStutters
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gosec
+        - dupl
+        - gocritic
+    - path: cmd/
+      linters:
+        - gochecknoinits
+
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
