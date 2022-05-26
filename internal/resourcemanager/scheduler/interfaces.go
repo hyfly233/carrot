@@ -1,8 +1,9 @@
 package scheduler
 
 import (
-	"carrot/internal/common"
 	"time"
+
+	"carrot/internal/common"
 )
 
 // Scheduler 调度器接口
@@ -16,11 +17,12 @@ type Scheduler interface {
 
 // ResourceManagerInterface 资源管理器接口
 type ResourceManagerInterface interface {
+	GetAvailableNodes() []NodeInfo
 	GetNodesForScheduler() map[string]*NodeInfo
 	GetClusterTimestamp() int64
 }
 
-// ApplicationInfo 应用程序信息
+// ApplicationInfo 统一的应用程序信息结构
 type ApplicationInfo struct {
 	ID         common.ApplicationID `json:"id"`
 	Resource   common.Resource      `json:"resource"`
@@ -29,7 +31,7 @@ type ApplicationInfo struct {
 	Priority   int32                `json:"priority"`
 }
 
-// ContainerAllocation 容器分配信息
+// ContainerAllocation 统一的容器分配信息结构
 type ContainerAllocation struct {
 	ID       common.ContainerID `json:"id"`
 	NodeID   common.NodeID      `json:"node_id"`
@@ -40,8 +42,9 @@ type ContainerAllocation struct {
 // NodeInfo 节点信息
 type NodeInfo struct {
 	ID                common.NodeID   `json:"id"`
-	State             string          `json:"state"`
+	Resource          common.Resource `json:"resource"`
 	AvailableResource common.Resource `json:"available_resource"`
+	State             string          `json:"state"`
 	UsedResource      common.Resource `json:"used_resource"`
 	LastHeartbeat     time.Time       `json:"last_heartbeat"`
 }
