@@ -1,4 +1,4 @@
-package nodemanager
+package main
 
 import (
 	"carrot/internal/common"
