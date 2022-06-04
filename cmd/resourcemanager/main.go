@@ -1,4 +1,4 @@
-package resourcemanager
+package main
 
 import (
 	"flag"
