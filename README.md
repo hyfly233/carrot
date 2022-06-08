@@ -46,6 +46,8 @@ Carrot 是一个使用 Go 语言实现的 Hadoop YARN (Yet Another Resource Nego
     - 协调特定应用程序的执行
     - 请求和管理容器资源
     - 监控任务执行状态
+    - 提供应用程序 Web UI 和 API
+    - 实现应用程序特定的调度逻辑
 
 4. **Client** - 客户端
     - 提交应用程序到集群
@@ -87,6 +89,7 @@ make build
 # 或者分别编译
 go build -o bin/resourcemanager cmd/resourcemanager/main.go
 go build -o bin/nodemanager cmd/nodemanager/main.go
+go build -o bin/applicationmaster cmd/applicationmaster/main.go
 go build -o bin/client cmd/client/main.go
 ```
 
@@ -95,19 +98,41 @@ go build -o bin/client cmd/client/main.go
 1. **启动 ResourceManager**:
 
 ```bash
-./bin/resourcemanager -port 8088
+./bin/resourcemanager -port 8030
 ```
 
 2. **启动 NodeManager**:
 
 ```bash
-./bin/nodemanager -port 8042 -host localhost -rm-url http://localhost:8088 -memory 8192 -vcores 8
+./bin/nodemanager -port 8042 -host localhost -rm-url http://localhost:8030 -memory 8192 -vcores 8
 ```
 
-3. **提交应用程序**:
+3. **启动 ApplicationMaster** (通常由 ResourceManager 自动启动):
 
 ```bash
-./bin/client -rm-url http://localhost:8088 -app-name "test-job" -command "echo 'Hello YARN!'"
+# 简单应用程序示例
+./bin/applicationmaster \
+    -application_id="$(date +%s)_1" \
+    -application_attempt_id="$(date +%s)_1_1" \
+    -rm_address="http://localhost:8030" \
+    -app_type="simple" \
+    -num_tasks=3 \
+    -port=8088
+
+# 分布式应用程序示例  
+./bin/applicationmaster \
+    -application_id="$(date +%s)_2" \
+    -application_attempt_id="$(date +%s)_2_1" \
+    -rm_address="http://localhost:8030" \
+    -app_type="distributed" \
+    -num_workers=3 \
+    -port=8089
+```
+
+4. **提交应用程序**:
+
+```bash
+./bin/client -rm-url http://localhost:8030 -app-name "test-job" -command "echo 'Hello YARN!'"
 ```
 
 ### 使用 Docker
@@ -134,6 +159,82 @@ docker-compose -f deployments/docker/docker-compose.yml up
 
 - `GET /ws/v1/node/containers` - 获取容器列表
 - `POST /ws/v1/node/containers` - 启动新容器
+- `GET /ws/v1/node/info` - 获取节点信息
+
+### ApplicationMaster API
+
+- `GET /ws/v1/appmaster/info` - 获取应用程序主控信息
+- `GET /ws/v1/appmaster/status` - 获取应用程序状态
+- `GET /ws/v1/appmaster/containers` - 获取容器列表
+- `GET /ws/v1/appmaster/progress` - 获取执行进度
+- `GET /ws/v1/appmaster/metrics` - 获取性能指标
+- `POST /ws/v1/appmaster/shutdown` - 关闭应用程序
+
+### ApplicationMaster Web UI
+
+ApplicationMaster 提供了一个简洁的 Web 界面来监控应用程序执行：
+
+- **应用程序概览** - 显示应用程序 ID、状态、进度等基本信息
+- **容器管理** - 实时显示已分配、完成、失败的容器
+- **资源监控** - 显示内存和 CPU 使用情况
+- **自动刷新** - 每 5 秒自动更新状态信息
+
+访问地址: `http://localhost:8088` (默认端口)
+
+## ApplicationMaster 使用指南
+
+### 应用程序类型
+
+1. **简单应用程序 (Simple Application)**
+    - 适用于独立的任务执行
+    - 每个任务在单独的容器中运行
+    - 任务之间无依赖关系
+
+2. **分布式应用程序 (Distributed Application)**
+    - 适用于主从架构的应用程序
+    - 包含一个主任务和多个工作任务
+    - 主任务协调工作任务的执行
+
+### 配置选项
+
+```bash
+./bin/applicationmaster -h
+Usage of ./bin/applicationmaster:
+  -application_id string
+        Application ID (format: timestamp_id)
+  -application_attempt_id string
+        Application Attempt ID (format: timestamp_id_attempt)
+  -rm_address string
+        ResourceManager address (default "http://localhost:8030")
+  -tracking_url string
+        Application tracking URL
+  -port int
+        ApplicationMaster HTTP server port (default 8088)
+  -app_type string
+        Application type: simple, distributed (default "simple")
+  -num_tasks int
+        Number of tasks for simple application (default 3)
+  -num_workers int
+        Number of workers for distributed application (default 2)
+  -heartbeat_interval duration
+        Heartbeat interval (default 10s)
+  -max_retries int
+        Maximum container retries (default 3)
+  -debug
+        Enable debug logging
+```
+
+### 示例应用程序
+
+运行示例应用程序：
+
+```bash
+# 运行所有示例
+./scripts/run-applicationmaster-examples.sh
+
+# 构建 ApplicationMaster
+./scripts/build-applicationmaster.sh
+```
 
 ## 配置
 
