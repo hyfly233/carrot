@@ -244,7 +244,7 @@ func (rm *ResourceManager) RegisterNode(nodeID common.NodeID, resource common.Re
 		UsedResource:      common.Resource{Memory: 0, VCores: 0},
 		State:             common.NodeStateRunning,
 		LastHeartbeat:     time.Now(),
-		Containers:        make(map[string]*common.Container),
+		Containers:        []*common.Container{},
 	}
 
 	rm.nodes[rm.getNodeKey(nodeID)] = node
@@ -274,10 +274,7 @@ func (rm *ResourceManager) NodeHeartbeat(nodeID common.NodeID, usedResource comm
 	}
 
 	// 更新容器信息
-	node.Containers = make(map[string]*common.Container)
-	for _, container := range containers {
-		node.Containers[rm.getContainerKey(container.ID)] = container
-	}
+	node.Containers = containers
 
 	return nil
 }
