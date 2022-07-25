@@ -30,6 +30,7 @@ build:
 	$(GOBUILD) $(LDFLAGS) -o bin/resourcemanager cmd/resourcemanager/main.go
 	$(GOBUILD) $(LDFLAGS) -o bin/nodemanager cmd/nodemanager/main.go
 	$(GOBUILD) $(LDFLAGS) -o bin/client cmd/client/main.go
+	$(GOBUILD) $(LDFLAGS) -o bin/applicationmaster cmd/applicationmaster/main.go
 	@echo "Build completed!"
 
 # 交叉编译
