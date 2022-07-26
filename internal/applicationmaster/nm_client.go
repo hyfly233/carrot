@@ -29,7 +29,7 @@ type ContainerStatus struct {
 
 // StartContainerRequest 启动容器请求
 type StartContainerRequest struct {
-	ContainerID           common.ContainerID             `json:"container_id"`
+	ContainerID            common.ContainerID            `json:"container_id"`
 	ContainerLaunchContext common.ContainerLaunchContext `json:"container_launch_context"`
 }
 
@@ -57,9 +57,9 @@ func NewNodeManagerClient(nmAddress string, logger *zap.Logger) *NodeManagerClie
 // StartContainer 启动容器
 func (nm *NodeManagerClient) StartContainer(containerID common.ContainerID, launchContext *common.ContainerLaunchContext) error {
 	url := fmt.Sprintf("%s/ws/v1/node/containers/%d/start", nm.baseURL, containerID.ContainerID)
-	
+
 	request := StartContainerRequest{
-		ContainerID:           containerID,
+		ContainerID:            containerID,
 		ContainerLaunchContext: *launchContext,
 	}
 
@@ -87,7 +87,7 @@ func (nm *NodeManagerClient) StartContainer(containerID common.ContainerID, laun
 // StopContainer 停止容器
 func (nm *NodeManagerClient) StopContainer(containerID common.ContainerID) error {
 	url := fmt.Sprintf("%s/ws/v1/node/containers/%d/stop", nm.baseURL, containerID.ContainerID)
-	
+
 	request := StopContainerRequest{
 		ContainerID: containerID,
 	}
@@ -116,7 +116,7 @@ func (nm *NodeManagerClient) StopContainer(containerID common.ContainerID) error
 // GetContainerStatus 获取容器状态
 func (nm *NodeManagerClient) GetContainerStatus(containerID common.ContainerID) (*ContainerStatus, error) {
 	url := fmt.Sprintf("%s/ws/v1/node/containers/%d/status", nm.baseURL, containerID.ContainerID)
-	
+
 	resp, err := nm.httpClient.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
@@ -140,7 +140,7 @@ func (nm *NodeManagerClient) GetContainerStatus(containerID common.ContainerID) 
 // GetContainerLogs 获取容器日志
 func (nm *NodeManagerClient) GetContainerLogs(containerID common.ContainerID, logType string) (string, error) {
 	url := fmt.Sprintf("%s/ws/v1/node/containers/%d/logs/%s", nm.baseURL, containerID.ContainerID, logType)
-	
+
 	resp, err := nm.httpClient.Get(url)
 	if err != nil {
 		return "", fmt.Errorf("failed to send request: %w", err)
@@ -164,7 +164,7 @@ func (nm *NodeManagerClient) GetContainerLogs(containerID common.ContainerID, lo
 // GetNodeStatus 获取节点状态
 func (nm *NodeManagerClient) GetNodeStatus() (*NodeStatus, error) {
 	url := fmt.Sprintf("%s/ws/v1/node/info", nm.baseURL)
-	
+
 	resp, err := nm.httpClient.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
@@ -188,7 +188,7 @@ func (nm *NodeManagerClient) GetNodeStatus() (*NodeStatus, error) {
 // ListContainers 列出容器
 func (nm *NodeManagerClient) ListContainers() ([]*ContainerStatus, error) {
 	url := fmt.Sprintf("%s/ws/v1/node/containers", nm.baseURL)
-	
+
 	resp, err := nm.httpClient.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
@@ -211,15 +211,15 @@ func (nm *NodeManagerClient) ListContainers() ([]*ContainerStatus, error) {
 
 // NodeStatus 节点状态
 type NodeStatus struct {
-	ID                    common.NodeID    `json:"id"`
-	NodeManagerVersion   string           `json:"nodeManagerVersion"`
-	TotalCapability      common.Resource  `json:"totalVmemAllocatedForContainers"`
-	TotalUsed            common.Resource  `json:"totalVmemAllocatedForContainers"`
-	NodeHealthy          bool             `json:"nodeHealthy"`
-	NodeManagerBuildVersion string        `json:"nodeManagerBuildVersion"`
-	HadoopBuildVersion   string           `json:"hadoopBuildVersion"`
-	HadoopVersion        string           `json:"hadoopVersion"`
-	LastNodeUpdateTime   int64            `json:"lastNodeUpdateTime"`
-	HealthReport         string           `json:"healthReport"`
-	ActiveContainers     int32            `json:"containersRunning"`
+	ID                      common.NodeID   `json:"id"`
+	NodeManagerVersion      string          `json:"nodeManagerVersion"`
+	TotalCapability         common.Resource `json:"totalVmemAllocatedForContainers"`
+	TotalUsed               common.Resource `json:"totalVmemAllocatedForContainers"`
+	NodeHealthy             bool            `json:"nodeHealthy"`
+	NodeManagerBuildVersion string          `json:"nodeManagerBuildVersion"`
+	HadoopBuildVersion      string          `json:"hadoopBuildVersion"`
+	HadoopVersion           string          `json:"hadoopVersion"`
+	LastNodeUpdateTime      int64           `json:"lastNodeUpdateTime"`
+	HealthReport            string          `json:"healthReport"`
+	ActiveContainers        int32           `json:"containersRunning"`
 }

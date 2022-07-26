@@ -67,7 +67,7 @@ func TestResourceManagerModulesConstruction(t *testing.T) {
 		// 由于 common.Resource 是结构体，不是指针，所以不能与 nil 比较
 		// 这里只检查方法是否可以调用
 		_ = totalResources
-		_ = usedResources  
+		_ = usedResources
 		_ = availableResources
 
 		t.Logf("NodeManager components construction and basic operations passed")

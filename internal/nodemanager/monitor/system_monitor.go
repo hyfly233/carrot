@@ -1,7 +1,6 @@
 package monitor
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"io/ioutil"

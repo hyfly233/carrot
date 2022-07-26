@@ -23,15 +23,15 @@ func TestNewApplicationMaster(t *testing.T) {
 			},
 			AttemptID: 1,
 		},
-		RMAddress:         "http://localhost:8030",
-		TrackingURL:       "http://localhost:8088",
-		HeartbeatInterval: 10 * time.Second,
+		RMAddress:           "http://localhost:8030",
+		TrackingURL:         "http://localhost:8088",
+		HeartbeatInterval:   10 * time.Second,
 		MaxContainerRetries: 3,
-		Port:              8088,
+		Port:                8088,
 	}
 
 	am := NewApplicationMaster(config)
-	
+
 	assert.NotNil(t, am)
 	assert.Equal(t, config.ApplicationID, am.applicationID)
 	assert.Equal(t, config.ApplicationAttemptID, am.applicationAttemptID)
@@ -53,11 +53,11 @@ func TestApplicationMasterContainerManagement(t *testing.T) {
 			},
 			AttemptID: 1,
 		},
-		RMAddress:         "http://localhost:8030",
-		TrackingURL:       "http://localhost:8088",
-		HeartbeatInterval: 10 * time.Second,
+		RMAddress:           "http://localhost:8030",
+		TrackingURL:         "http://localhost:8088",
+		HeartbeatInterval:   10 * time.Second,
 		MaxContainerRetries: 3,
-		Port:              8088,
+		Port:                8088,
 	}
 
 	am := NewApplicationMaster(config)
@@ -75,7 +75,7 @@ func TestApplicationMasterContainerManagement(t *testing.T) {
 	}
 
 	am.RequestContainers(requests)
-	
+
 	assert.Len(t, am.pendingRequests, 2)
 	assert.Equal(t, int64(1024), am.pendingRequests[0].Resource.Memory)
 	assert.Equal(t, int32(1), am.pendingRequests[0].Resource.VCores)
@@ -96,7 +96,7 @@ func TestApplicationMasterContainerManagement(t *testing.T) {
 	}
 
 	am.handleNewContainer(container)
-	
+
 	containerKey := am.getContainerKey(container.ID)
 	assert.Contains(t, am.allocatedContainers, containerKey)
 	assert.Equal(t, container, am.allocatedContainers[containerKey])
@@ -115,11 +115,11 @@ func TestApplicationMasterProgress(t *testing.T) {
 			},
 			AttemptID: 1,
 		},
-		RMAddress:         "http://localhost:8030",
-		TrackingURL:       "http://localhost:8088",
-		HeartbeatInterval: 10 * time.Second,
+		RMAddress:           "http://localhost:8030",
+		TrackingURL:         "http://localhost:8088",
+		HeartbeatInterval:   10 * time.Second,
 		MaxContainerRetries: 3,
-		Port:              8088,
+		Port:                8088,
 	}
 
 	am := NewApplicationMaster(config)
@@ -156,11 +156,11 @@ func TestSimpleApplication(t *testing.T) {
 			},
 			AttemptID: 1,
 		},
-		RMAddress:         "http://localhost:8030",
-		TrackingURL:       "http://localhost:8088",
-		HeartbeatInterval: 10 * time.Second,
+		RMAddress:           "http://localhost:8030",
+		TrackingURL:         "http://localhost:8088",
+		HeartbeatInterval:   10 * time.Second,
 		MaxContainerRetries: 3,
-		Port:              8088,
+		Port:                8088,
 	}
 
 	am := NewApplicationMaster(config)
@@ -194,11 +194,11 @@ func TestDistributedApplication(t *testing.T) {
 			},
 			AttemptID: 1,
 		},
-		RMAddress:         "http://localhost:8030",
-		TrackingURL:       "http://localhost:8088",
-		HeartbeatInterval: 10 * time.Second,
+		RMAddress:           "http://localhost:8030",
+		TrackingURL:         "http://localhost:8088",
+		HeartbeatInterval:   10 * time.Second,
 		MaxContainerRetries: 3,
-		Port:              8088,
+		Port:                8088,
 	}
 
 	am := NewApplicationMaster(config)
@@ -251,11 +251,11 @@ func TestApplicationMasterKeyGeneration(t *testing.T) {
 			},
 			AttemptID: 1,
 		},
-		RMAddress:         "http://localhost:8030",
-		TrackingURL:       "http://localhost:8088",
-		HeartbeatInterval: 10 * time.Second,
+		RMAddress:           "http://localhost:8030",
+		TrackingURL:         "http://localhost:8088",
+		HeartbeatInterval:   10 * time.Second,
 		MaxContainerRetries: 3,
-		Port:              8088,
+		Port:                8088,
 	}
 
 	am := NewApplicationMaster(config)
@@ -290,11 +290,11 @@ func TestApplicationMasterContainerStateUpdate(t *testing.T) {
 			},
 			AttemptID: 1,
 		},
-		RMAddress:         "http://localhost:8030",
-		TrackingURL:       "http://localhost:8088",
-		HeartbeatInterval: 10 * time.Second,
+		RMAddress:           "http://localhost:8030",
+		TrackingURL:         "http://localhost:8088",
+		HeartbeatInterval:   10 * time.Second,
 		MaxContainerRetries: 3,
-		Port:              8088,
+		Port:                8088,
 	}
 
 	am := NewApplicationMaster(config)
@@ -338,11 +338,11 @@ func BenchmarkApplicationMasterContainerHandling(b *testing.B) {
 			},
 			AttemptID: 1,
 		},
-		RMAddress:         "http://localhost:8030",
-		TrackingURL:       "http://localhost:8088",
-		HeartbeatInterval: 10 * time.Second,
+		RMAddress:           "http://localhost:8030",
+		TrackingURL:         "http://localhost:8088",
+		HeartbeatInterval:   10 * time.Second,
 		MaxContainerRetries: 3,
-		Port:              8088,
+		Port:                8088,
 	}
 
 	am := NewApplicationMaster(config)

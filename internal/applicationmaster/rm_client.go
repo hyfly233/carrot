@@ -53,8 +53,8 @@ type AllocateResponse struct {
 // FinishApplicationMasterRequest 完成 ApplicationMaster 请求
 type FinishApplicationMasterRequest struct {
 	FinalApplicationStatus string `json:"final_application_status"`
-	Diagnostics           string `json:"diagnostics"`
-	TrackingURL           string `json:"tracking_url"`
+	Diagnostics            string `json:"diagnostics"`
+	TrackingURL            string `json:"tracking_url"`
 }
 
 // FinishApplicationMasterResponse 完成 ApplicationMaster 响应
@@ -76,7 +76,7 @@ func NewResourceManagerClient(rmAddress string, logger *zap.Logger) *ResourceMan
 // RegisterApplicationMaster 注册 ApplicationMaster
 func (rm *ResourceManagerClient) RegisterApplicationMaster(request *RegisterApplicationMasterRequest) (*RegisterApplicationMasterResponse, error) {
 	url := fmt.Sprintf("%s/ws/v1/cluster/apps/new-application", rm.baseURL)
-	
+
 	reqBody, err := json.Marshal(request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
@@ -106,7 +106,7 @@ func (rm *ResourceManagerClient) RegisterApplicationMaster(request *RegisterAppl
 // Allocate 发送分配请求
 func (rm *ResourceManagerClient) Allocate(request *AllocateRequest) (*AllocateResponse, error) {
 	url := fmt.Sprintf("%s/ws/v1/cluster/apps/allocate", rm.baseURL)
-	
+
 	reqBody, err := json.Marshal(request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
@@ -137,7 +137,7 @@ func (rm *ResourceManagerClient) Allocate(request *AllocateRequest) (*AllocateRe
 // FinishApplicationMaster 完成 ApplicationMaster
 func (rm *ResourceManagerClient) FinishApplicationMaster(request *FinishApplicationMasterRequest) (*FinishApplicationMasterResponse, error) {
 	url := fmt.Sprintf("%s/ws/v1/cluster/apps/finish", rm.baseURL)
-	
+
 	reqBody, err := json.Marshal(request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
@@ -167,7 +167,7 @@ func (rm *ResourceManagerClient) FinishApplicationMaster(request *FinishApplicat
 // GetApplicationReport 获取应用程序报告
 func (rm *ResourceManagerClient) GetApplicationReport(appID common.ApplicationID) (*common.ApplicationReport, error) {
 	url := fmt.Sprintf("%s/ws/v1/cluster/apps/%d_%d", rm.baseURL, appID.ClusterTimestamp, appID.ID)
-	
+
 	resp, err := rm.httpClient.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
@@ -191,7 +191,7 @@ func (rm *ResourceManagerClient) GetApplicationReport(appID common.ApplicationID
 // GetClusterMetrics 获取集群指标
 func (rm *ResourceManagerClient) GetClusterMetrics() (*ClusterMetrics, error) {
 	url := fmt.Sprintf("%s/ws/v1/cluster/metrics", rm.baseURL)
-	
+
 	resp, err := rm.httpClient.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)

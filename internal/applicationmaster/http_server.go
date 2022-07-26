@@ -56,11 +56,11 @@ func (am *ApplicationMaster) handleAppMasterInfo(w http.ResponseWriter, r *http.
 	info := map[string]interface{}{
 		"applicationId":        am.applicationID,
 		"applicationAttemptId": am.applicationAttemptID,
-		"state":               am.applicationState,
-		"finalStatus":         am.finalStatus,
-		"progress":            am.progress,
-		"trackingUrl":         am.trackingURL,
-		"startTime":           am.applicationAttemptID, // 可以从 attempt 中获取开始时间
+		"state":                am.applicationState,
+		"finalStatus":          am.finalStatus,
+		"progress":             am.progress,
+		"trackingUrl":          am.trackingURL,
+		"startTime":            am.applicationAttemptID, // 可以从 attempt 中获取开始时间
 	}
 	am.mu.RUnlock()
 
@@ -73,7 +73,7 @@ func (am *ApplicationMaster) handleAppMasterInfo(w http.ResponseWriter, r *http.
 // handleAppMasterStatus 处理应用程序主控状态请求
 func (am *ApplicationMaster) handleAppMasterStatus(w http.ResponseWriter, r *http.Request) {
 	stats := am.GetContainerStatistics()
-	
+
 	status := map[string]interface{}{
 		"state":      am.GetState(),
 		"progress":   am.GetProgress(),
@@ -91,7 +91,7 @@ func (am *ApplicationMaster) handleAppMasterStatus(w http.ResponseWriter, r *htt
 func (am *ApplicationMaster) handleContainers(w http.ResponseWriter, r *http.Request) {
 	am.mu.RLock()
 	containers := make([]*ContainerInfo, 0)
-	
+
 	// 添加已分配的容器
 	for _, container := range am.allocatedContainers {
 		containers = append(containers, &ContainerInfo{
@@ -99,7 +99,7 @@ func (am *ApplicationMaster) handleContainers(w http.ResponseWriter, r *http.Req
 			Status:    "ALLOCATED",
 		})
 	}
-	
+
 	// 添加已完成的容器
 	for _, container := range am.completedContainers {
 		containers = append(containers, &ContainerInfo{
@@ -107,7 +107,7 @@ func (am *ApplicationMaster) handleContainers(w http.ResponseWriter, r *http.Req
 			Status:    "COMPLETED",
 		})
 	}
-	
+
 	// 添加失败的容器
 	for _, container := range am.failedContainers {
 		containers = append(containers, &ContainerInfo{
@@ -127,10 +127,10 @@ func (am *ApplicationMaster) handleContainers(w http.ResponseWriter, r *http.Req
 func (am *ApplicationMaster) handleContainer(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	containerIDStr := vars["containerId"]
-	
+
 	am.mu.RLock()
 	defer am.mu.RUnlock()
-	
+
 	// 查找容器
 	var container *ContainerInfo
 	if c, exists := am.allocatedContainers[containerIDStr]; exists {
@@ -179,8 +179,8 @@ func (am *ApplicationMaster) handleMetrics(w http.ResponseWriter, r *http.Reques
 	metrics := map[string]interface{}{
 		"applicationId":        am.applicationID,
 		"applicationAttemptId": am.applicationAttemptID,
-		"state":               am.applicationState,
-		"progress":            am.progress,
+		"state":                am.applicationState,
+		"progress":             am.progress,
 		"containers": map[string]interface{}{
 			"allocated": len(am.allocatedContainers),
 			"completed": len(am.completedContainers),
@@ -207,7 +207,7 @@ func (am *ApplicationMaster) handleMetrics(w http.ResponseWriter, r *http.Reques
 // handleShutdown 处理关闭请求
 func (am *ApplicationMaster) handleShutdown(w http.ResponseWriter, r *http.Request) {
 	am.logger.Info("Received shutdown request")
-	
+
 	// 设置最终状态
 	am.mu.Lock()
 	am.applicationState = "FINISHING"

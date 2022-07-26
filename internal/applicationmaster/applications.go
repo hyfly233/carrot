@@ -12,9 +12,9 @@ import (
 
 // SimpleApplication 简单应用程序示例
 type SimpleApplication struct {
-	am          *ApplicationMaster
-	logger      *zap.Logger
-	totalTasks  int
+	am             *ApplicationMaster
+	logger         *zap.Logger
+	totalTasks     int
 	completedTasks int
 }
 
@@ -49,7 +49,7 @@ func (app *SimpleApplication) Run(ctx context.Context) error {
 // requestContainers 请求容器
 func (app *SimpleApplication) requestContainers() error {
 	requests := make([]*common.ContainerRequest, app.totalTasks)
-	
+
 	for i := 0; i < app.totalTasks; i++ {
 		requests[i] = &common.ContainerRequest{
 			Resource: common.Resource{
@@ -62,7 +62,7 @@ func (app *SimpleApplication) requestContainers() error {
 
 	app.am.RequestContainers(requests)
 	app.logger.Info("Requested containers", zap.Int("count", len(requests)))
-	
+
 	return nil
 }
 
@@ -82,7 +82,7 @@ func (app *SimpleApplication) monitorTasks(ctx context.Context) error {
 		case <-ticker.C:
 			stats := app.am.GetContainerStatistics()
 			app.completedTasks = stats["completed"]
-			
+
 			progress := float32(app.completedTasks) / float32(app.totalTasks)
 			app.logger.Info("Task progress",
 				zap.Int("completed", app.completedTasks),
@@ -115,10 +115,10 @@ func (app *SimpleApplication) GetProgress() float32 {
 
 // DistributedApplication 分布式应用程序示例
 type DistributedApplication struct {
-	am            *ApplicationMaster
-	logger        *zap.Logger
-	masterTask    *Task
-	workerTasks   []*Task
+	am                   *ApplicationMaster
+	logger               *zap.Logger
+	masterTask           *Task
+	workerTasks          []*Task
 	coordinatorContainer *common.Container
 	workerContainers     []*common.Container
 }
@@ -210,7 +210,7 @@ func (app *DistributedApplication) startMasterTask() error {
 
 	app.am.RequestContainers([]*common.ContainerRequest{request})
 	app.masterTask.Status = "REQUESTED"
-	
+
 	app.logger.Info("Requested master container")
 	return nil
 }
@@ -242,7 +242,7 @@ func (app *DistributedApplication) waitForMasterContainer(ctx context.Context) e
 // startWorkerTasks 启动工作任务
 func (app *DistributedApplication) startWorkerTasks() error {
 	requests := make([]*common.ContainerRequest, len(app.workerTasks))
-	
+
 	for i, task := range app.workerTasks {
 		requests[i] = &common.ContainerRequest{
 			Resource: task.Resource,
@@ -253,7 +253,7 @@ func (app *DistributedApplication) startWorkerTasks() error {
 
 	app.am.RequestContainers(requests)
 	app.logger.Info("Requested worker containers", zap.Int("count", len(requests)))
-	
+
 	return nil
 }
 
@@ -274,7 +274,7 @@ func (app *DistributedApplication) monitorAllTasks(ctx context.Context) error {
 		case <-ticker.C:
 			stats := app.am.GetContainerStatistics()
 			completed := stats["completed"]
-			
+
 			app.logger.Info("Task progress",
 				zap.Int("completed", completed),
 				zap.Int("total", totalTasks),

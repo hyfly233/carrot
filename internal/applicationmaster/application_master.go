@@ -14,9 +14,9 @@ import (
 
 // ApplicationMaster 应用程序主控
 type ApplicationMaster struct {
-	mu                    sync.RWMutex
-	applicationID         common.ApplicationID
-	applicationAttemptID  common.ApplicationAttemptID
+	mu                   sync.RWMutex
+	applicationID        common.ApplicationID
+	applicationAttemptID common.ApplicationAttemptID
 	rmClient             *ResourceManagerClient
 	nmClients            map[string]*NodeManagerClient
 	containers           map[string]*common.Container
@@ -42,11 +42,11 @@ type ApplicationMaster struct {
 type ApplicationMasterConfig struct {
 	ApplicationID        common.ApplicationID
 	ApplicationAttemptID common.ApplicationAttemptID
-	RMAddress           string
-	TrackingURL         string
-	HeartbeatInterval   time.Duration
-	MaxContainerRetries int
-	Port                int
+	RMAddress            string
+	TrackingURL          string
+	HeartbeatInterval    time.Duration
+	MaxContainerRetries  int
+	Port                 int
 }
 
 // NewApplicationMaster 创建新的 ApplicationMaster
@@ -56,23 +56,23 @@ func NewApplicationMaster(config *ApplicationMasterConfig) *ApplicationMaster {
 	am := &ApplicationMaster{
 		applicationID:        config.ApplicationID,
 		applicationAttemptID: config.ApplicationAttemptID,
-		nmClients:           make(map[string]*NodeManagerClient),
-		containers:          make(map[string]*common.Container),
-		pendingRequests:     make([]*common.ContainerRequest, 0),
-		allocatedContainers: make(map[string]*common.Container),
-		completedContainers: make(map[string]*common.Container),
-		failedContainers:    make(map[string]*common.Container),
-		applicationState:    common.ApplicationStateRunning,
-		finalStatus:         common.FinalApplicationStatusUndefined,
-		progress:            0.0,
-		trackingURL:         config.TrackingURL,
-		config:              common.GetDefaultConfig(),
-		logger:              common.ComponentLogger("application-master"),
-		ctx:                 ctx,
-		cancel:              cancel,
-		heartbeatInterval:   config.HeartbeatInterval,
-		maxContainerRetries: config.MaxContainerRetries,
-		shutdownHook:        make(chan struct{}, 1),
+		nmClients:            make(map[string]*NodeManagerClient),
+		containers:           make(map[string]*common.Container),
+		pendingRequests:      make([]*common.ContainerRequest, 0),
+		allocatedContainers:  make(map[string]*common.Container),
+		completedContainers:  make(map[string]*common.Container),
+		failedContainers:     make(map[string]*common.Container),
+		applicationState:     common.ApplicationStateRunning,
+		finalStatus:          common.FinalApplicationStatusUndefined,
+		progress:             0.0,
+		trackingURL:          config.TrackingURL,
+		config:               common.GetDefaultConfig(),
+		logger:               common.ComponentLogger("application-master"),
+		ctx:                  ctx,
+		cancel:               cancel,
+		heartbeatInterval:    config.HeartbeatInterval,
+		maxContainerRetries:  config.MaxContainerRetries,
+		shutdownHook:         make(chan struct{}, 1),
 	}
 
 	// 创建 ResourceManager 客户端
@@ -166,8 +166,8 @@ func (am *ApplicationMaster) registerWithRM() error {
 func (am *ApplicationMaster) unregisterFromRM() error {
 	request := &FinishApplicationMasterRequest{
 		FinalApplicationStatus: am.finalStatus,
-		Diagnostics:           "Application completed successfully",
-		TrackingURL:           am.trackingURL,
+		Diagnostics:            "Application completed successfully",
+		TrackingURL:            am.trackingURL,
 	}
 
 	_, err := am.rmClient.FinishApplicationMaster(request)
@@ -206,10 +206,10 @@ func (am *ApplicationMaster) sendHeartbeat() error {
 	am.completedContainers = make(map[string]*common.Container) // 清空已完成容器
 
 	request := &AllocateRequest{
-		Ask:               am.pendingRequests,
-		Release:           []common.ContainerID{}, // TODO: 实现容器释放
+		Ask:                 am.pendingRequests,
+		Release:             []common.ContainerID{}, // TODO: 实现容器释放
 		CompletedContainers: completedContainers,
-		Progress:          am.progress,
+		Progress:            am.progress,
 	}
 
 	response, err := am.rmClient.Allocate(request)
@@ -246,7 +246,7 @@ func (am *ApplicationMaster) handleNewContainer(container *common.Container) {
 // handleCompletedContainer 处理已完成的容器
 func (am *ApplicationMaster) handleCompletedContainer(container *common.Container) {
 	containerKey := am.getContainerKey(container.ID)
-	
+
 	if container.Status == "COMPLETE" {
 		am.completedContainers[containerKey] = container
 		am.logger.Info("Container completed successfully",
@@ -265,7 +265,7 @@ func (am *ApplicationMaster) handleCompletedContainer(container *common.Containe
 // launchContainer 启动容器
 func (am *ApplicationMaster) launchContainer(container *common.Container) {
 	nodeKey := am.getNodeKey(container.NodeID)
-	
+
 	// 获取或创建 NodeManager 客户端
 	nmClient, err := am.getNMClient(container.NodeID)
 	if err != nil {
@@ -299,7 +299,7 @@ func (am *ApplicationMaster) RequestContainers(requests []*common.ContainerReque
 	defer am.mu.Unlock()
 
 	am.pendingRequests = append(am.pendingRequests, requests...)
-	
+
 	am.logger.Info("Added container requests",
 		zap.Int("count", len(requests)))
 }
@@ -307,7 +307,7 @@ func (am *ApplicationMaster) RequestContainers(requests []*common.ContainerReque
 // ReleaseContainer 释放容器
 func (am *ApplicationMaster) ReleaseContainer(containerID common.ContainerID) error {
 	containerKey := am.getContainerKey(containerID)
-	
+
 	am.mu.Lock()
 	container, exists := am.allocatedContainers[containerKey]
 	if !exists {
@@ -353,7 +353,7 @@ func (am *ApplicationMaster) releaseAllContainers() {
 // getNMClient 获取 NodeManager 客户端
 func (am *ApplicationMaster) getNMClient(nodeID common.NodeID) (*NodeManagerClient, error) {
 	nodeKey := am.getNodeKey(nodeID)
-	
+
 	am.mu.Lock()
 	defer am.mu.Unlock()
 
@@ -424,7 +424,7 @@ func (am *ApplicationMaster) updateContainerState(containerID common.ContainerID
 	containerKey := am.getContainerKey(containerID)
 	if container, exists := am.allocatedContainers[containerKey]; exists {
 		container.State = newState
-		
+
 		// 如果容器完成，移动到完成列表
 		if newState == common.ContainerStateComplete {
 			am.completedContainers[containerKey] = container
