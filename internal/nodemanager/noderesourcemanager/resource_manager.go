@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hyfly233/carrot/internal/common"
+	"carrot/internal/common"
 	"go.uber.org/zap"
 )
 
@@ -493,7 +493,7 @@ func (rm *ResourceManager) UpdateResourceLimits(containerID string, newSpec *com
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
 
-	allocation, exists := rm.allocations[containerID]
+	_, exists := rm.allocations[containerID]
 	if !exists {
 		return fmt.Errorf("container %s has no resource allocation", containerID)
 	}

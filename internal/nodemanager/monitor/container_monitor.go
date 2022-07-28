@@ -417,8 +417,8 @@ func (cm *ContainerMonitor) collectContainerMetrics(containerID string) (*Contai
 	// 收集 CPU 指标
 	if cpuMetrics, err := cm.resourceCollector.CollectCPUMetrics(containerID, pid); err == nil {
 		metrics.CPUUsagePercent = cpuMetrics.UsagePercent
-		metrics.CPUUserTime = cpuMetrics.UserTime
-		metrics.CPUSystemTime = cpuMetrics.SystemTime
+		metrics.CPUUserTime = float64(cpuMetrics.UserTime)
+		metrics.CPUSystemTime = float64(cpuMetrics.SystemTime)
 		metrics.CPUThrottled = cpuMetrics.Throttled
 	}
 

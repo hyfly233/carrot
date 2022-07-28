@@ -8,6 +8,14 @@ type Resource struct {
 	VCores int32 `json:"vcores"` // 虚拟核心数
 }
 
+// ResourceSpec 表示详细的资源规格配置，支持限制和请求
+type ResourceSpec struct {
+	CPU         float64 `json:"cpu"`          // CPU 请求量（核心数）
+	Memory      int64   `json:"memory"`       // 内存请求量（MB）
+	CPULimit    float64 `json:"cpu_limit"`    // CPU 限制量（核心数）
+	MemoryLimit int64   `json:"memory_limit"` // 内存限制量（MB）
+}
+
 // NodeID 节点标识
 type NodeID struct {
 	Host string `json:"host"`

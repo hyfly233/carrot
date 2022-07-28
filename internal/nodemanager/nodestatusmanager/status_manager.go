@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hyfly233/carrot/internal/common"
+	"carrot/internal/common"
 	"go.uber.org/zap"
 )
 

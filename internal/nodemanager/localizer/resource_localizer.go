@@ -81,7 +81,7 @@ func (rl *ResourceLocalizer) parseResources(launchContext *common.ContainerLaunc
 	// 解析本地资源
 	for _, localRes := range launchContext.LocalResources {
 		resource := &LocalResource{
-			URL:        localRes.Resource,
+			URL:        localRes.URL,
 			Type:       rl.convertResourceType(localRes.Type),
 			Size:       localRes.Size,
 			Visibility: rl.convertVisibility(localRes.Visibility),

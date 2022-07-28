@@ -85,6 +85,11 @@ type CPUMetrics struct {
 
 	// 每个CPU核心的使用率
 	PerCPUUsage []float64 `json:"per_cpu_usage"`
+
+	// 容器监控所需的字段
+	UserTime   int64 `json:"user_time"`
+	SystemTime int64 `json:"system_time"`
+	Throttled  int64 `json:"throttled"`
 }
 
 // MemoryMetrics 内存指标
@@ -108,6 +113,12 @@ type MemoryMetrics struct {
 	Slab        int64 `json:"slab"`
 	PageTables  int64 `json:"page_tables"`
 	VmallocUsed int64 `json:"vmalloc_used"`
+
+	// 容器监控所需的字段
+	Usage int64 `json:"usage"`
+	Limit int64 `json:"limit"`
+	Cache int64 `json:"cache"`
+	Swap  int64 `json:"swap"`
 }
 
 // DiskMetrics 磁盘指标
@@ -170,6 +181,10 @@ type ProcessMetrics struct {
 	SleepingProcesses int `json:"sleeping_processes"`
 	ZombieProcesses   int `json:"zombie_processes"`
 	StoppedProcesses  int `json:"stopped_processes"`
+
+	// 容器监控所需的字段
+	NumThreads int `json:"num_threads"`
+	NumFDs     int `json:"num_fds"`
 }
 
 // SystemInfo 系统信息
@@ -982,8 +997,9 @@ func (rc *ResourceCollector) CollectCPUMetrics(containerID string, pid int) (*CP
 	// 简化实现，返回模拟数据
 	return &CPUMetrics{
 		UsagePercent: 10.5,
-		UserTime:     1.2,
-		SystemTime:   0.8,
+		UserTime:     1200,
+		SystemTime:   800,
+		Throttled:    0,
 	}, nil
 }
 
