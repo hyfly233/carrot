@@ -108,6 +108,7 @@ run-client:
 # Docker构建
 docker-build:
 	@echo "Building Docker images..."
+	docker-compose -f deployments/docker/docker-compose.yml build
 	docker build -f deployments/docker/Dockerfile.rm -t carrot-resourcemanager:$(VERSION) .
 	docker build -f deployments/docker/Dockerfile.nm -t carrot-nodemanager:$(VERSION) .
 
@@ -144,27 +145,6 @@ help:
 	@echo "  start-cluster  - Start YARN cluster"
 	@echo "  stop-cluster   - Stop YARN cluster"
 	@echo "  install-tools  - Install development tools"
-
-# 格式化代码
-fmt:
-	@echo "Formatting code..."
-	go fmt ./...
-
-# 检查代码
-lint:
-	@echo "Linting code..."
-	golangci-lint run
-
-# 安装依赖
-deps:
-	@echo "Installing dependencies..."
-	go mod tidy
-	go mod download
-
-# 构建 Docker 镜像
-docker-build:
-	@echo "Building Docker images..."
-	docker-compose -f deployments/docker/docker-compose.yml build
 
 # 启动 Docker 集群
 docker-up:

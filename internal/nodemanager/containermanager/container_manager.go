@@ -63,6 +63,27 @@ type ContainerInfo struct {
 	restartCount  int
 }
 
+func (ci *ContainerInfo) Clone() *ContainerInfo {
+	ci.mu.RLock()
+	defer ci.mu.RUnlock()
+
+	return &ContainerInfo{
+		Container:        ci.Container,
+		LaunchContext:    ci.LaunchContext,
+		State:            ci.State,
+		StartTime:        ci.StartTime,
+		FinishTime:       ci.FinishTime,
+		ExitCode:         ci.ExitCode,
+		Diagnostics:      ci.Diagnostics,
+		ResourceUsage:    ci.ResourceUsage,
+		Process:          ci.Process,
+		WorkingDirectory: ci.WorkingDirectory,
+		LogFiles:         ci.LogFiles,
+		lastHeartbeat:    ci.lastHeartbeat,
+		restartCount:     ci.restartCount,
+	}
+}
+
 // ContainerState 容器状态
 type ContainerState int
 
@@ -415,8 +436,7 @@ func (cm *ContainerManager) GetContainer(containerID common.ContainerID) (*Conta
 	}
 
 	// 返回副本以防止外部修改
-	copy := *containerInfo
-	return &copy, nil
+	return containerInfo.Clone(), nil
 }
 
 // GetAllContainers 获取所有容器信息
@@ -426,8 +446,7 @@ func (cm *ContainerManager) GetAllContainers() []*ContainerInfo {
 
 	containers := make([]*ContainerInfo, 0, len(cm.containers))
 	for _, containerInfo := range cm.containers {
-		copy := *containerInfo
-		containers = append(containers, &copy)
+		containers = append(containers, containerInfo.Clone())
 	}
 
 	return containers

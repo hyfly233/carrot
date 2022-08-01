@@ -65,6 +65,27 @@ type LocalizationRequest struct {
 	totalBytes      int64
 }
 
+func (lr *LocalizationRequest) Clone() *LocalizationRequest {
+	lr.mu.RLock()
+	defer lr.mu.RUnlock()
+
+	return &LocalizationRequest{
+		ID:              lr.ID,
+		ContainerID:     lr.ContainerID,
+		Resources:       lr.Resources,
+		Destination:     lr.Destination,
+		State:           lr.State,
+		StartTime:       lr.StartTime,
+		CompletionTime:  lr.CompletionTime,
+		Progress:        lr.Progress,
+		Error:           lr.Error,
+		Callback:        lr.Callback,
+		downloadedBytes: lr.downloadedBytes,
+		totalBytes:      lr.totalBytes,
+		// mu 字段会自动初始化为零值（新的锁）
+	}
+}
+
 // LocalResource 本地资源
 type LocalResource struct {
 	URL        string             `json:"url"`
@@ -290,8 +311,7 @@ func (l *Localizer) GetLocalizationStatus(requestID string) (*LocalizationReques
 	}
 
 	// 返回副本
-	copy := *request
-	return &copy, nil
+	return request.Clone(), nil
 }
 
 // CancelLocalization 取消本地化

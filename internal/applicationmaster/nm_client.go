@@ -214,7 +214,7 @@ type NodeStatus struct {
 	ID                      common.NodeID   `json:"id"`
 	NodeManagerVersion      string          `json:"nodeManagerVersion"`
 	TotalCapability         common.Resource `json:"totalVmemAllocatedForContainers"`
-	TotalUsed               common.Resource `json:"totalVmemAllocatedForContainers"`
+	TotalUsed               common.Resource `json:"totalVmemUsedForContainers"`
 	NodeHealthy             bool            `json:"nodeHealthy"`
 	NodeManagerBuildVersion string          `json:"nodeManagerBuildVersion"`
 	HadoopBuildVersion      string          `json:"hadoopBuildVersion"`
