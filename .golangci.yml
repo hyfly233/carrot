@@ -1,39 +1,30 @@
+version: 2
+
 run:
   timeout: 5m
   modules-download-mode: readonly
 
 linters:
   enable:
-    - gofmt
-    - goimports
     - govet
     - ineffassign
     - misspell
     - unconvert
-    - typecheck
     - unused
     - staticcheck
-    - gosimple
-    - structcheck
-    - varcheck
-    - deadcode
     - errcheck
     - gosec
     - gocritic
     - gocyclo
     - dupl
-    - gofumpt
     - goheader
-    - gci
     - godot
     - godox
-    - gomnd
     - gomodguard
     - goprintffuncname
     - nolintlint
     - revive
     - rowserrcheck
-    - exportloopref
     - whitespace
 
 linters-settings:

@@ -62,7 +62,7 @@ vet:
 lint:
 	@echo "Running linter..."
 	@if command -v golangci-lint >/dev/null 2>&1; then \
-		golangci-lint run; \
+		GOPROXY=https://goproxy.cn,direct golangci-lint run; \
 	else \
 		echo "golangci-lint not found. Please install: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"; \
 	fi
