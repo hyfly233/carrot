@@ -41,7 +41,7 @@ func NewResourceManager(config *common.Config) *ResourceManager {
 		nodes:            make(map[string]*nodemanager.Node),
 		clusterTimestamp: time.Now().Unix(),
 		config:           config,
-		logger:           common.ComponentLogger("resource-manager"),
+		logger:           common.ComponentLogger(fmt.Sprintf("rm-%d", time.Now().Unix())),
 		ctx:              ctx,
 		cancel:           cancel,
 	}
@@ -470,9 +470,12 @@ func (rm *ResourceManager) handleNewApplication(w http.ResponseWriter, r *http.R
 	rm.mu.Unlock()
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"application-id": appID,
 	})
+	if err != nil {
+		rm.logger.Error("Failed to encode new application", zap.Error(err))
+	}
 }
 
 func (rm *ResourceManager) handleApplication(w http.ResponseWriter, r *http.Request) {
@@ -482,21 +485,26 @@ func (rm *ResourceManager) handleApplication(w http.ResponseWriter, r *http.Requ
 
 func (rm *ResourceManager) handleNodes(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
+		rm.logger.Warn("Method not allowed", zap.String("method", r.Method))
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
 	nodes := rm.GetNodes()
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"nodes": map[string]interface{}{
 			"node": nodes,
 		},
 	})
+	if err != nil {
+		rm.logger.Error("Failed to encode nodes", zap.Error(err))
+	}
 }
 
 func (rm *ResourceManager) handleClusterInfo(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
+		rm.logger.Warn("Method not allowed", zap.String("method", r.Method))
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
@@ -512,11 +520,15 @@ func (rm *ResourceManager) handleClusterInfo(w http.ResponseWriter, r *http.Requ
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(info)
+	err := json.NewEncoder(w).Encode(info)
+	if err != nil {
+		rm.logger.Error("Failed to encode cluster info", zap.Error(err))
+	}
 }
 
 func (rm *ResourceManager) handleNodeRegistration(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
+		rm.logger.Warn("Method not allowed", zap.String("method", r.Method))
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
@@ -534,18 +546,23 @@ func (rm *ResourceManager) handleNodeRegistration(w http.ResponseWriter, r *http
 
 	err := rm.RegisterNode(registrationData.NodeID, registrationData.Resource, registrationData.HTTPAddress)
 	if err != nil {
+		rm.logger.Error("Failed to register node", zap.Error(err))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	err = json.NewEncoder(w).Encode(map[string]interface{}{
 		"status": "registered",
 	})
+	if err != nil {
+		rm.logger.Error("Failed to encode registration response", zap.Error(err))
+	}
 }
 
 func (rm *ResourceManager) handleNodeHeartbeat(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
+		rm.logger.Warn("Method not allowed", zap.String("method", r.Method))
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
@@ -557,18 +574,23 @@ func (rm *ResourceManager) handleNodeHeartbeat(w http.ResponseWriter, r *http.Re
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&heartbeatData); err != nil {
+		rm.logger.Error("Failed to decode heartbeat", zap.Error(err))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	err := rm.NodeHeartbeat(heartbeatData.NodeID, heartbeatData.UsedResource, heartbeatData.Containers)
 	if err != nil {
+		rm.logger.Error("Failed to process node heartbeat", zap.Error(err))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	err = json.NewEncoder(w).Encode(map[string]interface{}{
 		"status": "heartbeat_received",
 	})
+	if err != nil {
+		rm.logger.Error("Failed to encode heartbeat response", zap.Error(err))
+	}
 }

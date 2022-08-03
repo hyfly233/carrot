@@ -1,7 +1,10 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"flag"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -38,20 +41,26 @@ func main() {
 	rm := resourcemanager.NewResourceManager(config)
 
 	// 优雅关闭处理
+	_, cancel := context.WithCancel(context.Background())
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
 		<-sigChan
 		logger.Info("Received shutdown signal")
+		cancel() // 取消context
 		if err := rm.Stop(); err != nil {
 			logger.Error("Error stopping ResourceManager", zap.Error(err))
 		}
-		os.Exit(0)
 	}()
 
 	// 启动服务
 	if err := rm.Start(*port); err != nil {
-		logger.Fatal("Failed to start ResourceManager", zap.Error(err))
+		// 只有在不是正常关闭的情况下才记录错误
+		if !errors.Is(err, http.ErrServerClosed) {
+			logger.Fatal("Failed to start ResourceManager", zap.Error(err))
+		}
 	}
+
+	logger.Info("ResourceManager exited gracefully")
 }

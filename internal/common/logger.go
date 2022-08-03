@@ -80,6 +80,6 @@ func ComponentLogger(component string) *zap.Logger {
 // Sync 同步日志缓冲区
 func Sync() {
 	if logger != nil {
-		logger.Sync()
+		_ = logger.Sync()
 	}
 }

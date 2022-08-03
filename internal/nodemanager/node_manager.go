@@ -2,8 +2,6 @@ package nodemanager
 
 import (
 	"bytes"
-	"carrot/internal/common"
-	"carrot/internal/nodemanager/containermanager"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -14,6 +12,11 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"carrot/internal/common"
+	"carrot/internal/nodemanager/containermanager"
+
+	"go.uber.org/zap"
 )
 
 // NodeManager 节点管理器
@@ -27,6 +30,7 @@ type NodeManager struct {
 	httpServer         *http.Server
 	heartbeatInterval  time.Duration
 	stopChan           chan struct{}
+	logger             *zap.Logger
 }
 
 // NewNodeManager 创建新的节点管理器
@@ -39,6 +43,7 @@ func NewNodeManager(nodeID common.NodeID, totalResource common.Resource, rmURL s
 		containers:         make(map[string]*containermanager.Container),
 		heartbeatInterval:  3 * time.Second,
 		stopChan:           make(chan struct{}),
+		logger:             common.ComponentLogger(fmt.Sprintf("nm-%s", nodeID.String())),
 	}
 }
 

@@ -1,6 +1,9 @@
 package common
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // Resource 表示资源配置
 type Resource struct {
@@ -20,6 +23,10 @@ type ResourceSpec struct {
 type NodeID struct {
 	Host string `json:"host"`
 	Port int32  `json:"port"`
+}
+
+func (ni *NodeID) String() string {
+	return fmt.Sprintf("%s:%d", ni.Host, ni.Port)
 }
 
 // ApplicationID 应用程序标识
