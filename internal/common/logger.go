@@ -8,6 +8,10 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+type loggerKeyType string
+
+const loggerKey loggerKeyType = "logger"
+
 var (
 	logger *zap.Logger
 	sugar  *zap.SugaredLogger
@@ -61,7 +65,7 @@ func GetSugaredLogger() *zap.SugaredLogger {
 
 // LoggerFromContext 从上下文中获取日志记录器
 func LoggerFromContext(ctx context.Context) *zap.Logger {
-	if l, ok := ctx.Value("logger").(*zap.Logger); ok {
+	if l, ok := ctx.Value(loggerKey).(*zap.Logger); ok {
 		return l
 	}
 	return GetLogger()
@@ -69,7 +73,7 @@ func LoggerFromContext(ctx context.Context) *zap.Logger {
 
 // ContextWithLogger 将日志记录器添加到上下文
 func ContextWithLogger(ctx context.Context, logger *zap.Logger) context.Context {
-	return context.WithValue(ctx, "logger", logger)
+	return context.WithValue(ctx, loggerKey, logger)
 }
 
 // ComponentLogger 为特定组件创建带有组件信息的日志记录器

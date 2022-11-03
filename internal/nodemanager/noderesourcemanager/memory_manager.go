@@ -3,7 +3,6 @@ package noderesourcemanager
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -655,7 +654,7 @@ func (mm *MemoryManager) initMemoryPools() error {
 
 // readSystemMeminfo 读取系统内存信息
 func (mm *MemoryManager) readSystemMeminfo() (map[string]int64, error) {
-	data, err := ioutil.ReadFile("/proc/meminfo")
+	data, err := os.ReadFile("/proc/meminfo")
 	if err != nil {
 		return nil, err
 	}
@@ -806,14 +805,14 @@ func (mm *MemoryManager) applyMemoryLimits(containerID string, allocation *Memor
 
 	// 设置内存限制
 	limitPath := filepath.Join(cgroupPath, "memory.limit_in_bytes")
-	if err := ioutil.WriteFile(limitPath, []byte(fmt.Sprintf("%d", allocation.MemoryLimit)), 0644); err != nil {
+	if err := os.WriteFile(limitPath, []byte(fmt.Sprintf("%d", allocation.MemoryLimit)), 0644); err != nil {
 		return fmt.Errorf("failed to set memory limit: %v", err)
 	}
 
 	// 设置swap限制
 	if mm.config.SwapEnabled {
 		swapLimitPath := filepath.Join(cgroupPath, "memory.memsw.limit_in_bytes")
-		if err := ioutil.WriteFile(swapLimitPath, []byte(fmt.Sprintf("%d", allocation.SwapLimit)), 0644); err != nil {
+		if err := os.WriteFile(swapLimitPath, []byte(fmt.Sprintf("%d", allocation.SwapLimit)), 0644); err != nil {
 			mm.logger.Warn("Failed to set swap limit", zap.Error(err))
 		}
 	}
@@ -821,7 +820,7 @@ func (mm *MemoryManager) applyMemoryLimits(containerID string, allocation *Memor
 	// 设置OOM控制
 	if allocation.OOMKillDisable {
 		oomControlPath := filepath.Join(cgroupPath, "memory.oom_control")
-		if err := ioutil.WriteFile(oomControlPath, []byte("1"), 0644); err != nil {
+		if err := os.WriteFile(oomControlPath, []byte("1"), 0644); err != nil {
 			mm.logger.Warn("Failed to disable OOM killer", zap.Error(err))
 		}
 	}
@@ -832,7 +831,7 @@ func (mm *MemoryManager) applyMemoryLimits(containerID string, allocation *Memor
 	if !mm.config.SwapEnabled {
 		swappiness = "0"
 	}
-	if err := ioutil.WriteFile(swappinessPath, []byte(swappiness), 0644); err != nil {
+	if err := os.WriteFile(swappinessPath, []byte(swappiness), 0644); err != nil {
 		mm.logger.Warn("Failed to set memory swappiness", zap.Error(err))
 	}
 
@@ -856,7 +855,7 @@ func (mm *MemoryManager) readMemoryUsage(cgroupPath string) (*MemoryUsage, error
 
 	// 读取内存使用统计
 	statPath := filepath.Join(cgroupPath, "memory.stat")
-	if data, err := ioutil.ReadFile(statPath); err == nil {
+	if data, err := os.ReadFile(statPath); err == nil {
 		stats := mm.parseMemoryStats(string(data))
 		usage.RSS = stats["rss"]
 		usage.Cache = stats["cache"]
@@ -865,7 +864,7 @@ func (mm *MemoryManager) readMemoryUsage(cgroupPath string) (*MemoryUsage, error
 
 	// 读取当前内存使用量
 	usagePath := filepath.Join(cgroupPath, "memory.usage_in_bytes")
-	if data, err := ioutil.ReadFile(usagePath); err == nil {
+	if data, err := os.ReadFile(usagePath); err == nil {
 		if total, err := strconv.ParseInt(strings.TrimSpace(string(data)), 10, 64); err == nil {
 			usage.Total = total
 		}
@@ -874,7 +873,7 @@ func (mm *MemoryManager) readMemoryUsage(cgroupPath string) (*MemoryUsage, error
 	// 读取swap使用量
 	if mm.config.SwapEnabled {
 		swapUsagePath := filepath.Join(cgroupPath, "memory.memsw.usage_in_bytes")
-		if data, err := ioutil.ReadFile(swapUsagePath); err == nil {
+		if data, err := os.ReadFile(swapUsagePath); err == nil {
 			if swapTotal, err := strconv.ParseInt(strings.TrimSpace(string(data)), 10, 64); err == nil {
 				usage.Swap = swapTotal - usage.Total
 			}
@@ -1067,7 +1066,7 @@ func (mm *MemoryManager) checkOOMEvents() {
 		cgroupPath := filepath.Join(mm.config.CgroupsPath, "memory", containerID)
 		oomControlPath := filepath.Join(cgroupPath, "memory.oom_control")
 
-		if data, err := ioutil.ReadFile(oomControlPath); err == nil {
+		if data, err := os.ReadFile(oomControlPath); err == nil {
 			lines := strings.Split(string(data), "\n")
 			for _, line := range lines {
 				if strings.HasPrefix(line, "oom_kill_count") {

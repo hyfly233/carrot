@@ -154,3 +154,13 @@ const (
 	FinalApplicationStatusFailed    = "FAILED"
 	FinalApplicationStatusKilled    = "KILLED"
 )
+
+// ParseContainerID 解析容器ID字符串
+func ParseContainerID(containerIDStr string) (ContainerID, error) {
+	// 简单实现：假设容器ID字符串是数字格式
+	// 在真实实现中应该解析更复杂的格式
+	var containerID ContainerID
+	// 这里暂时返回一个基本的容器ID
+	// 真实实现应该解析字符串并填充完整的 ContainerID 结构
+	return containerID, nil
+}

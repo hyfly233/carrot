@@ -3,7 +3,6 @@ package noderesourcemanager
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -499,7 +498,7 @@ func (cm *CPUManager) initCPUTopology() error {
 
 	// 读取CPU信息
 	cpuinfoPath := "/proc/cpuinfo"
-	data, err := ioutil.ReadFile(cpuinfoPath)
+	data, err := os.ReadFile(cpuinfoPath)
 	if err != nil {
 		return fmt.Errorf("failed to read %s: %v", cpuinfoPath, err)
 	}
@@ -592,7 +591,7 @@ func (cm *CPUManager) initCPUTopology() error {
 // loadNUMAInfo 加载NUMA信息
 func (cm *CPUManager) loadNUMAInfo(topology *CPUTopology, numaMap map[int]*NUMANode) {
 	numaPath := "/sys/devices/system/node"
-	entries, err := ioutil.ReadDir(numaPath)
+	entries, err := os.ReadDir(numaPath)
 	if err != nil {
 		cm.logger.Debug("Failed to read NUMA info", zap.Error(err))
 		return
@@ -616,14 +615,14 @@ func (cm *CPUManager) loadNUMAInfo(topology *CPUTopology, numaMap map[int]*NUMAN
 
 		// 读取NUMA节点的CPU列表
 		cpuListPath := filepath.Join(numaPath, entry.Name(), "cpulist")
-		if data, err := ioutil.ReadFile(cpuListPath); err == nil {
+		if data, err := os.ReadFile(cpuListPath); err == nil {
 			cpuList := strings.TrimSpace(string(data))
 			node.CPUs = cm.parseCPUList(cpuList)
 		}
 
 		// 读取内存信息
 		meminfoPath := filepath.Join(numaPath, entry.Name(), "meminfo")
-		if data, err := ioutil.ReadFile(meminfoPath); err == nil {
+		if data, err := os.ReadFile(meminfoPath); err == nil {
 			cm.parseNUMAMeminfo(string(data), node)
 		}
 
@@ -821,10 +820,7 @@ func (cm *CPUManager) allocateShared(containerID string, request *common.Resourc
 	}
 
 	// shared策略可以使用所有非独占的CPU
-	sharedCPUs := make([]int, 0)
-	for _, cpuID := range cm.availableCPUs {
-		sharedCPUs = append(sharedCPUs, cpuID)
-	}
+	sharedCPUs := append([]int(nil), cm.availableCPUs...)
 
 	allocation := &CPUAllocation{
 		ContainerID:   containerID,
@@ -930,20 +926,20 @@ func (cm *CPUManager) applyCPULimits(containerID string, allocation *CPUAllocati
 	// 设置CPU quota
 	if allocation.CPUQuota > 0 {
 		quotaPath := filepath.Join(cgroupPath, "cpu.cfs_quota_us")
-		if err := ioutil.WriteFile(quotaPath, []byte(fmt.Sprintf("%d", allocation.CPUQuota)), 0644); err != nil {
+		if err := os.WriteFile(quotaPath, []byte(fmt.Sprintf("%d", allocation.CPUQuota)), 0644); err != nil {
 			return fmt.Errorf("failed to set CPU quota: %v", err)
 		}
 	}
 
 	// 设置CPU period
 	periodPath := filepath.Join(cgroupPath, "cpu.cfs_period_us")
-	if err := ioutil.WriteFile(periodPath, []byte(fmt.Sprintf("%d", allocation.CPUPeriod)), 0644); err != nil {
+	if err := os.WriteFile(periodPath, []byte(fmt.Sprintf("%d", allocation.CPUPeriod)), 0644); err != nil {
 		return fmt.Errorf("failed to set CPU period: %v", err)
 	}
 
 	// 设置CPU shares
 	sharesPath := filepath.Join(cgroupPath, "cpu.shares")
-	if err := ioutil.WriteFile(sharesPath, []byte(fmt.Sprintf("%d", allocation.CPUShares)), 0644); err != nil {
+	if err := os.WriteFile(sharesPath, []byte(fmt.Sprintf("%d", allocation.CPUShares)), 0644); err != nil {
 		return fmt.Errorf("failed to set CPU shares: %v", err)
 	}
 
@@ -957,14 +953,14 @@ func (cm *CPUManager) applyCPULimits(containerID string, allocation *CPUAllocati
 		// 设置CPU列表
 		cpuList := cm.formatCPUList(allocation.AllocatedCPUs)
 		cpusPath := filepath.Join(cpusetPath, "cpuset.cpus")
-		if err := ioutil.WriteFile(cpusPath, []byte(cpuList), 0644); err != nil {
+		if err := os.WriteFile(cpusPath, []byte(cpuList), 0644); err != nil {
 			return fmt.Errorf("failed to set cpuset.cpus: %v", err)
 		}
 
 		// 设置内存节点
 		memNodes := cm.getCPUMemoryNodes(allocation.AllocatedCPUs)
 		memsPath := filepath.Join(cpusetPath, "cpuset.mems")
-		if err := ioutil.WriteFile(memsPath, []byte(memNodes), 0644); err != nil {
+		if err := os.WriteFile(memsPath, []byte(memNodes), 0644); err != nil {
 			return fmt.Errorf("failed to set cpuset.mems: %v", err)
 		}
 	}
@@ -1115,7 +1111,7 @@ func (cm *CPUManager) checkCPUThrottling() {
 		cgroupPath := filepath.Join(cm.config.CgroupsPath, "cpu", containerID)
 		statPath := filepath.Join(cgroupPath, "cpu.stat")
 
-		if data, err := ioutil.ReadFile(statPath); err == nil {
+		if data, err := os.ReadFile(statPath); err == nil {
 			lines := strings.Split(string(data), "\n")
 			for _, line := range lines {
 				if strings.HasPrefix(line, "nr_throttled") {

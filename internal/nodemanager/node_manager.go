@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -16,6 +15,7 @@ import (
 	"carrot/internal/common"
 	"carrot/internal/nodemanager/containermanager"
 
+	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
 
@@ -70,7 +70,7 @@ func (nm *NodeManager) Start(port int) error {
 	// 启动容器监控
 	go nm.monitorContainers()
 
-	log.Printf("NodeManager starting on port %d", port)
+	nm.logger.Info("NodeManager starting", zap.Int("port", port))
 	return nm.httpServer.ListenAndServe()
 }
 
@@ -121,7 +121,7 @@ func (nm *NodeManager) StartContainer(containerID common.ContainerID, launchCont
 	nm.usedResource.Memory += resource.Memory
 	nm.usedResource.VCores += resource.VCores
 
-	log.Printf("Started container %v", containerID)
+	nm.logger.Info("Started container", zap.Any("container_id", containerID))
 	return nil
 }
 
@@ -142,7 +142,7 @@ func (nm *NodeManager) StopContainer(containerID common.ContainerID) error {
 	nm.usedResource.Memory -= container.Resource.Memory
 	nm.usedResource.VCores -= container.Resource.VCores
 
-	log.Printf("Stopped container %v", containerID)
+	nm.logger.Info("Stopped container", zap.Any("container_id", containerID))
 	return nil
 }
 
@@ -172,13 +172,10 @@ func (nm *NodeManager) registerWithRM() error {
 		return err
 	}
 
-	resp, err := http.Post(
-		nm.resourceManagerURL+"/ws/v1/cluster/nodes/register",
-		"application/json",
-		bytes.NewBuffer(jsonData),
-	)
+	url := nm.resourceManagerURL + "/ws/v1/cluster/nodes"
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to register with RM: %v", err)
 	}
 	defer resp.Body.Close()
 
@@ -226,7 +223,7 @@ func (nm *NodeManager) sendHeartbeat() {
 
 	jsonData, err := json.Marshal(heartbeatData)
 	if err != nil {
-		log.Printf("Failed to marshal heartbeat data: %v", err)
+		nm.logger.Error("Failed to marshal heartbeat data", zap.Error(err))
 		return
 	}
 
@@ -236,7 +233,7 @@ func (nm *NodeManager) sendHeartbeat() {
 		bytes.NewBuffer(jsonData),
 	)
 	if err != nil {
-		log.Printf("Failed to send heartbeat: %v", err)
+		nm.logger.Error("Failed to send heartbeat", zap.Error(err))
 	}
 }
 
@@ -386,6 +383,63 @@ func (nm *NodeManager) handleContainers(w http.ResponseWriter, r *http.Request) 
 }
 
 func (nm *NodeManager) handleContainer(w http.ResponseWriter, r *http.Request) {
-	// TODO: 实现单个容器的处理
-	http.Error(w, "Not implemented", http.StatusNotImplemented)
+	vars := mux.Vars(r)
+	containerIDStr := vars["containerId"]
+	
+	if containerIDStr == "" {
+		http.Error(w, "Container ID is required", http.StatusBadRequest)
+		return
+	}
+
+	// 解析容器ID
+	containerID, err := common.ParseContainerID(containerIDStr)
+	if err != nil {
+		nm.logger.Error("Invalid container ID", zap.String("container_id", containerIDStr), zap.Error(err))
+		http.Error(w, "Invalid container ID", http.StatusBadRequest)
+		return
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		nm.handleGetContainer(w, r, containerID)
+	case http.MethodDelete:
+		nm.handleDeleteContainer(w, r, containerID)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func (nm *NodeManager) handleGetContainer(w http.ResponseWriter, r *http.Request, containerID common.ContainerID) {
+	nm.mu.RLock()
+	container, exists := nm.containers[nm.getContainerKey(containerID)]
+	nm.mu.RUnlock()
+
+	if !exists {
+		http.Error(w, "Container not found", http.StatusNotFound)
+		return
+	}
+
+	response := struct {
+		ContainerID common.ContainerID `json:"container_id"`
+		State       string             `json:"state"`
+		Resource    common.Resource    `json:"resource"`
+	}{
+		ContainerID: container.ID,
+		State:       string(container.State),
+		Resource:    container.Resource,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func (nm *NodeManager) handleDeleteContainer(w http.ResponseWriter, r *http.Request, containerID common.ContainerID) {
+	err := nm.StopContainer(containerID)
+	if err != nil {
+		nm.logger.Error("Failed to stop container", zap.Any("container_id", containerID), zap.Error(err))
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

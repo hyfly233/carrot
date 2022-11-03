@@ -3,7 +3,6 @@ package recovery
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -258,7 +257,7 @@ func (fs *FileStateStore) SaveSnapshot(snapshot *ClusterSnapshot) error {
 	}
 
 	// 写入文件
-	if err := ioutil.WriteFile(filename, data, 0644); err != nil {
+	if err := os.WriteFile(filename, data, 0644); err != nil {
 		return fmt.Errorf("failed to write snapshot file: %w", err)
 	}
 
@@ -283,7 +282,7 @@ func (fs *FileStateStore) LoadSnapshot(id string) (*ClusterSnapshot, error) {
 	}
 
 	// 读取文件
-	data, err := ioutil.ReadFile(filename)
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read snapshot file: %w", err)
 	}
@@ -316,7 +315,7 @@ func (fs *FileStateStore) ListSnapshots(limit int) ([]*SnapshotMetadata, error) 
 	fs.mu.RLock()
 	defer fs.mu.RUnlock()
 
-	files, err := ioutil.ReadDir(fs.directory)
+	files, err := os.ReadDir(fs.directory)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read directory: %w", err)
 	}
@@ -337,7 +336,11 @@ func (fs *FileStateStore) ListSnapshots(limit int) ([]*SnapshotMetadata, error) 
 			metadata := &SnapshotMetadata{
 				ID:        id,
 				Timestamp: timestamp,
-				Size:      file.Size(),
+			}
+
+			// 获取文件信息以获取大小
+			if fileInfo, err := file.Info(); err == nil {
+				metadata.Size = fileInfo.Size()
 			}
 
 			// 尝试读取快照以获取更多元数据
@@ -393,7 +396,7 @@ func (fs *FileStateStore) DeleteOldSnapshots(olderThan time.Time) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	files, err := ioutil.ReadDir(fs.directory)
+	files, err := os.ReadDir(fs.directory)
 	if err != nil {
 		return fmt.Errorf("failed to read directory: %w", err)
 	}

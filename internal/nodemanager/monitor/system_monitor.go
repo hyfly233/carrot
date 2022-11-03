@@ -3,7 +3,6 @@ package monitor
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -482,7 +481,7 @@ func (sm *SystemMonitor) collectMetrics() {
 // collectCPUMetrics 收集 CPU 指标
 func (sm *SystemMonitor) collectCPUMetrics() (*CPUMetrics, error) {
 	statFile := filepath.Join(sm.config.ProcPath, "stat")
-	data, err := ioutil.ReadFile(statFile)
+	data, err := os.ReadFile(statFile)
 	if err != nil {
 		return nil, err
 	}
@@ -577,7 +576,7 @@ func (sm *SystemMonitor) collectCPUMetrics() (*CPUMetrics, error) {
 // collectMemoryMetrics 收集内存指标
 func (sm *SystemMonitor) collectMemoryMetrics() (*MemoryMetrics, error) {
 	meminfoFile := filepath.Join(sm.config.ProcPath, "meminfo")
-	data, err := ioutil.ReadFile(meminfoFile)
+	data, err := os.ReadFile(meminfoFile)
 	if err != nil {
 		return nil, err
 	}
@@ -637,7 +636,7 @@ func (sm *SystemMonitor) collectDiskMetrics() (map[string]*DiskMetrics, error) {
 
 	// 读取挂载信息
 	mountsFile := filepath.Join(sm.config.ProcPath, "mounts")
-	data, err := ioutil.ReadFile(mountsFile)
+	data, err := os.ReadFile(mountsFile)
 	if err != nil {
 		return nil, err
 	}
@@ -704,7 +703,7 @@ func (sm *SystemMonitor) collectDiskMetrics() (map[string]*DiskMetrics, error) {
 // collectNetworkMetrics 收集网络指标
 func (sm *SystemMonitor) collectNetworkMetrics() (map[string]*NetworkMetrics, error) {
 	netDevFile := filepath.Join(sm.config.ProcPath, "net/dev")
-	data, err := ioutil.ReadFile(netDevFile)
+	data, err := os.ReadFile(netDevFile)
 	if err != nil {
 		return nil, err
 	}
@@ -759,7 +758,7 @@ func (sm *SystemMonitor) collectNetworkMetrics() (map[string]*NetworkMetrics, er
 // collectLoadMetrics 收集负载指标
 func (sm *SystemMonitor) collectLoadMetrics() (*LoadMetrics, error) {
 	loadavgFile := filepath.Join(sm.config.ProcPath, "loadavg")
-	data, err := ioutil.ReadFile(loadavgFile)
+	data, err := os.ReadFile(loadavgFile)
 	if err != nil {
 		return nil, err
 	}
@@ -804,7 +803,7 @@ func (sm *SystemMonitor) collectLoadMetrics() (*LoadMetrics, error) {
 // collectProcessMetrics 收集进程指标
 func (sm *SystemMonitor) collectProcessMetrics() (*ProcessMetrics, error) {
 	statFile := filepath.Join(sm.config.ProcPath, "stat")
-	data, err := ioutil.ReadFile(statFile)
+	data, err := os.ReadFile(statFile)
 	if err != nil {
 		return nil, err
 	}
@@ -846,7 +845,7 @@ func (sm *SystemMonitor) collectSystemInfo() (*SystemInfo, error) {
 
 	// 获取系统正常运行时间
 	uptimeFile := filepath.Join(sm.config.ProcPath, "uptime")
-	if data, err := ioutil.ReadFile(uptimeFile); err == nil {
+	if data, err := os.ReadFile(uptimeFile); err == nil {
 		fields := strings.Fields(string(data))
 		if len(fields) >= 1 {
 			if uptime, err := strconv.ParseFloat(fields[0], 64); err == nil {
@@ -857,7 +856,7 @@ func (sm *SystemMonitor) collectSystemInfo() (*SystemInfo, error) {
 	}
 
 	// 获取 CPU 数量
-	if cpuinfo, err := ioutil.ReadFile(filepath.Join(sm.config.ProcPath, "cpuinfo")); err == nil {
+	if cpuinfo, err := os.ReadFile(filepath.Join(sm.config.ProcPath, "cpuinfo")); err == nil {
 		lines := strings.Split(string(cpuinfo), "\n")
 		cpuCount := 0
 		for _, line := range lines {

@@ -2,7 +2,6 @@ package common
 
 import (
 	"os"
-	"strconv"
 	"time"
 )
 
@@ -146,16 +145,6 @@ func GetDefaultConfig() *Config {
 func getEnvOrDefault(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
-	}
-	return defaultValue
-}
-
-// getEnvIntOrDefault 获取环境变量整数值或使用默认值
-func getEnvIntOrDefault(key string, defaultValue int) int {
-	if value := os.Getenv(key); value != "" {
-		if intValue, err := strconv.Atoi(value); err == nil {
-			return intValue
-		}
 	}
 	return defaultValue
 }
