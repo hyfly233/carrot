@@ -1,0 +1,31 @@
+# Carrot YARN 配置示例
+# ResourceManager 配置
+resourcemanager:
+  port: 8088
+  address: "0.0.0.0"
+  heartbeat_interval: 3s
+  node_expiry_timeout: 600s
+  application_max_attempts: 2
+
+# NodeManager 配置
+nodemanager:
+  port: 8042
+  address: "0.0.0.0"
+  resourcemanager_url: "http://localhost:8088"
+  heartbeat_interval: 3s
+  container_cleanup_delay: 0s
+  container_memory_limit_mb: 8192
+  container_vcores_limit: 8
+
+# 调度器配置
+scheduler:
+  type: "fifo"  # 可选: fifo, capacity, fair
+  max_apps: 10000
+
+# 安全配置
+security:
+  enable_security: false
+
+# 心跳监测配置
+heartbeat_timeout: 90    # 节点心跳超时时间（秒），默认90秒
+monitor_interval: 30     # 心跳监测检查间隔（秒），默认30秒

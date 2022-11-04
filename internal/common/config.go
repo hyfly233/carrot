@@ -7,10 +7,12 @@ import (
 
 // Config 全局配置
 type Config struct {
-	ResourceManager ResourceManagerConfig `yaml:"resourcemanager"`
-	NodeManager     NodeManagerConfig     `yaml:"nodemanager"`
-	Scheduler       SchedulerConfig       `yaml:"scheduler"`
-	Security        SecurityConfig        `yaml:"security"`
+	ResourceManager   ResourceManagerConfig `yaml:"resourcemanager"`
+	NodeManager       NodeManagerConfig     `yaml:"nodemanager"`
+	Scheduler         SchedulerConfig       `yaml:"scheduler"`
+	Security          SecurityConfig        `yaml:"security"`
+	HeartbeatTimeout  int                   `yaml:"heartbeat_timeout"`  // 心跳超时时间（秒）
+	MonitorInterval   int                   `yaml:"monitor_interval"`   // 监测间隔（秒）
 }
 
 // ResourceManagerConfig ResourceManager配置

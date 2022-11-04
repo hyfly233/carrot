@@ -19,31 +19,51 @@ import (
 
 // ResourceManager 资源管理器
 type ResourceManager struct {
-	mu               sync.RWMutex
-	applications     map[string]*applicationmanager.Application
-	nodes            map[string]*nodemanager.Node
-	scheduler        scheduler.Scheduler
-	appIDCounter     int32
-	clusterTimestamp int64
-	httpServer       *http.Server
-	config           *common.Config
-	logger           *zap.Logger
-	ctx              context.Context
-	cancel           context.CancelFunc
+	mu                   sync.RWMutex
+	applications         map[string]*applicationmanager.Application
+	nodes                map[string]*nodemanager.Node
+	scheduler            scheduler.Scheduler
+	appIDCounter         int32
+	clusterTimestamp     int64
+	httpServer           *http.Server
+	config               *common.Config
+	logger               *zap.Logger
+	ctx                  context.Context
+	cancel               context.CancelFunc
+	
+	// 心跳监测相关
+	nodeHeartbeatTimeout time.Duration
+	nodeMonitorInterval  time.Duration
 }
 
 // NewResourceManager 创建新的资源管理器
 func NewResourceManager(config *common.Config) *ResourceManager {
 	ctx, cancel := context.WithCancel(context.Background())
 
+	// 设置默认的心跳超时和监测间隔
+	nodeHeartbeatTimeout := 90 * time.Second  // 90秒心跳超时
+	nodeMonitorInterval := 30 * time.Second   // 30秒检查一次
+	
+	// 从配置中读取心跳参数（如果有的话）
+	if config != nil {
+		if config.HeartbeatTimeout > 0 {
+			nodeHeartbeatTimeout = time.Duration(config.HeartbeatTimeout) * time.Second
+		}
+		if config.MonitorInterval > 0 {
+			nodeMonitorInterval = time.Duration(config.MonitorInterval) * time.Second
+		}
+	}
+
 	rm := &ResourceManager{
-		applications:     make(map[string]*applicationmanager.Application),
-		nodes:            make(map[string]*nodemanager.Node),
-		clusterTimestamp: time.Now().Unix(),
-		config:           config,
-		logger:           common.ComponentLogger(fmt.Sprintf("rm-%d", time.Now().Unix())),
-		ctx:              ctx,
-		cancel:           cancel,
+		applications:         make(map[string]*applicationmanager.Application),
+		nodes:                make(map[string]*nodemanager.Node),
+		clusterTimestamp:     time.Now().Unix(),
+		config:               config,
+		logger:               common.ComponentLogger(fmt.Sprintf("rm-%d", time.Now().Unix())),
+		ctx:                  ctx,
+		cancel:               cancel,
+		nodeHeartbeatTimeout: nodeHeartbeatTimeout,
+		nodeMonitorInterval:  nodeMonitorInterval,
 	}
 
 	// 使用调度器工厂创建调度器
@@ -95,6 +115,7 @@ func (rm *ResourceManager) Start(port int) error {
 	nodes.HandleFunc("", rm.handleNodes).Methods("GET")
 	nodes.HandleFunc("/register", rm.handleNodeRegistration).Methods("POST")
 	nodes.HandleFunc("/heartbeat", rm.handleNodeHeartbeat).Methods("POST")
+	nodes.HandleFunc("/health", rm.handleNodeHealth).Methods("GET")
 
 	rm.httpServer = &http.Server{
 		Addr:         fmt.Sprintf(":%d", port),
@@ -106,7 +127,12 @@ func (rm *ResourceManager) Start(port int) error {
 
 	rm.logger.Info("ResourceManager starting",
 		zap.Int("port", port),
-		zap.Int64("cluster_timestamp", rm.clusterTimestamp))
+		zap.Int64("cluster_timestamp", rm.clusterTimestamp),
+		zap.Duration("heartbeat_timeout", rm.nodeHeartbeatTimeout),
+		zap.Duration("monitor_interval", rm.nodeMonitorInterval))
+
+	// 启动心跳监测
+	go rm.startNodeMonitor()
 
 	return rm.httpServer.ListenAndServe()
 }
@@ -593,4 +619,162 @@ func (rm *ResourceManager) handleNodeHeartbeat(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		rm.logger.Error("Failed to encode heartbeat response", zap.Error(err))
 	}
+}
+
+// handleNodeHealth 处理节点健康状态查询
+func (rm *ResourceManager) handleNodeHealth(w http.ResponseWriter, r *http.Request) {
+	healthStatus := rm.GetNodeHealthStatus()
+	
+	// 获取详细的节点信息
+	rm.mu.RLock()
+	nodeDetails := make([]map[string]interface{}, 0, len(rm.nodes))
+	for nodeKey, node := range rm.nodes {
+		timeSinceLastHeartbeat := time.Since(node.LastHeartbeat)
+		
+		detail := map[string]interface{}{
+			"node_key":                    nodeKey,
+			"node_id":                     node.ID,
+			"state":                       node.State,
+			"last_heartbeat":              node.LastHeartbeat.Format(time.RFC3339),
+			"time_since_last_heartbeat":   timeSinceLastHeartbeat.String(),
+			"health_report":               node.HealthReport,
+			"total_resource":              node.TotalResource,
+			"used_resource":               node.UsedResource,
+			"available_resource":          node.AvailableResource,
+			"num_containers":              len(node.Containers),
+		}
+		nodeDetails = append(nodeDetails, detail)
+	}
+	rm.mu.RUnlock()
+	
+	response := map[string]interface{}{
+		"summary":      healthStatus,
+		"node_details": nodeDetails,
+		"monitor_config": map[string]interface{}{
+			"heartbeat_timeout":  rm.nodeHeartbeatTimeout.String(),
+			"monitor_interval":   rm.nodeMonitorInterval.String(),
+		},
+		"timestamp": time.Now().Format(time.RFC3339),
+	}
+	
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		rm.logger.Error("Failed to encode node health response", zap.Error(err))
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	}
+}
+
+// startNodeMonitor 启动节点心跳监测
+func (rm *ResourceManager) startNodeMonitor() {
+	rm.logger.Info("Starting node heartbeat monitor",
+		zap.Duration("check_interval", rm.nodeMonitorInterval),
+		zap.Duration("timeout_threshold", rm.nodeHeartbeatTimeout))
+
+	ticker := time.NewTicker(rm.nodeMonitorInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-rm.ctx.Done():
+			rm.logger.Info("Node monitor stopped")
+			return
+		case <-ticker.C:
+			rm.checkNodeHealth()
+		}
+	}
+}
+
+// checkNodeHealth 检查节点健康状态
+func (rm *ResourceManager) checkNodeHealth() {
+	rm.mu.Lock()
+	defer rm.mu.Unlock()
+
+	now := time.Now()
+	unhealthyNodes := make([]string, 0)
+	
+	for nodeKey, node := range rm.nodes {
+		timeSinceLastHeartbeat := now.Sub(node.LastHeartbeat)
+		
+		if timeSinceLastHeartbeat > rm.nodeHeartbeatTimeout {
+			// 节点超时，标记为不健康
+			if node.State != "UNHEALTHY" {
+				rm.logger.Warn("Node heartbeat timeout, marking as unhealthy",
+					zap.String("node_id", nodeKey),
+					zap.String("node_host", node.ID.Host),
+					zap.Int32("node_port", node.ID.Port),
+					zap.Duration("time_since_last_heartbeat", timeSinceLastHeartbeat),
+					zap.Duration("timeout_threshold", rm.nodeHeartbeatTimeout))
+				
+				rm.markNodeUnhealthy(node)
+				unhealthyNodes = append(unhealthyNodes, nodeKey)
+			}
+		} else if node.State == "UNHEALTHY" && timeSinceLastHeartbeat <= rm.nodeHeartbeatTimeout {
+			// 节点恢复心跳，标记为健康
+			rm.logger.Info("Node heartbeat recovered, marking as healthy",
+				zap.String("node_id", nodeKey),
+				zap.String("node_host", node.ID.Host),
+				zap.Int32("node_port", node.ID.Port))
+			
+			rm.markNodeHealthy(node)
+		}
+	}
+	
+	// 如果有不健康的节点，通知调度器
+	if len(unhealthyNodes) > 0 {
+		rm.notifySchedulerNodeChanges(unhealthyNodes)
+	}
+}
+
+// markNodeUnhealthy 标记节点为不健康状态
+func (rm *ResourceManager) markNodeUnhealthy(node *nodemanager.Node) {
+	node.State = "UNHEALTHY"
+	node.HealthReport = fmt.Sprintf("Node heartbeat timeout at %s", time.Now().Format(time.RFC3339))
+	
+	// 将节点上的容器标记为失败/丢失
+	for _, container := range node.Containers {
+		if container.State == "RUNNING" {
+			container.State = "LOST"
+			rm.logger.Warn("Container lost due to node unhealthy",
+				zap.Any("container_id", container.ID),
+				zap.String("node_host", node.ID.Host))
+		}
+	}
+}
+
+// markNodeHealthy 标记节点为健康状态
+func (rm *ResourceManager) markNodeHealthy(node *nodemanager.Node) {
+	node.State = "RUNNING"
+	node.HealthReport = fmt.Sprintf("Node recovered at %s", time.Now().Format(time.RFC3339))
+}
+
+// notifySchedulerNodeChanges 通知调度器节点状态变化
+func (rm *ResourceManager) notifySchedulerNodeChanges(nodeKeys []string) {
+	// 这里可以通知调度器有节点状态变化
+	// 调度器可以据此重新分配资源或处理失败的容器
+	if rm.scheduler != nil {
+		for _, nodeKey := range nodeKeys {
+			rm.logger.Debug("Notifying scheduler of node change",
+				zap.String("node_key", nodeKey))
+		}
+	}
+}
+
+// GetNodeHealthStatus 获取节点健康状态统计
+func (rm *ResourceManager) GetNodeHealthStatus() map[string]int {
+	rm.mu.RLock()
+	defer rm.mu.RUnlock()
+	
+	status := map[string]int{
+		"RUNNING":   0,
+		"UNHEALTHY": 0,
+		"TOTAL":     len(rm.nodes),
+	}
+	
+	for _, node := range rm.nodes {
+		if count, exists := status[node.State]; exists {
+			status[node.State] = count + 1
+		}
+	}
+	
+	return status
 }
