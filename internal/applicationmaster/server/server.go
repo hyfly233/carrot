@@ -1,93 +1,66 @@
 package server
 
 import (
+	"carrot/internal/common"
 	"context"
 	"net"
 
 	"go.uber.org/zap"
 )
 
-// ServerType 服务器类型
-type ServerType string
-
-const (
-	ServerTypeHTTP ServerType = "http"
-	ServerTypeGRPC ServerType = "grpc"
-	ServerTypeTCP  ServerType = "tcp"
-	ServerTypeUDP  ServerType = "udp"
-)
-
-// Server 通用服务器接口
-type Server interface {
-	// Start 启动服务器
-	Start(port int) error
-	
-	// Stop 停止服务器
-	Stop() error
-	
-	// GetType 获取服务器类型
-	GetType() ServerType
-	
-	// GetAddress 获取服务器地址
-	GetAddress() string
-	
-	// IsRunning 检查服务器是否在运行
-	IsRunning() bool
-}
-
 // ServerManager 服务器管理器
 type ServerManager struct {
-	servers map[ServerType]Server
+	servers map[common.ServerType]common.Server
 	logger  *zap.Logger
 }
 
 // NewServerManager 创建新的服务器管理器
 func NewServerManager(logger *zap.Logger) *ServerManager {
 	return &ServerManager{
-		servers: make(map[ServerType]Server),
+		servers: make(map[common.ServerType]common.Server),
 		logger:  logger,
 	}
 }
 
 // RegisterServer 注册服务器
-func (sm *ServerManager) RegisterServer(serverType ServerType, server Server) {
+func (sm *ServerManager) RegisterServer(serverType common.ServerType, server common.Server) {
 	sm.servers[serverType] = server
-	sm.logger.Info("Server registered", 
+	sm.logger.Info("Server registered",
 		zap.String("type", string(serverType)),
 		zap.String("address", server.GetAddress()))
 }
 
 // StartServer 启动指定类型的服务器
-func (sm *ServerManager) StartServer(serverType ServerType, port int) error {
+func (sm *ServerManager) StartServer(serverType common.ServerType, port int) error {
 	server, exists := sm.servers[serverType]
 	if !exists {
 		sm.logger.Error("Server not found", zap.String("type", string(serverType)))
 		return ErrServerNotFound
 	}
-	
-	sm.logger.Info("Starting server", 
+
+	sm.logger.Info("Starting server",
 		zap.String("type", string(serverType)),
 		zap.Int("port", port))
-	
+
 	return server.Start(port)
 }
 
 // StopServer 停止指定类型的服务器
-func (sm *ServerManager) StopServer(serverType ServerType) error {
+func (sm *ServerManager) StopServer(serverType common.ServerType) error {
 	server, exists := sm.servers[serverType]
 	if !exists {
 		return ErrServerNotFound
 	}
-	
+
 	sm.logger.Info("Stopping server", zap.String("type", string(serverType)))
 	return server.Stop()
 }
 
 // StartAllServers 启动所有服务器
-func (sm *ServerManager) StartAllServers(basePorts map[ServerType]int) error {
+func (sm *ServerManager) StartAllServers(basePorts map[common.ServerType]int) error {
 	for serverType, port := range basePorts {
 		if err := sm.StartServer(serverType, port); err != nil {
-			sm.logger.Error("Failed to start server", 
+			sm.logger.Error("Failed to start server",
 				zap.String("type", string(serverType)),
 				zap.Error(err))
 			return err
@@ -101,7 +74,7 @@ func (sm *ServerManager) StopAllServers() error {
 	var lastErr error
 	for serverType := range sm.servers {
 		if err := sm.StopServer(serverType); err != nil {
-			sm.logger.Error("Failed to stop server", 
+			sm.logger.Error("Failed to stop server",
 				zap.String("type", string(serverType)),
 				zap.Error(err))
 			lastErr = err
@@ -111,8 +84,8 @@ func (sm *ServerManager) StopAllServers() error {
 }
 
 // GetRunningServers 获取正在运行的服务器
-func (sm *ServerManager) GetRunningServers() []ServerType {
-	var running []ServerType
+func (sm *ServerManager) GetRunningServers() []common.ServerType {
+	var running []common.ServerType
 	for serverType, server := range sm.servers {
 		if server.IsRunning() {
 			running = append(running, serverType)
@@ -123,20 +96,20 @@ func (sm *ServerManager) GetRunningServers() []ServerType {
 
 // GRPCServer gRPC 服务器接口 (预留)
 type GRPCServer interface {
-	Server
+	common.Server
 	RegisterService(serviceName string, service interface{})
 }
 
 // TCPServer TCP 服务器接口 (预留)
 type TCPServer interface {
-	Server
+	common.Server
 	SetConnectionHandler(handler func(conn net.Conn))
 	GetConnectionCount() int
 }
 
-// UDPServer UDP 服务器接口 (预留)  
+// UDPServer UDP 服务器接口 (预留)
 type UDPServer interface {
-	Server
+	common.Server
 	SetPacketHandler(handler func(data []byte, addr net.Addr))
 }
 
@@ -167,8 +140,8 @@ func (s *grpcServer) Stop() error {
 	return ErrNotImplemented
 }
 
-func (s *grpcServer) GetType() ServerType {
-	return ServerTypeGRPC
+func (s *grpcServer) GetType() common.ServerType {
+	return common.ServerTypeGRPC
 }
 
 func (s *grpcServer) GetAddress() string {
@@ -222,8 +195,8 @@ func (s *tcpServer) Stop() error {
 	return nil
 }
 
-func (s *tcpServer) GetType() ServerType {
-	return ServerTypeTCP
+func (s *tcpServer) GetType() common.ServerType {
+	return common.ServerTypeTCP
 }
 
 func (s *tcpServer) GetAddress() string {
@@ -277,8 +250,8 @@ func (s *udpServer) Stop() error {
 	return nil
 }
 
-func (s *udpServer) GetType() ServerType {
-	return ServerTypeUDP
+func (s *udpServer) GetType() common.ServerType {
+	return common.ServerTypeUDP
 }
 
 func (s *udpServer) GetAddress() string {

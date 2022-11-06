@@ -1,48 +1,31 @@
 package server
 
 import (
+	"carrot/internal/common"
 	"context"
 	"net"
 
 	"go.uber.org/zap"
 )
 
-// Server 通用服务器接口
-type Server interface {
-	// Start 启动服务器
-	Start(port int) error
-	
-	// Stop 停止服务器
-	Stop() error
-	
-	// GetType 获取服务器类型
-	GetType() ServerType
-	
-	// GetAddress 获取服务器地址
-	GetAddress() string
-	
-	// IsRunning 检查服务器是否在运行
-	IsRunning() bool
-}
-
 // ServerManager 服务器管理器
 type ServerManager struct {
-	servers map[ServerType]Server
+	servers map[ServerType]common.Server
 	logger  *zap.Logger
 }
 
 // NewServerManager 创建新的服务器管理器
 func NewServerManager(logger *zap.Logger) *ServerManager {
 	return &ServerManager{
-		servers: make(map[ServerType]Server),
+		servers: make(map[ServerType]common.Server),
 		logger:  logger,
 	}
 }
 
 // RegisterServer 注册服务器
-func (sm *ServerManager) RegisterServer(serverType ServerType, server Server) {
+func (sm *ServerManager) RegisterServer(serverType ServerType, server common.Server) {
 	sm.servers[serverType] = server
-	sm.logger.Info("Server registered", 
+	sm.logger.Info("Server registered",
 		zap.String("type", string(serverType)),
 		zap.String("address", server.GetAddress()))
 }
@@ -54,11 +37,11 @@ func (sm *ServerManager) StartServer(serverType ServerType, port int) error {
 		sm.logger.Error("Server not found", zap.String("type", string(serverType)))
 		return ErrServerNotFound
 	}
-	
-	sm.logger.Info("Starting server", 
+
+	sm.logger.Info("Starting server",
 		zap.String("type", string(serverType)),
 		zap.Int("port", port))
-	
+
 	return server.Start(port)
 }
 
@@ -68,7 +51,7 @@ func (sm *ServerManager) StopServer(serverType ServerType) error {
 	if !exists {
 		return ErrServerNotFound
 	}
-	
+
 	sm.logger.Info("Stopping server", zap.String("type", string(serverType)))
 	return server.Stop()
 }
@@ -77,7 +60,7 @@ func (sm *ServerManager) StopServer(serverType ServerType) error {
 func (sm *ServerManager) StartAllServers(basePorts map[ServerType]int) error {
 	for serverType, port := range basePorts {
 		if err := sm.StartServer(serverType, port); err != nil {
-			sm.logger.Error("Failed to start server", 
+			sm.logger.Error("Failed to start server",
 				zap.String("type", string(serverType)),
 				zap.Error(err))
 			return err
@@ -91,7 +74,7 @@ func (sm *ServerManager) StopAllServers() error {
 	var lastErr error
 	for serverType := range sm.servers {
 		if err := sm.StopServer(serverType); err != nil {
-			sm.logger.Error("Failed to stop server", 
+			sm.logger.Error("Failed to stop server",
 				zap.String("type", string(serverType)),
 				zap.Error(err))
 			lastErr = err
@@ -113,20 +96,20 @@ func (sm *ServerManager) GetRunningServers() []ServerType {
 
 // GRPCServer gRPC 服务器接口 (预留)
 type GRPCServer interface {
-	Server
+	common.Server
 	RegisterService(serviceName string, service interface{})
 }
 
 // TCPServer TCP 服务器接口 (预留)
 type TCPServer interface {
-	Server
+	common.Server
 	SetConnectionHandler(handler func(conn net.Conn))
 	GetConnectionCount() int
 }
 
-// UDPServer UDP 服务器接口 (预留)  
+// UDPServer UDP 服务器接口 (预留)
 type UDPServer interface {
-	Server
+	common.Server
 	SetPacketHandler(handler func(data []byte, addr net.Addr))
 }
 

@@ -5,6 +5,33 @@ import (
 	"time"
 )
 
+type ServerType string
+
+const (
+	ServerTypeHTTP ServerType = "http"
+	ServerTypeGRPC ServerType = "grpc"
+	ServerTypeTCP  ServerType = "tcp"
+	ServerTypeUDP  ServerType = "udp"
+)
+
+// Server 通用服务器接口
+type Server interface {
+	// Start 启动服务器
+	Start(port int) error
+
+	// Stop 停止服务器
+	Stop() error
+
+	// GetType 获取服务器类型
+	GetType() ServerType
+
+	// GetAddress 获取服务器地址
+	GetAddress() string
+
+	// IsRunning 检查服务器是否在运行
+	IsRunning() bool
+}
+
 // Resource 表示资源配置
 type Resource struct {
 	Memory int64 `json:"memory"` // MB
