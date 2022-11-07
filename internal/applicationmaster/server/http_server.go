@@ -15,9 +15,10 @@ import (
 
 // HTTPServer ApplicationMaster HTTP 服务器
 type HTTPServer struct {
-	server *http.Server
-	logger *zap.Logger
-	am     ApplicationMasterInterface
+	server  *http.Server
+	logger  *zap.Logger
+	am      ApplicationMasterInterface
+	address string
 }
 
 // ApplicationMasterInterface 定义 ApplicationMaster 接口
@@ -58,6 +59,7 @@ func NewHTTPServer(am ApplicationMasterInterface, logger *zap.Logger) *HTTPServe
 
 // Start 启动 HTTP 服务器
 func (s *HTTPServer) Start(port int) error {
+	s.address = fmt.Sprintf(":%d", port)
 	router := mux.NewRouter()
 
 	// 添加中间件
@@ -79,7 +81,7 @@ func (s *HTTPServer) Start(port int) error {
 
 	// 创建 HTTP 服务器
 	s.server = &http.Server{
-		Addr:         fmt.Sprintf(":%d", port),
+		Addr:         s.address,
 		Handler:      router,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
@@ -416,4 +418,19 @@ func (s *HTTPServer) writeJSONResponse(w http.ResponseWriter, data interface{}) 
 		s.logger.Error("Failed to encode JSON response", zap.Error(err))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
+}
+
+// GetAddress 获取服务器地址
+func (s *HTTPServer) GetAddress() string {
+	return s.address
+}
+
+// GetType 获取服务器类型
+func (s *HTTPServer) GetType() common.ServerType {
+	return common.ServerTypeHTTP
+}
+
+// IsRunning 检查服务器是否在运行
+func (s *HTTPServer) IsRunning() bool {
+	return s.server != nil
 }

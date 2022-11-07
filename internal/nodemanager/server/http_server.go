@@ -53,11 +53,11 @@ func (s *HTTPServer) Start(port int) error {
 	// API 路由
 	v1 := router.PathPrefix("/ws/v1").Subrouter()
 	node := v1.PathPrefix("/node").Subrouter()
-	
+
 	// 容器相关路由
 	node.HandleFunc("/containers", s.handleContainers).Methods("GET", "POST")
 	node.HandleFunc("/containers/{containerId}", s.handleContainer).Methods("GET", "DELETE")
-	
+
 	// 节点信息路由
 	node.HandleFunc("/info", s.handleNodeInfo).Methods("GET")
 	node.HandleFunc("/status", s.handleNodeStatus).Methods("GET")
@@ -146,7 +146,7 @@ func (s *HTTPServer) handleContainers(w http.ResponseWriter, r *http.Request) {
 
 		w.WriteHeader(http.StatusCreated)
 		s.writeJSONResponse(w, map[string]interface{}{
-			"status": "container_started",
+			"status":       "container_started",
 			"container_id": request.ContainerID,
 		})
 
@@ -159,7 +159,7 @@ func (s *HTTPServer) handleContainers(w http.ResponseWriter, r *http.Request) {
 func (s *HTTPServer) handleContainer(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	containerIDStr := vars["containerId"]
-	
+
 	if containerIDStr == "" {
 		http.Error(w, "Container ID is required", http.StatusBadRequest)
 		return
@@ -229,12 +229,12 @@ func (s *HTTPServer) handleNodeInfo(w http.ResponseWriter, r *http.Request) {
 	availableResource := s.nm.GetAvailableResource()
 
 	info := map[string]interface{}{
-		"node_id": nodeID,
-		"total_resource": totalResource,
-		"used_resource": usedResource,
+		"node_id":            nodeID,
+		"total_resource":     totalResource,
+		"used_resource":      usedResource,
 		"available_resource": availableResource,
-		"status": s.nm.GetNodeStatus(),
-		"timestamp": time.Now().Format(time.RFC3339),
+		"status":             s.nm.GetNodeStatus(),
+		"timestamp":          time.Now().Format(time.RFC3339),
 	}
 
 	s.writeJSONResponse(w, map[string]interface{}{
@@ -250,14 +250,14 @@ func (s *HTTPServer) handleNodeStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	containers := s.nm.GetContainers()
-	
+
 	status := map[string]interface{}{
-		"status": s.nm.GetNodeStatus(),
-		"container_count": len(containers),
-		"total_resource": s.nm.GetTotalResource(),
-		"used_resource": s.nm.GetUsedResource(),
+		"status":             s.nm.GetNodeStatus(),
+		"container_count":    len(containers),
+		"total_resource":     s.nm.GetTotalResource(),
+		"used_resource":      s.nm.GetUsedResource(),
 		"available_resource": s.nm.GetAvailableResource(),
-		"timestamp": time.Now().Format(time.RFC3339),
+		"timestamp":          time.Now().Format(time.RFC3339),
 	}
 
 	s.writeJSONResponse(w, status)
@@ -271,7 +271,7 @@ func (s *HTTPServer) parseContainerID(containerIDStr string) (common.ContainerID
 	if len(parts) < 3 {
 		return common.ContainerID{}, fmt.Errorf("invalid container ID format")
 	}
-	
+
 	// 这里需要根据实际的 ContainerID 结构进行解析
 	// 暂时返回一个空的 ContainerID
 	return common.ContainerID{}, nil

@@ -385,7 +385,7 @@ func (nm *NodeManager) handleContainers(w http.ResponseWriter, r *http.Request) 
 func (nm *NodeManager) handleContainer(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	containerIDStr := vars["containerId"]
-	
+
 	if containerIDStr == "" {
 		http.Error(w, "Container ID is required", http.StatusBadRequest)
 		return

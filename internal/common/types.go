@@ -38,6 +38,15 @@ type Resource struct {
 	VCores int32 `json:"vcores"` // 虚拟核心数
 }
 
+// ResourceRequest 表示资源请求
+type ResourceRequest struct {
+	Priority            int32    `json:"priority"`
+	Resource            Resource `json:"resource"`
+	NumContainers       int32    `json:"num_containers"`
+	RelaxLocality       bool     `json:"relax_locality"`
+	NodeLabelExpression string   `json:"node_label_expression,omitempty"`
+}
+
 // ResourceSpec 表示详细的资源规格配置，支持限制和请求
 type ResourceSpec struct {
 	CPU         float64 `json:"cpu"`          // CPU 请求量（核心数）

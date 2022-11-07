@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"carrot/internal/common"
+	"carrot/internal/resourcemanager/applicationmanager"
+	"carrot/internal/resourcemanager/nodemanager"
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
@@ -22,9 +24,9 @@ type HTTPServer struct {
 
 // ResourceManagerInterface 定义 ResourceManager 接口
 type ResourceManagerInterface interface {
-	GetApplications() []*common.Application
+	GetApplications() []*applicationmanager.Application
 	SubmitApplication(ctx common.ApplicationSubmissionContext) (*common.ApplicationID, error)
-	GetNodes() []*common.Node
+	GetNodes() []*nodemanager.Node
 	RegisterNode(nodeID common.NodeID, resource common.Resource, httpAddress string) error
 	NodeHeartbeat(nodeID common.NodeID, usedResource common.Resource, containers []*common.Container) error
 	GetClusterTimestamp() int64
@@ -102,8 +104,8 @@ func (s *HTTPServer) Stop() error {
 }
 
 // GetType 获取服务器类型
-func (s *HTTPServer) GetType() ServerType {
-	return ServerTypeHTTP
+func (s *HTTPServer) GetType() common.ServerType {
+	return common.ServerTypeHTTP
 }
 
 // GetAddress 获取服务器地址
@@ -159,7 +161,7 @@ func (s *HTTPServer) handleNewApplication(w http.ResponseWriter, r *http.Request
 
 	appID := common.ApplicationID{
 		ClusterTimestamp: s.rm.GetClusterTimestamp(),
-		ID:               time.Now().UnixNano(), // 临时生成 ID
+		ID:               int32(time.Now().UnixNano() % 1000000), // 临时生成 ID，转换为 int32
 	}
 
 	s.writeJSONResponse(w, map[string]interface{}{
@@ -284,7 +286,7 @@ func (s *HTTPServer) handleNodeHealth(w http.ResponseWriter, r *http.Request) {
 	healthStatus := s.rm.GetNodeHealthStatus()
 
 	response := map[string]interface{}{
-		"summary": healthStatus,
+		"summary":   healthStatus,
 		"timestamp": time.Now().Format(time.RFC3339),
 	}
 
@@ -337,13 +339,3 @@ func (s *HTTPServer) writeJSONResponse(w http.ResponseWriter, data interface{}) 
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
 }
-
-// ServerType 服务器类型
-type ServerType string
-
-const (
-	ServerTypeHTTP ServerType = "http"
-	ServerTypeGRPC ServerType = "grpc"
-	ServerTypeTCP  ServerType = "tcp"
-	ServerTypeUDP  ServerType = "udp"
-)

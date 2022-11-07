@@ -21,14 +21,14 @@ type ApplicationMasterServerExample struct {
 func NewApplicationMasterServerExample(am ApplicationMasterInterface, logger *zap.Logger) *ApplicationMasterServerExample {
 	serverManager := NewServerManager(logger)
 	httpServer := NewHTTPServer(am, logger)
-	
+
 	// 注册 HTTP 服务器
-	serverManager.RegisterServer(ServerTypeHTTP, httpServer)
-	
+	serverManager.RegisterServer(common.ServerTypeHTTP, httpServer)
+
 	// 预留：注册其他类型的服务器
 	// grpcServer := NewGRPCServer(logger)
 	// serverManager.RegisterServer(ServerTypeGRPC, grpcServer)
-	
+
 	// tcpServer := NewTCPServer(logger)
 	// serverManager.RegisterServer(ServerTypeTCP, tcpServer)
 
@@ -43,13 +43,13 @@ func NewApplicationMasterServerExample(am ApplicationMasterInterface, logger *za
 // Start 启动所有服务器
 func (e *ApplicationMasterServerExample) Start(httpPort int) error {
 	// 定义各种服务器的端口
-	ports := map[ServerType]int{
-		ServerTypeHTTP: httpPort,
+	ports := map[common.ServerType]int{
+		common.ServerTypeHTTP: httpPort,
 		// 预留其他服务器端口
 		// ServerTypeGRPC: httpPort + 1,
 		// ServerTypeTCP:  httpPort + 2,
 	}
-	
+
 	// 启动所有已注册的服务器
 	return e.serverManager.StartAllServers(ports)
 }
@@ -60,13 +60,13 @@ func (e *ApplicationMasterServerExample) Stop() error {
 }
 
 // GetRunningServers 获取运行中的服务器列表
-func (e *ApplicationMasterServerExample) GetRunningServers() []ServerType {
+func (e *ApplicationMasterServerExample) GetRunningServers() []common.ServerType {
 	return e.serverManager.GetRunningServers()
 }
 
 // StartHTTPOnly 仅启动 HTTP 服务器
 func (e *ApplicationMasterServerExample) StartHTTPOnly(port int) error {
-	return e.serverManager.StartServer(ServerTypeHTTP, port)
+	return e.serverManager.StartServer(common.ServerTypeHTTP, port)
 }
 
 // ApplicationMasterAdapter 适配器，将现有的 ApplicationMaster 适配到接口
@@ -118,7 +118,7 @@ func (a *ApplicationMasterAdapter) GetTrackingURL() string {
 func (a *ApplicationMasterAdapter) GetContainerStatistics() map[string]int {
 	a.am.mu.RLock()
 	defer a.am.mu.RUnlock()
-	
+
 	return map[string]int{
 		"allocated": len(a.am.allocatedContainers),
 		"completed": len(a.am.completedContainers),
@@ -130,7 +130,7 @@ func (a *ApplicationMasterAdapter) GetContainerStatistics() map[string]int {
 func (a *ApplicationMasterAdapter) GetAllocatedContainers() map[string]*common.Container {
 	a.am.mu.RLock()
 	defer a.am.mu.RUnlock()
-	
+
 	// 复制 map 以避免并发访问问题
 	result := make(map[string]*common.Container)
 	for k, v := range a.am.allocatedContainers {
@@ -142,7 +142,7 @@ func (a *ApplicationMasterAdapter) GetAllocatedContainers() map[string]*common.C
 func (a *ApplicationMasterAdapter) GetCompletedContainers() map[string]*common.Container {
 	a.am.mu.RLock()
 	defer a.am.mu.RUnlock()
-	
+
 	result := make(map[string]*common.Container)
 	for k, v := range a.am.completedContainers {
 		result[k] = v
@@ -153,7 +153,7 @@ func (a *ApplicationMasterAdapter) GetCompletedContainers() map[string]*common.C
 func (a *ApplicationMasterAdapter) GetFailedContainers() map[string]*common.Container {
 	a.am.mu.RLock()
 	defer a.am.mu.RUnlock()
-	
+
 	result := make(map[string]*common.Container)
 	for k, v := range a.am.failedContainers {
 		result[k] = v
@@ -164,7 +164,7 @@ func (a *ApplicationMasterAdapter) GetFailedContainers() map[string]*common.Cont
 func (a *ApplicationMasterAdapter) GetPendingRequests() []*common.ResourceRequest {
 	a.am.mu.RLock()
 	defer a.am.mu.RUnlock()
-	
+
 	// 转换 ContainerRequest 到 ResourceRequest
 	result := make([]*common.ResourceRequest, len(a.am.pendingRequests))
 	for i, req := range a.am.pendingRequests {
@@ -199,7 +199,7 @@ func (a *ApplicationMasterAdapter) SendShutdownSignal() {
 func (a *ApplicationMasterAdapter) CalculateRequestedMemory() int64 {
 	a.am.mu.RLock()
 	defer a.am.mu.RUnlock()
-	
+
 	var total int64
 	for _, req := range a.am.pendingRequests {
 		total += req.Resource.Memory
@@ -210,7 +210,7 @@ func (a *ApplicationMasterAdapter) CalculateRequestedMemory() int64 {
 func (a *ApplicationMasterAdapter) CalculateAllocatedMemory() int64 {
 	a.am.mu.RLock()
 	defer a.am.mu.RUnlock()
-	
+
 	var total int64
 	for _, container := range a.am.allocatedContainers {
 		total += container.Resource.Memory
@@ -221,7 +221,7 @@ func (a *ApplicationMasterAdapter) CalculateAllocatedMemory() int64 {
 func (a *ApplicationMasterAdapter) CalculateRequestedVCores() int32 {
 	a.am.mu.RLock()
 	defer a.am.mu.RUnlock()
-	
+
 	var total int32
 	for _, req := range a.am.pendingRequests {
 		total += req.Resource.VCores
@@ -232,7 +232,7 @@ func (a *ApplicationMasterAdapter) CalculateRequestedVCores() int32 {
 func (a *ApplicationMasterAdapter) CalculateAllocatedVCores() int32 {
 	a.am.mu.RLock()
 	defer a.am.mu.RUnlock()
-	
+
 	var total int32
 	for _, container := range a.am.allocatedContainers {
 		total += container.Resource.VCores
@@ -257,27 +257,27 @@ type ApplicationMaster struct {
 }
 
 // 使用示例：
-// 
+//
 // func main() {
 //     logger := zap.NewExample()
-//     
+//
 //     // 创建原有的 ApplicationMaster
 //     am := &ApplicationMaster{
 //         applicationID: common.ApplicationID{ClusterTimestamp: 1234567890, ID: 1},
 //         // ... 其他初始化
 //     }
-//     
+//
 //     // 创建适配器
 //     adapter := NewApplicationMasterAdapter(am)
-//     
+//
 //     // 创建服务器示例
 //     example := NewApplicationMasterServerExample(adapter, logger)
-//     
+//
 //     // 启动服务器
 //     if err := example.Start(8088); err != nil {
 //         logger.Fatal("Failed to start servers", zap.Error(err))
 //     }
-//     
+//
 //     // 优雅关闭
 //     defer example.Stop()
 // }

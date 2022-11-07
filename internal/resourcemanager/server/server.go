@@ -10,20 +10,20 @@ import (
 
 // ServerManager 服务器管理器
 type ServerManager struct {
-	servers map[ServerType]common.Server
+	servers map[common.ServerType]common.Server
 	logger  *zap.Logger
 }
 
 // NewServerManager 创建新的服务器管理器
 func NewServerManager(logger *zap.Logger) *ServerManager {
 	return &ServerManager{
-		servers: make(map[ServerType]common.Server),
+		servers: make(map[common.ServerType]common.Server),
 		logger:  logger,
 	}
 }
 
 // RegisterServer 注册服务器
-func (sm *ServerManager) RegisterServer(serverType ServerType, server common.Server) {
+func (sm *ServerManager) RegisterServer(serverType common.ServerType, server common.Server) {
 	sm.servers[serverType] = server
 	sm.logger.Info("Server registered",
 		zap.String("type", string(serverType)),
@@ -31,7 +31,7 @@ func (sm *ServerManager) RegisterServer(serverType ServerType, server common.Ser
 }
 
 // StartServer 启动指定类型的服务器
-func (sm *ServerManager) StartServer(serverType ServerType, port int) error {
+func (sm *ServerManager) StartServer(serverType common.ServerType, port int) error {
 	server, exists := sm.servers[serverType]
 	if !exists {
 		sm.logger.Error("Server not found", zap.String("type", string(serverType)))
@@ -46,7 +46,7 @@ func (sm *ServerManager) StartServer(serverType ServerType, port int) error {
 }
 
 // StopServer 停止指定类型的服务器
-func (sm *ServerManager) StopServer(serverType ServerType) error {
+func (sm *ServerManager) StopServer(serverType common.ServerType) error {
 	server, exists := sm.servers[serverType]
 	if !exists {
 		return ErrServerNotFound
@@ -57,7 +57,7 @@ func (sm *ServerManager) StopServer(serverType ServerType) error {
 }
 
 // StartAllServers 启动所有服务器
-func (sm *ServerManager) StartAllServers(basePorts map[ServerType]int) error {
+func (sm *ServerManager) StartAllServers(basePorts map[common.ServerType]int) error {
 	for serverType, port := range basePorts {
 		if err := sm.StartServer(serverType, port); err != nil {
 			sm.logger.Error("Failed to start server",
@@ -84,8 +84,8 @@ func (sm *ServerManager) StopAllServers() error {
 }
 
 // GetRunningServers 获取正在运行的服务器
-func (sm *ServerManager) GetRunningServers() []ServerType {
-	var running []ServerType
+func (sm *ServerManager) GetRunningServers() []common.ServerType {
+	var running []common.ServerType
 	for serverType, server := range sm.servers {
 		if server.IsRunning() {
 			running = append(running, serverType)
@@ -140,8 +140,8 @@ func (s *grpcServer) Stop() error {
 	return ErrNotImplemented
 }
 
-func (s *grpcServer) GetType() ServerType {
-	return ServerTypeGRPC
+func (s *grpcServer) GetType() common.ServerType {
+	return common.ServerTypeGRPC
 }
 
 func (s *grpcServer) GetAddress() string {
@@ -195,8 +195,8 @@ func (s *tcpServer) Stop() error {
 	return nil
 }
 
-func (s *tcpServer) GetType() ServerType {
-	return ServerTypeTCP
+func (s *tcpServer) GetType() common.ServerType {
+	return common.ServerTypeTCP
 }
 
 func (s *tcpServer) GetAddress() string {
@@ -250,8 +250,8 @@ func (s *udpServer) Stop() error {
 	return nil
 }
 
-func (s *udpServer) GetType() ServerType {
-	return ServerTypeUDP
+func (s *udpServer) GetType() common.ServerType {
+	return common.ServerTypeUDP
 }
 
 func (s *udpServer) GetAddress() string {
