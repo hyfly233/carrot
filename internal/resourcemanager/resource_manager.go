@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"carrot/internal/common"
+	"carrot/internal/common/cluster"
 	"carrot/internal/resourcemanager/applicationmanager"
 	"carrot/internal/resourcemanager/nodemanager"
 	"carrot/internal/resourcemanager/scheduler"
@@ -34,6 +35,10 @@ type ResourceManager struct {
 	// 心跳监测相关
 	nodeHeartbeatTimeout time.Duration
 	nodeMonitorInterval  time.Duration
+
+	// 集群支持
+	clusterManager *cluster.ClusterManager
+	isLeader       bool
 }
 
 // NewResourceManager 创建新的资源管理器
@@ -64,6 +69,13 @@ func NewResourceManager(config *common.Config) *ResourceManager {
 		cancel:               cancel,
 		nodeHeartbeatTimeout: nodeHeartbeatTimeout,
 		nodeMonitorInterval:  nodeMonitorInterval,
+		isLeader:             false,
+	}
+
+	// 初始化集群管理器
+	if err := rm.initClusterManager(); err != nil {
+		rm.logger.Error("Failed to initialize cluster manager", zap.Error(err))
+		// 不是致命错误，可以继续以单机模式运行
 	}
 
 	// 使用调度器工厂创建调度器
@@ -131,6 +143,13 @@ func (rm *ResourceManager) Start(port int) error {
 		zap.Duration("heartbeat_timeout", rm.nodeHeartbeatTimeout),
 		zap.Duration("monitor_interval", rm.nodeMonitorInterval))
 
+	// 启动集群管理器
+	if rm.clusterManager != nil {
+		if err := rm.startClusterManager(); err != nil {
+			rm.logger.Warn("Failed to start cluster manager", zap.Error(err))
+		}
+	}
+
 	// 启动心跳监测
 	go rm.startNodeMonitor()
 
@@ -140,6 +159,9 @@ func (rm *ResourceManager) Start(port int) error {
 // Stop 停止资源管理器
 func (rm *ResourceManager) Stop() error {
 	rm.logger.Info("Stopping ResourceManager")
+
+	// 停止集群管理器
+	rm.stopClusterManager()
 
 	// 取消上下文
 	rm.cancel()
@@ -487,6 +509,13 @@ func (rm *ResourceManager) handleNewApplication(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	// 检查领导者权限
+	if err := rm.validateLeadership(); err != nil {
+		rm.logger.Warn("Application submission denied: not leader", zap.Error(err))
+		http.Error(w, fmt.Sprintf("Not leader: %v", err), http.StatusServiceUnavailable)
+		return
+	}
+
 	rm.mu.Lock()
 	appID := common.ApplicationID{
 		ClusterTimestamp: rm.clusterTimestamp,
@@ -535,6 +564,7 @@ func (rm *ResourceManager) handleClusterInfo(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// 基础集群信息
 	info := map[string]interface{}{
 		"clusterInfo": map[string]interface{}{
 			"id":                     rm.clusterTimestamp,
@@ -543,6 +573,44 @@ func (rm *ResourceManager) handleClusterInfo(w http.ResponseWriter, r *http.Requ
 			"haState":                "ACTIVE",
 			"resourceManagerVersion": "carrot-1.0.0",
 		},
+	}
+
+	// 如果启用了集群模式，添加集群详细信息
+	if rm.clusterManager != nil {
+		clusterInfo := rm.GetClusterInfo()
+		if clusterInfo != nil {
+			info["cluster"] = map[string]interface{}{
+				"name":           clusterInfo.ID.Name,
+				"id":             clusterInfo.ID.ID,
+				"state":          string(clusterInfo.State),
+				"leader":         clusterInfo.Leader,
+				"nodes":          len(clusterInfo.Nodes),
+				"activeNodes":    clusterInfo.Statistics.ActiveNodes,
+				"failedNodes":    clusterInfo.Statistics.FailedNodes,
+				"totalResources": clusterInfo.Statistics.TotalResources,
+				"usedResources":  clusterInfo.Statistics.UsedResources,
+				"uptime":         clusterInfo.Statistics.Uptime,
+				"isLeader":       rm.IsLeader(),
+			}
+		}
+		
+		// 添加集群节点信息
+		clusterNodes := rm.GetClusterNodes()
+		nodeList := make([]map[string]interface{}, 0, len(clusterNodes))
+		for _, node := range clusterNodes {
+			nodeInfo := map[string]interface{}{
+				"id":            node.ID.String(),
+				"type":          string(node.Type),
+				"state":         string(node.State),
+				"roles":         node.Roles,
+				"lastHeartbeat": node.LastHeartbeat,
+				"joinTime":      node.JoinTime,
+				"health":        node.Health.Status,
+				"version":       node.Version,
+			}
+			nodeList = append(nodeList, nodeInfo)
+		}
+		info["clusterNodes"] = nodeList
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -777,4 +845,197 @@ func (rm *ResourceManager) GetNodeHealthStatus() map[string]int {
 	}
 
 	return status
+}
+
+// 集群管理相关方法
+
+// initClusterManager 初始化集群管理器
+func (rm *ResourceManager) initClusterManager() error {
+	if rm.config == nil {
+		rm.logger.Info("No config provided, running in standalone mode")
+		return nil
+	}
+
+	// 如果集群名称为空，跳过集群初始化
+	if rm.config.Cluster.Name == "" {
+		rm.logger.Info("No cluster name configured, running in standalone mode")
+		return nil
+	}
+
+	// 验证集群配置
+	if err := cluster.ValidateClusterConfig(rm.config.Cluster); err != nil {
+		return fmt.Errorf("invalid cluster config: %w", err)
+	}
+
+	// 创建本地节点信息
+	localNode := cluster.CreateLocalNode(
+		common.NodeTypeResourceManager,
+		rm.config.ResourceManager.Address,
+		int32(rm.config.ResourceManager.Port),
+		map[string]string{
+			"role": "resourcemanager",
+			"version": "1.0.0",
+		},
+	)
+
+	// 设置领导者角色
+	localNode.Roles = []common.NodeRole{common.NodeRoleLeader}
+
+	// 创建集群管理器
+	cm := cluster.NewClusterManager(rm.config.Cluster, localNode, rm.logger)
+
+	// 注册回调函数
+	cm.OnNodeJoined(rm.onNodeJoined)
+	cm.OnNodeLeft(rm.onNodeLeft)
+	cm.OnLeaderChange(rm.onLeaderChange)
+
+	rm.clusterManager = cm
+
+	rm.logger.Info("Cluster manager initialized",
+		zap.String("cluster", rm.config.Cluster.Name),
+		zap.String("discovery", rm.config.Cluster.DiscoveryMethod))
+
+	return nil
+}
+
+// startClusterManager 启动集群管理器
+func (rm *ResourceManager) startClusterManager() error {
+	if rm.clusterManager == nil {
+		return fmt.Errorf("cluster manager not initialized")
+	}
+
+	// 启动集群管理器
+	if err := rm.clusterManager.Start(rm.ctx); err != nil {
+		return fmt.Errorf("failed to start cluster manager: %w", err)
+	}
+
+	// 加入集群
+	if err := rm.clusterManager.JoinCluster(); err != nil {
+		rm.logger.Warn("Failed to join cluster, continuing in standalone mode", zap.Error(err))
+	}
+
+	return nil
+}
+
+// stopClusterManager 停止集群管理器
+func (rm *ResourceManager) stopClusterManager() {
+	if rm.clusterManager != nil {
+		rm.clusterManager.Stop()
+	}
+}
+
+// GetClusterInfo 获取集群信息
+func (rm *ResourceManager) GetClusterInfo() *common.ClusterInfo {
+	if rm.clusterManager == nil {
+		return nil
+	}
+	return rm.clusterManager.GetClusterInfo()
+}
+
+// IsLeader 检查是否为领导者
+func (rm *ResourceManager) IsLeader() bool {
+	if rm.clusterManager == nil {
+		return true // 单机模式下总是领导者
+	}
+	return rm.clusterManager.IsLeader()
+}
+
+// GetClusterNodes 获取集群节点列表
+func (rm *ResourceManager) GetClusterNodes() map[string]*common.ClusterNode {
+	if rm.clusterManager == nil {
+		return make(map[string]*common.ClusterNode)
+	}
+	return rm.clusterManager.GetNodes()
+}
+
+// 集群事件回调函数
+
+// onNodeJoined 处理节点加入事件
+func (rm *ResourceManager) onNodeJoined(node *common.ClusterNode) {
+	rm.logger.Info("Cluster node joined",
+		zap.String("node", node.ID.String()),
+		zap.String("type", string(node.Type)))
+
+	// 如果是NodeManager节点，等待它主动注册
+	if node.Type == common.NodeTypeNodeManager {
+		rm.logger.Info("NodeManager joined cluster, waiting for registration",
+			zap.String("node", node.ID.String()))
+	}
+}
+
+// onNodeLeft 处理节点离开事件
+func (rm *ResourceManager) onNodeLeft(node *common.ClusterNode) {
+	rm.logger.Info("Cluster node left",
+		zap.String("node", node.ID.String()),
+		zap.String("type", string(node.Type)))
+
+	// 如果是NodeManager节点，从注册列表中移除
+	if node.Type == common.NodeTypeNodeManager {
+		nodeID := node.ID.String()
+		rm.mu.Lock()
+		if rmNode, exists := rm.nodes[nodeID]; exists {
+			delete(rm.nodes, nodeID)
+			rm.logger.Info("Removed node from registry",
+				zap.String("node", nodeID))
+			
+			// 处理该节点上的容器
+			rm.handleFailedNode(rmNode)
+		}
+		rm.mu.Unlock()
+	}
+}
+
+// onLeaderChange 处理领导者变更事件
+func (rm *ResourceManager) onLeaderChange(oldLeader, newLeader *common.ClusterNode) {
+	if newLeader != nil && rm.clusterManager != nil {
+		rm.isLeader = rm.clusterManager.IsLeader()
+		
+		rm.logger.Info("Leader changed",
+			zap.Bool("is_leader", rm.isLeader),
+			zap.String("new_leader", newLeader.ID.String()))
+
+		if rm.isLeader {
+			rm.logger.Info("Became cluster leader, taking over resource management")
+			// 如果成为领导者，可以在这里初始化领导者特有的任务
+		} else {
+			rm.logger.Info("No longer leader, stepping down from resource management")
+			// 如果不再是领导者，可以在这里清理领导者特有的任务
+		}
+	}
+}
+
+// handleFailedNode 处理失败的节点
+func (rm *ResourceManager) handleFailedNode(node *nodemanager.Node) {
+	// 标记节点上的所有容器为失败
+	for _, container := range node.Containers {
+		container.Status = "FAILED"
+		container.State = "COMPLETE"
+		
+		rm.logger.Warn("Container failed due to node failure",
+			zap.Any("container_id", container.ID),
+			zap.String("node", node.ID.String()))
+	}
+
+	// 通知调度器节点失败，可能需要重新调度应用
+	if rm.scheduler != nil {
+		rm.logger.Debug("Notifying scheduler of node failure",
+			zap.String("node", node.ID.String()))
+	}
+}
+
+// requiresLeadership 检查操作是否需要领导者权限
+func (rm *ResourceManager) requiresLeadership() bool {
+	return rm.clusterManager != nil && !rm.IsLeader()
+}
+
+// validateLeadership 验证领导者权限
+func (rm *ResourceManager) validateLeadership() error {
+	if rm.requiresLeadership() {
+		leader, exists := rm.clusterManager.GetLeader()
+		if exists {
+			return fmt.Errorf("operation requires leadership, current leader: %v", leader.ID.String())
+		}
+		return fmt.Errorf("operation requires leadership, no leader elected")
+	}
+	return nil
 }

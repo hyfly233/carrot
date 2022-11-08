@@ -7,6 +7,7 @@ import (
 
 // Config 全局配置
 type Config struct {
+	Cluster          ClusterConfig         `yaml:"cluster"`
 	ResourceManager  ResourceManagerConfig `yaml:"resourcemanager"`
 	NodeManager      NodeManagerConfig     `yaml:"nodemanager"`
 	Scheduler        SchedulerConfig       `yaml:"scheduler"`
@@ -106,6 +107,19 @@ type SecurityConfig struct {
 // GetDefaultConfig 获取默认配置
 func GetDefaultConfig() *Config {
 	return &Config{
+		Cluster: ClusterConfig{
+			Name:                    "carrot-cluster",
+			ID:                      "",
+			MinNodes:               1,
+			MaxNodes:               100,
+			ElectionTimeout:        5 * time.Second,
+			HeartbeatInterval:      1 * time.Second,
+			FailureDetectionWindow: 30 * time.Second,
+			SplitBrainProtection:   true,
+			AutoScaling:            false,
+			DiscoveryMethod:        "static",
+			DiscoveryConfig:        make(map[string]interface{}),
+		},
 		ResourceManager: ResourceManagerConfig{
 			Port:                   8088,
 			Address:                "0.0.0.0",

@@ -1,4 +1,31 @@
 # Carrot YARN 配置示例
+
+# 集群配置
+cluster:
+  name: "carrot-cluster"
+  id: ""
+  min_nodes: 1
+  max_nodes: 100
+  election_timeout: 5s
+  heartbeat_interval: 1s
+  failure_detection_window: 30s
+  split_brain_protection: true
+  auto_scaling: false
+  discovery_method: "static"  # 支持: static, dns, etcd, consul
+  discovery_config:
+    # 静态节点发现配置示例
+    nodes:
+      - host: "localhost"
+        port: 8088
+        type: "resourcemanager"
+        metadata:
+          role: "master"
+      - host: "localhost"
+        port: 8042
+        type: "nodemanager"
+        metadata:
+          role: "worker"
+
 # ResourceManager 配置
 resourcemanager:
   port: 8088

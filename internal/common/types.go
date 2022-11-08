@@ -65,6 +65,180 @@ func (ni *NodeID) String() string {
 	return fmt.Sprintf("%s:%d", ni.Host, ni.Port)
 }
 
+// ClusterID 集群标识
+type ClusterID struct {
+	Name string `json:"name"`
+	ID   string `json:"id"`
+}
+
+func (ci *ClusterID) String() string {
+	return fmt.Sprintf("%s-%s", ci.Name, ci.ID)
+}
+
+// ClusterNode 集群节点信息
+type ClusterNode struct {
+	ID                NodeID                 `json:"id"`
+	Type              NodeType               `json:"type"`
+	State             NodeState              `json:"state"`
+	Roles             []NodeRole             `json:"roles"`
+	LastHeartbeat     time.Time              `json:"last_heartbeat"`
+	JoinTime          time.Time              `json:"join_time"`
+	Metadata          map[string]string      `json:"metadata"`
+	Capabilities      NodeCapabilities       `json:"capabilities"`
+	Health            NodeHealth             `json:"health"`
+	Version           string                 `json:"version"`
+}
+
+// NodeType 节点类型
+type NodeType string
+
+const (
+	NodeTypeResourceManager    NodeType = "resourcemanager"
+	NodeTypeNodeManager        NodeType = "nodemanager"
+	NodeTypeApplicationMaster  NodeType = "applicationmaster"
+)
+
+// NodeState 节点状态
+type NodeState string
+
+const (
+	NodeStateJoining      NodeState = "joining"
+	NodeStateActive       NodeState = "active"
+	NodeStateInactive     NodeState = "inactive"
+	NodeStateLeaving      NodeState = "leaving"
+	NodeStateFailed       NodeState = "failed"
+)
+
+// NodeRole 节点角色
+type NodeRole string
+
+const (
+	NodeRoleLeader    NodeRole = "leader"
+	NodeRoleFollower  NodeRole = "follower"
+	NodeRoleWorker    NodeRole = "worker"
+)
+
+// NodeCapabilities 节点能力
+type NodeCapabilities struct {
+	MaxContainers     int32             `json:"max_containers"`
+	SupportedFeatures []string          `json:"supported_features"`
+	Resources         Resource          `json:"resources"`
+	Labels            map[string]string `json:"labels"`
+}
+
+// NodeHealth 节点健康状态
+type NodeHealth struct {
+	Status         HealthStatus          `json:"status"`
+	LastCheck      time.Time             `json:"last_check"`
+	Issues         []HealthIssue         `json:"issues"`
+	Metrics        map[string]float64    `json:"metrics"`
+}
+
+// HealthStatus 健康状态
+type HealthStatus string
+
+const (
+	HealthStatusHealthy    HealthStatus = "healthy"
+	HealthStatusWarning    HealthStatus = "warning"
+	HealthStatusCritical   HealthStatus = "critical"
+	HealthStatusUnknown    HealthStatus = "unknown"
+)
+
+// HealthIssue 健康问题
+type HealthIssue struct {
+	Type        string    `json:"type"`
+	Message     string    `json:"message"`
+	Severity    string    `json:"severity"`
+	Timestamp   time.Time `json:"timestamp"`
+}
+
+// ClusterInfo 集群信息
+type ClusterInfo struct {
+	ID              ClusterID              `json:"id"`
+	State           ClusterState           `json:"state"`
+	Leader          *NodeID                `json:"leader,omitempty"`
+	Nodes           map[string]ClusterNode `json:"nodes"`
+	CreatedAt       time.Time              `json:"created_at"`
+	UpdatedAt       time.Time              `json:"updated_at"`
+	Config          ClusterConfig          `json:"config"`
+	Statistics      ClusterStatistics      `json:"statistics"`
+}
+
+// ClusterState 集群状态
+type ClusterState string
+
+const (
+	ClusterStateForming     ClusterState = "forming"
+	ClusterStateActive      ClusterState = "active"
+	ClusterStateDegraded    ClusterState = "degraded"
+	ClusterStateMaintenance ClusterState = "maintenance"
+	ClusterStateFailed      ClusterState = "failed"
+)
+
+// ClusterConfig 集群配置
+type ClusterConfig struct {
+	Name                    string                 `json:"name" yaml:"name"`
+	ID                      string                 `json:"id" yaml:"id"`
+	MinNodes               int                    `json:"min_nodes" yaml:"min_nodes"`
+	MaxNodes               int                    `json:"max_nodes" yaml:"max_nodes"`
+	ElectionTimeout        time.Duration          `json:"election_timeout" yaml:"election_timeout"`
+	HeartbeatInterval      time.Duration          `json:"heartbeat_interval" yaml:"heartbeat_interval"`
+	FailureDetectionWindow time.Duration          `json:"failure_detection_window" yaml:"failure_detection_window"`
+	SplitBrainProtection   bool                   `json:"split_brain_protection" yaml:"split_brain_protection"`
+	AutoScaling            bool                   `json:"auto_scaling" yaml:"auto_scaling"`
+	DiscoveryMethod        string                 `json:"discovery_method" yaml:"discovery_method"`
+	DiscoveryConfig        map[string]interface{} `json:"discovery_config" yaml:"discovery_config"`
+}
+
+// ClusterStatistics 集群统计信息
+type ClusterStatistics struct {
+	TotalNodes         int32              `json:"total_nodes"`
+	ActiveNodes        int32              `json:"active_nodes"`
+	FailedNodes        int32              `json:"failed_nodes"`
+	TotalResources     Resource           `json:"total_resources"`
+	UsedResources      Resource           `json:"used_resources"`
+	AvailableResources Resource           `json:"available_resources"`
+	RunningApplications int32             `json:"running_applications"`
+	PendingApplications int32             `json:"pending_applications"`
+	CompletedApplications int64           `json:"completed_applications"`
+	FailedApplications   int64            `json:"failed_applications"`
+	Uptime              time.Duration     `json:"uptime"`
+}
+
+// ClusterEvent 集群事件
+type ClusterEvent struct {
+	ID          string                 `json:"id"`
+	Type        ClusterEventType       `json:"type"`
+	Source      NodeID                 `json:"source"`
+	Target      *NodeID                `json:"target,omitempty"`
+	Timestamp   time.Time              `json:"timestamp"`
+	Data        map[string]interface{} `json:"data"`
+	Severity    EventSeverity          `json:"severity"`
+}
+
+// ClusterEventType 集群事件类型
+type ClusterEventType string
+
+const (
+	ClusterEventNodeJoined    ClusterEventType = "node_joined"
+	ClusterEventNodeLeft      ClusterEventType = "node_left"
+	ClusterEventNodeFailed    ClusterEventType = "node_failed"
+	ClusterEventLeaderElected ClusterEventType = "leader_elected"
+	ClusterEventConfigChanged ClusterEventType = "config_changed"
+	ClusterEventSplitBrain    ClusterEventType = "split_brain"
+	ClusterEventHealing       ClusterEventType = "healing"
+)
+
+// EventSeverity 事件严重性
+type EventSeverity string
+
+const (
+	EventSeverityInfo     EventSeverity = "info"
+	EventSeverityWarning  EventSeverity = "warning"
+	EventSeverityError    EventSeverity = "error"
+	EventSeverityCritical EventSeverity = "critical"
+)
+
 // ApplicationID 应用程序标识
 type ApplicationID struct {
 	ClusterTimestamp int64 `json:"cluster_timestamp"`

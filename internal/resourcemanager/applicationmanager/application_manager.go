@@ -435,9 +435,19 @@ func (am *ApplicationManager) sendEvent(event *ApplicationEvent) {
 
 // eventProcessor 事件处理器
 func (am *ApplicationManager) eventProcessor() {
+	defer func() {
+		if r := recover(); r != nil {
+			am.logger.Error("Event processor panic recovered", zap.Any("error", r))
+		}
+	}()
+
 	for {
 		select {
-		case event := <-am.appEvents:
+		case event, ok := <-am.appEvents:
+			if !ok {
+				// 通道已关闭
+				return
+			}
 			am.logger.Debug("Processing application event",
 				zap.String("event_type", event.Type),
 				zap.Any("app_id", event.ApplicationID))
@@ -532,7 +542,9 @@ func (am *ApplicationManager) GetStatistics() map[string]interface{} {
 // Stop 停止应用程序管理器
 func (am *ApplicationManager) Stop() error {
 	am.logger.Info("Stopping application manager")
+	// 先取消 context，让 goroutines 退出
 	am.cancel()
+	// 然后关闭通道
 	close(am.appEvents)
 	return nil
 }
