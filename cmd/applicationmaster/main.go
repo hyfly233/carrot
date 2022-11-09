@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
-	"time"
 
 	"carrot/internal/applicationmaster"
 	"carrot/internal/common"
@@ -20,24 +19,23 @@ import (
 func main() {
 	// 命令行参数
 	var (
-		appIDStr          = flag.String("application_id", "", "Application ID (format: timestamp_id)")
-		attemptIDStr      = flag.String("application_attempt_id", "", "Application Attempt ID (format: timestamp_id_attempt)")
-		rmAddress         = flag.String("rm_address", "http://localhost:8030", "ResourceManager address")
-		trackingURL       = flag.String("tracking_url", "", "Application tracking URL")
-		port              = flag.Int("port", 8088, "ApplicationMaster HTTP server port")
-		appType           = flag.String("app_type", "simple", "Application type: simple, distributed")
-		numTasks          = flag.Int("num_tasks", 3, "Number of tasks for simple application")
-		numWorkers        = flag.Int("num_workers", 2, "Number of workers for distributed application")
-		heartbeatInterval = flag.Duration("heartbeat_interval", 10*time.Second, "Heartbeat interval")
-		maxRetries        = flag.Int("max_retries", 3, "Maximum container retries")
-		debug             = flag.Bool("debug", false, "Enable debug logging")
+		configFile       = flag.String("config", "configs/applicationmaster.yaml", "Configuration file path")
+		appIDStr         = flag.String("application_id", "", "Application ID (format: timestamp_id)")
+		attemptIDStr     = flag.String("application_attempt_id", "", "Application Attempt ID (format: timestamp_id_attempt)")
+		development      = flag.Bool("dev", false, "Enable development mode")
 	)
 	flag.Parse()
 
+	// 加载配置文件
+	config, err := common.LoadConfig(*configFile)
+	if err != nil {
+		fmt.Printf("Failed to load configuration: %v\n", err)
+		os.Exit(1)
+	}
+
 	// 配置日志
 	var logger *zap.Logger
-	var err error
-	if *debug {
+	if config.ApplicationMaster.EnableDebug || *development {
 		logger, err = zap.NewDevelopment()
 	} else {
 		logger, err = zap.NewProduction()
@@ -49,10 +47,11 @@ func main() {
 	defer logger.Sync()
 
 	logger.Info("Starting ApplicationMaster",
+		zap.String("config_file", *configFile),
 		zap.String("app_id", *appIDStr),
 		zap.String("attempt_id", *attemptIDStr),
-		zap.String("rm_address", *rmAddress),
-		zap.String("app_type", *appType))
+		zap.String("rm_address", config.ApplicationMaster.ResourceManagerURL),
+		zap.String("app_type", config.ApplicationMaster.AppType))
 
 	// 解析应用程序 ID
 	appID, err := parseApplicationID(*appIDStr)
@@ -67,23 +66,24 @@ func main() {
 	}
 
 	// 生成跟踪 URL（如果未提供）
-	if *trackingURL == "" {
-		*trackingURL = fmt.Sprintf("http://localhost:%d", *port)
+	trackingURL := config.ApplicationMaster.TrackingURL
+	if trackingURL == "" {
+		trackingURL = fmt.Sprintf("http://localhost:%d", config.ApplicationMaster.Port)
 	}
 
 	// 创建 ApplicationMaster 配置
-	config := &applicationmaster.ApplicationMasterConfig{
+	amConfig := &applicationmaster.ApplicationMasterConfig{
 		ApplicationID:        *appID,
 		ApplicationAttemptID: *attemptID,
-		RMAddress:            *rmAddress,
-		TrackingURL:          *trackingURL,
-		HeartbeatInterval:    *heartbeatInterval,
-		MaxContainerRetries:  *maxRetries,
-		Port:                 *port,
+		RMAddress:            config.ApplicationMaster.ResourceManagerURL,
+		TrackingURL:          trackingURL,
+		HeartbeatInterval:    config.ApplicationMaster.HeartbeatInterval,
+		MaxContainerRetries:  config.ApplicationMaster.MaxRetries,
+		Port:                 config.ApplicationMaster.Port,
 	}
 
 	// 创建 ApplicationMaster
-	am := applicationmaster.NewApplicationMaster(config)
+	am := applicationmaster.NewApplicationMaster(amConfig)
 
 	// 启动 ApplicationMaster
 	if err := am.Start(); err != nil {
@@ -101,16 +101,16 @@ func main() {
 	// 运行应用程序逻辑
 	go func() {
 		var appErr error
-		switch *appType {
+		switch config.ApplicationMaster.AppType {
 		case "simple":
-			app := applicationmaster.NewSimpleApplication(am, *numTasks)
+			app := applicationmaster.NewSimpleApplication(am, config.ApplicationMaster.NumTasks)
 			appErr = app.Run(ctx)
 		case "distributed":
-			app := applicationmaster.NewDistributedApplication(am, *numWorkers)
+			app := applicationmaster.NewDistributedApplication(am, config.ApplicationMaster.NumWorkers)
 			appErr = app.Run(ctx)
 		default:
-			logger.Error("Unknown application type", zap.String("type", *appType))
-			appErr = fmt.Errorf("unknown application type: %s", *appType)
+			logger.Error("Unknown application type", zap.String("type", config.ApplicationMaster.AppType))
+			appErr = fmt.Errorf("unknown application type: %s", config.ApplicationMaster.AppType)
 		}
 
 		if appErr != nil {

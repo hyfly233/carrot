@@ -18,12 +18,8 @@ import (
 
 func main() {
 	var (
-		host        = flag.String("host", "localhost", "NodeManager host")
-		port        = flag.Int("port", 8042, "NodeManager port")
+		configFile  = flag.String("config", "configs/nodemanager.yaml", "Configuration file path")
 		development = flag.Bool("dev", false, "Enable development mode")
-		rmURL       = flag.String("rm-url", "http://localhost:8088", "ResourceManager URL")
-		memory      = flag.Int64("memory", 8192, "Total memory in MB")
-		vcores      = flag.Int("vcores", 8, "Total virtual cores")
 	)
 	flag.Parse()
 
@@ -34,25 +30,34 @@ func main() {
 	defer common.Sync()
 
 	logger := common.GetLogger()
-	logger.Info("NodeManager configuration",
-		zap.String("host", *host),
-		zap.Int("port", *port),
-		zap.Bool("development", *development),
-		zap.String("rm-url", *rmURL),
-		zap.Int64("memory", *memory),
-		zap.Int("vcores", *vcores))
+	logger.Info("Starting YARN NodeManager",
+		zap.String("config_file", *configFile),
+		zap.Bool("development", *development))
+
+	// 加载配置文件
+	config, err := common.LoadConfig(*configFile)
+	if err != nil {
+		logger.Fatal("Failed to load configuration", zap.Error(err))
+	}
+
+	logger.Info("Configuration loaded",
+		zap.String("cluster_name", config.Cluster.Name),
+		zap.Int("port", config.NodeManager.Port),
+		zap.String("rm_url", config.NodeManager.ResourceManagerURL),
+		zap.Int64("memory", config.NodeManager.ContainerMemoryLimitMB),
+		zap.Int32("vcores", config.NodeManager.ContainerVCoresLimit))
 
 	nodeID := common.NodeID{
-		Host: *host,
-		Port: int32(*port),
+		Host: config.NodeManager.Address,
+		Port: int32(config.NodeManager.Port),
 	}
 
 	totalResource := common.Resource{
-		Memory: *memory,
-		VCores: int32(*vcores),
+		Memory: config.NodeManager.ContainerMemoryLimitMB,
+		VCores: config.NodeManager.ContainerVCoresLimit,
 	}
 
-	nm := nodemanager.NewNodeManager(nodeID, totalResource, *rmURL)
+	nm := nodemanager.NewNodeManager(nodeID, totalResource, config.NodeManager.ResourceManagerURL)
 
 	// 优雅关闭处理
 	_, cancel := context.WithCancel(context.Background())
@@ -69,7 +74,7 @@ func main() {
 	}()
 
 	// 启动服务
-	if err := nm.Start(*port); err != nil {
+	if err := nm.Start(config.NodeManager.Port); err != nil {
 		// 只有在不是正常关闭的情况下才记录错误
 		if !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("Failed to start NodeManager: %v", err)

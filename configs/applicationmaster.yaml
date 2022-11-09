@@ -1,0 +1,46 @@
+# ApplicationMaster 配置文件
+
+# 集群配置
+cluster:
+  name: "carrot-cluster"
+  id: "am-1"
+  min_nodes: 1
+  max_nodes: 100
+  election_timeout: 5s
+  heartbeat_interval: 1s
+  failure_detection_window: 30s
+  split_brain_protection: true
+  auto_scaling: false
+  discovery_method: "static"  # 支持: static, dns, etcd, consul
+  discovery_config:
+    # 静态节点发现配置示例
+    nodes:
+      - host: "localhost"
+        port: 8088
+        type: "resourcemanager"
+        metadata:
+          role: "master"
+
+# ApplicationMaster 配置
+applicationmaster:
+  port: 8088
+  address: "0.0.0.0"
+  resourcemanager_url: "http://localhost:8030"
+  heartbeat_interval: 10s
+  max_retries: 3
+  app_type: "simple"  # simple, distributed
+  num_tasks: 3        # for simple app
+  num_workers: 2      # for distributed app
+  tracking_url: ""
+  enable_debug: false
+
+# 安全配置
+security:
+  enabled: false
+  token_expiry: 24h
+  secret_key: ""
+  container_secure: false
+
+# 心跳监测配置
+heartbeat_timeout: 90    # 节点心跳超时时间（秒），默认90秒
+monitor_interval: 30     # 心跳监测检查间隔（秒），默认30秒

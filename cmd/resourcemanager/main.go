@@ -17,7 +17,7 @@ import (
 
 func main() {
 	var (
-		port        = flag.Int("port", 8088, "ResourceManager port")
+		configFile  = flag.String("config", "configs/resourcemanager.yaml", "Configuration file path")
 		development = flag.Bool("dev", false, "Enable development mode")
 	)
 	flag.Parse()
@@ -30,12 +30,19 @@ func main() {
 
 	logger := common.GetLogger()
 	logger.Info("Starting YARN ResourceManager",
-		zap.Int("port", *port),
+		zap.String("config_file", *configFile),
 		zap.Bool("development", *development))
 
-	// 获取配置
-	config := common.GetDefaultConfig()
-	config.ResourceManager.Port = *port
+	// 加载配置文件
+	config, err := common.LoadConfig(*configFile)
+	if err != nil {
+		logger.Fatal("Failed to load configuration", zap.Error(err))
+	}
+
+	logger.Info("Configuration loaded",
+		zap.String("cluster_name", config.Cluster.Name),
+		zap.Int("port", config.ResourceManager.Port),
+		zap.String("scheduler_type", config.Scheduler.Type))
 
 	// 创建ResourceManager
 	rm := resourcemanager.NewResourceManager(config)
@@ -55,7 +62,7 @@ func main() {
 	}()
 
 	// 启动服务
-	if err := rm.Start(*port); err != nil {
+	if err := rm.Start(config.ResourceManager.Port); err != nil {
 		// 只有在不是正常关闭的情况下才记录错误
 		if !errors.Is(err, http.ErrServerClosed) {
 			logger.Fatal("Failed to start ResourceManager", zap.Error(err))

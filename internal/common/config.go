@@ -1,19 +1,25 @@
 package common
 
 import (
+	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"time"
+
+	"gopkg.in/yaml.v3"
 )
 
 // Config 全局配置
 type Config struct {
-	Cluster          ClusterConfig         `yaml:"cluster"`
-	ResourceManager  ResourceManagerConfig `yaml:"resourcemanager"`
-	NodeManager      NodeManagerConfig     `yaml:"nodemanager"`
-	Scheduler        SchedulerConfig       `yaml:"scheduler"`
-	Security         SecurityConfig        `yaml:"security"`
-	HeartbeatTimeout int                   `yaml:"heartbeat_timeout"` // 心跳超时时间（秒）
-	MonitorInterval  int                   `yaml:"monitor_interval"`  // 监测间隔（秒）
+	Cluster           ClusterConfig           `yaml:"cluster"`
+	ResourceManager   ResourceManagerConfig   `yaml:"resourcemanager"`
+	NodeManager       NodeManagerConfig       `yaml:"nodemanager"`
+	ApplicationMaster ApplicationMasterConfig `yaml:"applicationmaster"`
+	Scheduler         SchedulerConfig         `yaml:"scheduler"`
+	Security          SecurityConfig          `yaml:"security"`
+	HeartbeatTimeout  int                     `yaml:"heartbeat_timeout"` // 心跳超时时间（秒）
+	MonitorInterval   int                     `yaml:"monitor_interval"`  // 监测间隔（秒）
 }
 
 // ResourceManagerConfig ResourceManager配置
@@ -34,6 +40,20 @@ type NodeManagerConfig struct {
 	ContainerCleanupDelay  time.Duration `yaml:"container_cleanup_delay"`
 	ContainerMemoryLimitMB int64         `yaml:"container_memory_limit_mb"`
 	ContainerVCoresLimit   int32         `yaml:"container_vcores_limit"`
+}
+
+// ApplicationMasterConfig ApplicationMaster配置
+type ApplicationMasterConfig struct {
+	Port                int           `yaml:"port"`
+	Address             string        `yaml:"address"`
+	ResourceManagerURL  string        `yaml:"resourcemanager_url"`
+	HeartbeatInterval   time.Duration `yaml:"heartbeat_interval"`
+	MaxRetries          int           `yaml:"max_retries"`
+	AppType             string        `yaml:"app_type"`     // simple, distributed
+	NumTasks            int           `yaml:"num_tasks"`    // for simple app
+	NumWorkers          int           `yaml:"num_workers"`  // for distributed app
+	TrackingURL         string        `yaml:"tracking_url"`
+	EnableDebug         bool          `yaml:"enable_debug"`
 }
 
 // SchedulerConfig 调度器配置
@@ -136,6 +156,18 @@ func GetDefaultConfig() *Config {
 			ContainerMemoryLimitMB: 8192,
 			ContainerVCoresLimit:   8,
 		},
+		ApplicationMaster: ApplicationMasterConfig{
+			Port:               8088,
+			Address:            "0.0.0.0",
+			ResourceManagerURL: "http://localhost:8030",
+			HeartbeatInterval:  10 * time.Second,
+			MaxRetries:         3,
+			AppType:            "simple",
+			NumTasks:           3,
+			NumWorkers:         2,
+			TrackingURL:        "",
+			EnableDebug:        false,
+		},
 		Scheduler: SchedulerConfig{
 			Type:    "fifo",
 			MaxApps: 1000,
@@ -163,4 +195,54 @@ func getEnvOrDefault(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+// LoadConfig 从配置文件加载配置
+func LoadConfig(configPath string) (*Config, error) {
+	// 如果配置文件不存在，使用默认配置
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		return GetDefaultConfig(), nil
+	}
+
+	// 读取配置文件
+	data, err := ioutil.ReadFile(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read config file %s: %w", configPath, err)
+	}
+
+	// 解析配置文件
+	config := GetDefaultConfig() // 先获取默认配置作为基础
+	if err := yaml.Unmarshal(data, config); err != nil {
+		return nil, fmt.Errorf("failed to parse config file %s: %w", configPath, err)
+	}
+
+	return config, nil
+}
+
+// LoadConfigFromDir 从指定目录加载配置文件
+func LoadConfigFromDir(configDir, filename string) (*Config, error) {
+	configPath := filepath.Join(configDir, filename)
+	return LoadConfig(configPath)
+}
+
+// SaveConfig 保存配置到文件
+func SaveConfig(config *Config, configPath string) error {
+	// 确保目录存在
+	dir := filepath.Dir(configPath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create config directory %s: %w", dir, err)
+	}
+
+	// 序列化配置
+	data, err := yaml.Marshal(config)
+	if err != nil {
+		return fmt.Errorf("failed to marshal config: %w", err)
+	}
+
+	// 写入文件
+	if err := ioutil.WriteFile(configPath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write config file %s: %w", configPath, err)
+	}
+
+	return nil
 }

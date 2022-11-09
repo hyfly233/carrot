@@ -1,0 +1,57 @@
+# ResourceManager 配置文件
+
+# 集群配置
+cluster:
+  name: "carrot-cluster"
+  id: "rm-1"
+  min_nodes: 1
+  max_nodes: 100
+  election_timeout: 5s
+  heartbeat_interval: 1s
+  failure_detection_window: 30s
+  split_brain_protection: true
+  auto_scaling: false
+  discovery_method: "static"  # 支持: static, dns, etcd, consul
+  discovery_config:
+    # 静态节点发现配置示例
+    nodes:
+      - host: "localhost"
+        port: 8088
+        type: "resourcemanager"
+        metadata:
+          role: "master"
+      - host: "localhost"
+        port: 8042
+        type: "nodemanager"
+        metadata:
+          role: "worker"
+
+# ResourceManager 配置
+resourcemanager:
+  port: 8088
+  address: "0.0.0.0"
+  heartbeat_interval: 3s
+  node_expiry_timeout: 600s
+  application_max_attempts: 2
+
+# 调度器配置
+scheduler:
+  type: "fifo"  # 可选: fifo, capacity, fair
+  max_apps: 10000
+  queues:
+    default:
+      name: "default"
+      capacity: 1.0
+      max_capacity: 1.0
+      priority: 1
+
+# 安全配置
+security:
+  enabled: false
+  token_expiry: 24h
+  secret_key: ""
+  container_secure: false
+
+# 心跳监测配置
+heartbeat_timeout: 90    # 节点心跳超时时间（秒），默认90秒
+monitor_interval: 30     # 心跳监测检查间隔（秒），默认30秒
