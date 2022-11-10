@@ -19,10 +19,9 @@ import (
 func main() {
 	// 命令行参数
 	var (
-		configFile       = flag.String("config", "configs/applicationmaster.yaml", "Configuration file path")
-		appIDStr         = flag.String("application_id", "", "Application ID (format: timestamp_id)")
-		attemptIDStr     = flag.String("application_attempt_id", "", "Application Attempt ID (format: timestamp_id_attempt)")
-		development      = flag.Bool("dev", false, "Enable development mode")
+		configFile   = flag.String("config", "configs/applicationmaster.yaml", "Configuration file path")
+		appIDStr     = flag.String("application_id", "", "Application ID (format: timestamp_id)")
+		attemptIDStr = flag.String("application_attempt_id", "", "Application Attempt ID (format: timestamp_id_attempt)")
 	)
 	flag.Parse()
 
@@ -33,19 +32,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	// 配置日志
-	var logger *zap.Logger
-	if config.ApplicationMaster.EnableDebug || *development {
-		logger, err = zap.NewDevelopment()
-	} else {
-		logger, err = zap.NewProduction()
-	}
-	if err != nil {
-		fmt.Printf("Failed to create logger: %v\n", err)
+	// 初始化日志系统
+	if err := common.InitLoggerFromConfig(config); err != nil {
+		fmt.Printf("Failed to initialize logger: %v\n", err)
 		os.Exit(1)
 	}
-	defer logger.Sync()
+	defer common.Sync()
 
+	logger := common.ComponentLogger("applicationmaster")
 	logger.Info("Starting ApplicationMaster",
 		zap.String("config_file", *configFile),
 		zap.String("app_id", *appIDStr),

@@ -22,22 +22,22 @@ func main() {
 	)
 	flag.Parse()
 
+	// 加载配置文件
+	config, err := common.LoadConfig(*configFile)
+	if err != nil {
+		panic(err)
+	}
+
 	// 初始化日志系统
-	if err := common.InitLogger(*development); err != nil {
+	if err := common.InitLoggerFromConfig(config); err != nil {
 		panic(err)
 	}
 	defer common.Sync()
 
-	logger := common.GetLogger()
+	logger := common.ComponentLogger("resourcemanager")
 	logger.Info("Starting YARN ResourceManager",
 		zap.String("config_file", *configFile),
 		zap.Bool("development", *development))
-
-	// 加载配置文件
-	config, err := common.LoadConfig(*configFile)
-	if err != nil {
-		logger.Fatal("Failed to load configuration", zap.Error(err))
-	}
 
 	logger.Info("Configuration loaded",
 		zap.String("cluster_name", config.Cluster.Name),

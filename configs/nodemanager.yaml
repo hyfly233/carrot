@@ -46,3 +46,36 @@ security:
 # 心跳监测配置
 heartbeat_timeout: 90    # 节点心跳超时时间（秒），默认90秒
 monitor_interval: 30     # 心跳监测检查间隔（秒），默认30秒
+
+# 日志配置
+log:
+  level: "info"
+  development: false
+  file_output:
+    enabled: true
+    directory: "logs/nodemanager"
+    max_file_size: "100MB"
+    max_backups: 168
+    max_age: 7
+    compress: true
+    hourly_rotation: true
+    daily_compression: true
+  kafka_output:
+    enabled: false
+    brokers: ["localhost:9092"]
+    topic: "carrot-nm-logs"
+    batch_size: 100
+    timeout: "10s"
+    retries: 3
+  doris_output:
+    enabled: false
+    stream_load_url: "http://localhost:8030/api/carrot_logs/nm_logs/_stream_load"
+    database: "carrot_logs"
+    table: "nm_logs"
+    username: "root"
+    password: ""
+    batch_size: 1000
+    flush_interval: "30s"
+  console_output:
+    enabled: true
+    colorized: false

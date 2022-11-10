@@ -18,6 +18,7 @@ type Config struct {
 	ApplicationMaster ApplicationMasterConfig `yaml:"applicationmaster"`
 	Scheduler         SchedulerConfig         `yaml:"scheduler"`
 	Security          SecurityConfig          `yaml:"security"`
+	Log               LogConfig               `yaml:"log"`
 	HeartbeatTimeout  int                     `yaml:"heartbeat_timeout"` // 心跳超时时间（秒）
 	MonitorInterval   int                     `yaml:"monitor_interval"`  // 监测间隔（秒）
 }
@@ -124,6 +125,56 @@ type SecurityConfig struct {
 	ContainerSecure bool          `yaml:"container_secure"`
 }
 
+// LogConfig 日志配置
+type LogConfig struct {
+	Level          string           `yaml:"level"`           // 日志级别: debug, info, warn, error
+	Development    bool             `yaml:"development"`     // 开发模式
+	FileOutput     LogFileConfig    `yaml:"file_output"`     // 文件输出配置
+	KafkaOutput    LogKafkaConfig   `yaml:"kafka_output"`    // Kafka输出配置
+	DorisOutput    LogDorisConfig   `yaml:"doris_output"`    // Doris输出配置
+	ConsoleOutput  LogConsoleConfig `yaml:"console_output"`  // 控制台输出配置
+}
+
+// LogFileConfig 文件日志配置
+type LogFileConfig struct {
+	Enabled         bool   `yaml:"enabled"`           // 是否启用文件输出
+	Directory       string `yaml:"directory"`         // 日志文件目录
+	MaxFileSize     string `yaml:"max_file_size"`     // 单个文件最大大小
+	MaxBackups      int    `yaml:"max_backups"`       // 保留的备份文件数量
+	MaxAge          int    `yaml:"max_age"`           // 保留的天数
+	Compress        bool   `yaml:"compress"`          // 是否压缩旧文件
+	HourlyRotation  bool   `yaml:"hourly_rotation"`   // 是否按小时轮转
+	DailyCompression bool  `yaml:"daily_compression"` // 每日压缩
+}
+
+// LogKafkaConfig Kafka日志配置
+type LogKafkaConfig struct {
+	Enabled   bool     `yaml:"enabled"`    // 是否启用Kafka输出
+	Brokers   []string `yaml:"brokers"`    // Kafka broker地址列表
+	Topic     string   `yaml:"topic"`      // 日志主题
+	BatchSize int      `yaml:"batch_size"` // 批量发送大小
+	Timeout   string   `yaml:"timeout"`    // 发送超时时间
+	Retries   int      `yaml:"retries"`    // 重试次数
+}
+
+// LogDorisConfig Doris日志配置
+type LogDorisConfig struct {
+	Enabled      bool   `yaml:"enabled"`       // 是否启用Doris输出
+	StreamLoadURL string `yaml:"stream_load_url"` // Stream Load URL
+	Database     string `yaml:"database"`      // 数据库名
+	Table        string `yaml:"table"`         // 表名
+	Username     string `yaml:"username"`      // 用户名
+	Password     string `yaml:"password"`      // 密码
+	BatchSize    int    `yaml:"batch_size"`    // 批量大小
+	FlushInterval string `yaml:"flush_interval"` // 刷新间隔
+}
+
+// LogConsoleConfig 控制台日志配置
+type LogConsoleConfig struct {
+	Enabled   bool `yaml:"enabled"`    // 是否启用控制台输出
+	Colorized bool `yaml:"colorized"`  // 是否彩色输出
+}
+
 // GetDefaultConfig 获取默认配置
 func GetDefaultConfig() *Config {
 	return &Config{
@@ -185,6 +236,42 @@ func GetDefaultConfig() *Config {
 			TokenExpiry:     24 * time.Hour,
 			SecretKey:       getEnvOrDefault("CARROT_SECRET_KEY", "default-secret"),
 			ContainerSecure: false,
+		},
+		Log: LogConfig{
+			Level:       "info",
+			Development: false,
+			FileOutput: LogFileConfig{
+				Enabled:          true,
+				Directory:        "logs",
+				MaxFileSize:      "100MB",
+				MaxBackups:       168, // 保留一周的小时日志
+				MaxAge:           7,   // 保留7天
+				Compress:         true,
+				HourlyRotation:   true,
+				DailyCompression: true,
+			},
+			KafkaOutput: LogKafkaConfig{
+				Enabled:   false,
+				Brokers:   []string{"localhost:9092"},
+				Topic:     "carrot-logs",
+				BatchSize: 100,
+				Timeout:   "10s",
+				Retries:   3,
+			},
+			DorisOutput: LogDorisConfig{
+				Enabled:       false,
+				StreamLoadURL: "http://localhost:8030/api/carrot_logs/logs/_stream_load",
+				Database:      "carrot_logs",
+				Table:         "logs",
+				Username:      "root",
+				Password:      "",
+				BatchSize:     1000,
+				FlushInterval: "30s",
+			},
+			ConsoleOutput: LogConsoleConfig{
+				Enabled:   true,
+				Colorized: true,
+			},
 		},
 	}
 }
