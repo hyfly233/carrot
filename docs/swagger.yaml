@@ -1,0 +1,375 @@
+basePath: /ws/v1
+definitions:
+  carrot_internal_common.ApplicationAttemptID:
+    properties:
+      application_id:
+        $ref: '#/definitions/carrot_internal_common.ApplicationID'
+      attempt_id:
+        type: integer
+    type: object
+  carrot_internal_common.ApplicationID:
+    properties:
+      cluster_timestamp:
+        type: integer
+      id:
+        type: integer
+    type: object
+  carrot_internal_common.Container:
+    properties:
+      id:
+        $ref: '#/definitions/carrot_internal_common.ContainerID'
+      node_id:
+        $ref: '#/definitions/carrot_internal_common.NodeID'
+      resource:
+        $ref: '#/definitions/carrot_internal_common.Resource'
+      state:
+        type: string
+      status:
+        type: string
+    type: object
+  carrot_internal_common.ContainerID:
+    properties:
+      application_attempt_id:
+        $ref: '#/definitions/carrot_internal_common.ApplicationAttemptID'
+      container_id:
+        type: integer
+    type: object
+  carrot_internal_common.ContainerLaunchContext:
+    properties:
+      commands:
+        items:
+          type: string
+        type: array
+      environment:
+        additionalProperties:
+          type: string
+        type: object
+      local_resources:
+        additionalProperties:
+          $ref: '#/definitions/carrot_internal_common.LocalResource'
+        type: object
+      service_data:
+        additionalProperties:
+          items:
+            format: int32
+            type: integer
+          type: array
+        type: object
+      tokens:
+        items:
+          type: integer
+        type: array
+    type: object
+  carrot_internal_common.LocalResource:
+    properties:
+      pattern:
+        type: string
+      size:
+        type: integer
+      timestamp:
+        type: integer
+      type:
+        type: string
+      url:
+        type: string
+      visibility:
+        type: string
+    type: object
+  carrot_internal_common.NodeID:
+    properties:
+      host:
+        type: string
+      port:
+        type: integer
+    type: object
+  carrot_internal_common.Resource:
+    properties:
+      memory:
+        description: MB
+        type: integer
+      vcores:
+        description: 虚拟核心数
+        type: integer
+    type: object
+  internal_resourcemanager_server.ApplicationSubmissionRequest:
+    properties:
+      am_container_spec:
+        $ref: '#/definitions/carrot_internal_common.ContainerLaunchContext'
+      application_id:
+        $ref: '#/definitions/carrot_internal_common.ApplicationID'
+      application_name:
+        type: string
+      application_type:
+        type: string
+      max_app_attempts:
+        type: integer
+      priority:
+        type: integer
+      queue:
+        type: string
+      resource:
+        $ref: '#/definitions/carrot_internal_common.Resource'
+    required:
+    - am_container_spec
+    - application_id
+    - application_name
+    - application_type
+    - queue
+    - resource
+    type: object
+  internal_resourcemanager_server.NodeHeartbeatRequest:
+    properties:
+      containers:
+        items:
+          $ref: '#/definitions/carrot_internal_common.Container'
+        type: array
+      node_id:
+        $ref: '#/definitions/carrot_internal_common.NodeID'
+      used_resource:
+        $ref: '#/definitions/carrot_internal_common.Resource'
+    required:
+    - node_id
+    - used_resource
+    type: object
+  internal_resourcemanager_server.NodeRegistrationRequest:
+    properties:
+      http_address:
+        type: string
+      node_id:
+        $ref: '#/definitions/carrot_internal_common.NodeID'
+      resource:
+        $ref: '#/definitions/carrot_internal_common.Resource'
+    required:
+    - http_address
+    - node_id
+    - resource
+    type: object
+host: localhost:8088
+info:
+  contact:
+    email: support@carrot.io
+    name: API Support
+  description: Carrot YARN 资源管理器 REST API 服务
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Carrot YARN ResourceManager API
+  version: "1.0"
+paths:
+  /cluster/apps:
+    get:
+      description: 获取集群中所有应用程序的列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 应用程序列表
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取应用程序列表
+      tags:
+      - applications
+    post:
+      consumes:
+      - application/json
+      description: 向 YARN 集群提交新的应用程序
+      parameters:
+      - description: 应用程序提交信息
+        in: body
+        name: application
+        required: true
+        schema:
+          $ref: '#/definitions/internal_resourcemanager_server.ApplicationSubmissionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 应用程序ID
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 内部服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 提交应用程序
+      tags:
+      - applications
+  /cluster/apps/{appId}:
+    delete:
+      description: 终止并删除指定的应用程序
+      parameters:
+      - description: 应用程序ID
+        in: path
+        name: appId
+        required: true
+        type: string
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 应用程序未找到
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 删除应用程序
+      tags:
+      - applications
+    get:
+      description: 根据应用程序ID获取应用程序的详细信息
+      parameters:
+      - description: 应用程序ID
+        in: path
+        name: appId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 应用程序详情
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 应用程序未找到
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取应用程序详情
+      tags:
+      - applications
+  /cluster/apps/new-application:
+    post:
+      description: 为新应用程序分配唯一的应用程序ID
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 新应用程序ID
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取新应用程序ID
+      tags:
+      - applications
+  /cluster/info:
+    get:
+      description: 获取 YARN 集群的基本信息和状态
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 集群信息
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取集群信息
+      tags:
+      - cluster
+  /cluster/nodes:
+    get:
+      description: 获取集群中所有节点的列表和状态信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 节点列表
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取节点列表
+      tags:
+      - nodes
+  /cluster/nodes/health:
+    get:
+      description: 获取集群中所有节点的健康状态统计
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 节点健康状态
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取节点健康状态
+      tags:
+      - nodes
+  /cluster/nodes/heartbeat:
+    post:
+      consumes:
+      - application/json
+      description: 节点管理器向资源管理器发送心跳信息
+      parameters:
+      - description: 心跳信息
+        in: body
+        name: heartbeat
+        required: true
+        schema:
+          $ref: '#/definitions/internal_resourcemanager_server.NodeHeartbeatRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 心跳响应
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 内部服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 节点心跳
+      tags:
+      - nodes
+  /cluster/nodes/register:
+    post:
+      consumes:
+      - application/json
+      description: 向资源管理器注册新的节点管理器
+      parameters:
+      - description: 节点注册信息
+        in: body
+        name: node
+        required: true
+        schema:
+          $ref: '#/definitions/internal_resourcemanager_server.NodeRegistrationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 注册成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 内部服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 注册节点
+      tags:
+      - nodes
+swagger: "2.0"

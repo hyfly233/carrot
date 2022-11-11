@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"carrot/internal/common"
-	"carrot/internal/resourcemanager/applicationmanager"
-	"carrot/internal/resourcemanager/nodemanager"
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
@@ -20,17 +18,6 @@ type HTTPServer struct {
 	server *http.Server
 	logger *zap.Logger
 	rm     ResourceManagerInterface
-}
-
-// ResourceManagerInterface 定义 ResourceManager 接口
-type ResourceManagerInterface interface {
-	GetApplications() []*applicationmanager.Application
-	SubmitApplication(ctx common.ApplicationSubmissionContext) (*common.ApplicationID, error)
-	GetNodes() []*nodemanager.Node
-	RegisterNode(nodeID common.NodeID, resource common.Resource, httpAddress string) error
-	NodeHeartbeat(nodeID common.NodeID, usedResource common.Resource, containers []*common.Container) error
-	GetClusterTimestamp() int64
-	GetNodeHealthStatus() map[string]int
 }
 
 // NewHTTPServer 创建新的 HTTP 服务器

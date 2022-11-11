@@ -245,6 +245,11 @@ type ApplicationID struct {
 	ID               int32 `json:"id"`
 }
 
+// String 返回 ApplicationID 的字符串表示
+func (aid ApplicationID) String() string {
+	return fmt.Sprintf("application_%d_%d", aid.ClusterTimestamp, aid.ID)
+}
+
 // ContainerID 容器标识
 type ContainerID struct {
 	ApplicationAttemptID ApplicationAttemptID `json:"application_attempt_id"`

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -12,9 +13,21 @@ import (
 	"carrot/internal/common"
 	"carrot/internal/resourcemanager"
 
+	_ "carrot/docs" // 导入生成的 swagger 文档
+
 	"go.uber.org/zap"
 )
 
+// @title Carrot YARN ResourceManager API
+// @version 1.0
+// @description Carrot YARN 资源管理器 REST API 服务
+// @termsOfService http://swagger.io/terms/
+// @contact.name API Support
+// @contact.email support@carrot.io
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+// @host localhost:8088
+// @BasePath /ws/v1
 func main() {
 	var (
 		configFile  = flag.String("config", "configs/resourcemanager.yaml", "Configuration file path")
@@ -47,26 +60,31 @@ func main() {
 	// 创建ResourceManager
 	rm := resourcemanager.NewResourceManager(config)
 
+	logger.Info("Starting ResourceManager server",
+		zap.Int("port", config.ResourceManager.Port),
+		zap.String("swagger_url", fmt.Sprintf("http://localhost:%d/swagger/index.html", config.ResourceManager.Port)))
+
 	// 优雅关闭处理
 	_, cancel := context.WithCancel(context.Background())
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
+	// 启动服务
 	go func() {
-		<-sigChan
-		logger.Info("Received shutdown signal")
-		cancel() // 取消context
-		if err := rm.Stop(); err != nil {
-			logger.Error("Error stopping ResourceManager", zap.Error(err))
+		if err := rm.Start(config.ResourceManager.Port); err != nil {
+			// 只有在不是正常关闭的情况下才记录错误
+			if !errors.Is(err, http.ErrServerClosed) {
+				logger.Fatal("Failed to start ResourceManager", zap.Error(err))
+			}
 		}
 	}()
 
-	// 启动服务
-	if err := rm.Start(config.ResourceManager.Port); err != nil {
-		// 只有在不是正常关闭的情况下才记录错误
-		if !errors.Is(err, http.ErrServerClosed) {
-			logger.Fatal("Failed to start ResourceManager", zap.Error(err))
-		}
+	// 等待关闭信号
+	<-sigChan
+	logger.Info("Received shutdown signal")
+	cancel() // 取消context
+	if err := rm.Stop(); err != nil {
+		logger.Error("Error stopping ResourceManager", zap.Error(err))
 	}
 
 	logger.Info("ResourceManager exited gracefully")

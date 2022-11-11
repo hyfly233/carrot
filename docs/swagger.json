@@ -1,0 +1,558 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Carrot YARN 资源管理器 REST API 服务",
+        "title": "Carrot YARN ResourceManager API",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "API Support",
+            "email": "support@carrot.io"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8088",
+    "basePath": "/ws/v1",
+    "paths": {
+        "/cluster/apps": {
+            "get": {
+                "description": "获取集群中所有应用程序的列表",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "applications"
+                ],
+                "summary": "获取应用程序列表",
+                "responses": {
+                    "200": {
+                        "description": "应用程序列表",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "向 YARN 集群提交新的应用程序",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "applications"
+                ],
+                "summary": "提交应用程序",
+                "parameters": [
+                    {
+                        "description": "应用程序提交信息",
+                        "name": "application",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_resourcemanager_server.ApplicationSubmissionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "应用程序ID",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "内部服务器错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/cluster/apps/new-application": {
+            "post": {
+                "description": "为新应用程序分配唯一的应用程序ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "applications"
+                ],
+                "summary": "获取新应用程序ID",
+                "responses": {
+                    "200": {
+                        "description": "新应用程序ID",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/cluster/apps/{appId}": {
+            "get": {
+                "description": "根据应用程序ID获取应用程序的详细信息",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "applications"
+                ],
+                "summary": "获取应用程序详情",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "应用程序ID",
+                        "name": "appId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "应用程序详情",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "应用程序未找到",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "终止并删除指定的应用程序",
+                "tags": [
+                    "applications"
+                ],
+                "summary": "删除应用程序",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "应用程序ID",
+                        "name": "appId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "删除成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "应用程序未找到",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/cluster/info": {
+            "get": {
+                "description": "获取 YARN 集群的基本信息和状态",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cluster"
+                ],
+                "summary": "获取集群信息",
+                "responses": {
+                    "200": {
+                        "description": "集群信息",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/cluster/nodes": {
+            "get": {
+                "description": "获取集群中所有节点的列表和状态信息",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "nodes"
+                ],
+                "summary": "获取节点列表",
+                "responses": {
+                    "200": {
+                        "description": "节点列表",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/cluster/nodes/health": {
+            "get": {
+                "description": "获取集群中所有节点的健康状态统计",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "nodes"
+                ],
+                "summary": "获取节点健康状态",
+                "responses": {
+                    "200": {
+                        "description": "节点健康状态",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/cluster/nodes/heartbeat": {
+            "post": {
+                "description": "节点管理器向资源管理器发送心跳信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "nodes"
+                ],
+                "summary": "节点心跳",
+                "parameters": [
+                    {
+                        "description": "心跳信息",
+                        "name": "heartbeat",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_resourcemanager_server.NodeHeartbeatRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "心跳响应",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "内部服务器错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/cluster/nodes/register": {
+            "post": {
+                "description": "向资源管理器注册新的节点管理器",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "nodes"
+                ],
+                "summary": "注册节点",
+                "parameters": [
+                    {
+                        "description": "节点注册信息",
+                        "name": "node",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_resourcemanager_server.NodeRegistrationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "注册成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "内部服务器错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "carrot_internal_common.ApplicationAttemptID": {
+            "type": "object",
+            "properties": {
+                "application_id": {
+                    "$ref": "#/definitions/carrot_internal_common.ApplicationID"
+                },
+                "attempt_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "carrot_internal_common.ApplicationID": {
+            "type": "object",
+            "properties": {
+                "cluster_timestamp": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "carrot_internal_common.Container": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "$ref": "#/definitions/carrot_internal_common.ContainerID"
+                },
+                "node_id": {
+                    "$ref": "#/definitions/carrot_internal_common.NodeID"
+                },
+                "resource": {
+                    "$ref": "#/definitions/carrot_internal_common.Resource"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "carrot_internal_common.ContainerID": {
+            "type": "object",
+            "properties": {
+                "application_attempt_id": {
+                    "$ref": "#/definitions/carrot_internal_common.ApplicationAttemptID"
+                },
+                "container_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "carrot_internal_common.ContainerLaunchContext": {
+            "type": "object",
+            "properties": {
+                "commands": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "environment": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "local_resources": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/carrot_internal_common.LocalResource"
+                    }
+                },
+                "service_data": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "format": "int32"
+                        }
+                    }
+                },
+                "tokens": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "carrot_internal_common.LocalResource": {
+            "type": "object",
+            "properties": {
+                "pattern": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "timestamp": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                },
+                "visibility": {
+                    "type": "string"
+                }
+            }
+        },
+        "carrot_internal_common.NodeID": {
+            "type": "object",
+            "properties": {
+                "host": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "integer"
+                }
+            }
+        },
+        "carrot_internal_common.Resource": {
+            "type": "object",
+            "properties": {
+                "memory": {
+                    "description": "MB",
+                    "type": "integer"
+                },
+                "vcores": {
+                    "description": "虚拟核心数",
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_resourcemanager_server.ApplicationSubmissionRequest": {
+            "type": "object",
+            "required": [
+                "am_container_spec",
+                "application_id",
+                "application_name",
+                "application_type",
+                "queue",
+                "resource"
+            ],
+            "properties": {
+                "am_container_spec": {
+                    "$ref": "#/definitions/carrot_internal_common.ContainerLaunchContext"
+                },
+                "application_id": {
+                    "$ref": "#/definitions/carrot_internal_common.ApplicationID"
+                },
+                "application_name": {
+                    "type": "string"
+                },
+                "application_type": {
+                    "type": "string"
+                },
+                "max_app_attempts": {
+                    "type": "integer"
+                },
+                "priority": {
+                    "type": "integer"
+                },
+                "queue": {
+                    "type": "string"
+                },
+                "resource": {
+                    "$ref": "#/definitions/carrot_internal_common.Resource"
+                }
+            }
+        },
+        "internal_resourcemanager_server.NodeHeartbeatRequest": {
+            "type": "object",
+            "required": [
+                "node_id",
+                "used_resource"
+            ],
+            "properties": {
+                "containers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/carrot_internal_common.Container"
+                    }
+                },
+                "node_id": {
+                    "$ref": "#/definitions/carrot_internal_common.NodeID"
+                },
+                "used_resource": {
+                    "$ref": "#/definitions/carrot_internal_common.Resource"
+                }
+            }
+        },
+        "internal_resourcemanager_server.NodeRegistrationRequest": {
+            "type": "object",
+            "required": [
+                "http_address",
+                "node_id",
+                "resource"
+            ],
+            "properties": {
+                "http_address": {
+                    "type": "string"
+                },
+                "node_id": {
+                    "$ref": "#/definitions/carrot_internal_common.NodeID"
+                },
+                "resource": {
+                    "$ref": "#/definitions/carrot_internal_common.Resource"
+                }
+            }
+        }
+    }
+}

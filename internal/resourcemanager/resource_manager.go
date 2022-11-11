@@ -13,8 +13,8 @@ import (
 	"carrot/internal/resourcemanager/applicationmanager"
 	"carrot/internal/resourcemanager/nodemanager"
 	"carrot/internal/resourcemanager/scheduler"
+	"carrot/internal/resourcemanager/server"
 
-	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
 
@@ -27,6 +27,7 @@ type ResourceManager struct {
 	appIDCounter     int32
 	clusterTimestamp int64
 	httpServer       *http.Server
+	ginServer        *server.GinServer // 新增 Gin 服务器
 	config           *common.Config
 	logger           *zap.Logger
 	ctx              context.Context
@@ -98,45 +99,14 @@ func NewResourceManager(config *common.Config) *ResourceManager {
 	rm.logger.Info("Scheduler initialized",
 		zap.String("type", schedulerType))
 
+	// 初始化 Gin 服务器
+	rm.ginServer = server.NewGinServer(rm, rm.logger)
+
 	return rm
 }
 
 // Start 启动资源管理器
 func (rm *ResourceManager) Start(port int) error {
-	router := mux.NewRouter()
-
-	// API版本前缀
-	v1 := router.PathPrefix("/ws/v1").Subrouter()
-
-	// 添加中间件
-	v1.Use(rm.loggingMiddleware)
-	v1.Use(rm.corsMiddleware)
-
-	// 集群信息路由
-	cluster := v1.PathPrefix("/cluster").Subrouter()
-	cluster.HandleFunc("/info", rm.handleClusterInfo).Methods("GET")
-
-	// 应用程序路由
-	apps := cluster.PathPrefix("/apps").Subrouter()
-	apps.HandleFunc("", rm.handleApplications).Methods("GET", "POST")
-	apps.HandleFunc("/new-application", rm.handleNewApplication).Methods("POST")
-	apps.HandleFunc("/{appId}", rm.handleApplication).Methods("GET", "DELETE")
-
-	// 节点路由
-	nodes := cluster.PathPrefix("/nodes").Subrouter()
-	nodes.HandleFunc("", rm.handleNodes).Methods("GET")
-	nodes.HandleFunc("/register", rm.handleNodeRegistration).Methods("POST")
-	nodes.HandleFunc("/heartbeat", rm.handleNodeHeartbeat).Methods("POST")
-	nodes.HandleFunc("/health", rm.handleNodeHealth).Methods("GET")
-
-	rm.httpServer = &http.Server{
-		Addr:         fmt.Sprintf(":%d", port),
-		Handler:      router,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
-	}
-
 	rm.logger.Info("ResourceManager starting",
 		zap.Int("port", port),
 		zap.Int64("cluster_timestamp", rm.clusterTimestamp),
@@ -153,7 +123,8 @@ func (rm *ResourceManager) Start(port int) error {
 	// 启动心跳监测
 	go rm.startNodeMonitor()
 
-	return rm.httpServer.ListenAndServe()
+	// 启动 Gin 服务器
+	return rm.ginServer.Start(port)
 }
 
 // Stop 停止资源管理器
@@ -166,7 +137,12 @@ func (rm *ResourceManager) Stop() error {
 	// 取消上下文
 	rm.cancel()
 
-	// 关闭HTTP服务器
+	// 关闭 Gin 服务器
+	if rm.ginServer != nil {
+		return rm.ginServer.Stop()
+	}
+
+	// 关闭HTTP服务器 (保留兼容性)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 

@@ -1,4 +1,4 @@
-.PHONY: build clean test lint fmt vet run-rm run-nm run-client docker-build
+.PHONY: build clean test lint fmt vet run-rm run-nm run-client docker-build swagger
 
 # 默认目标
 all: fmt vet lint test build
@@ -40,6 +40,8 @@ build-linux:
 	GOOS=linux GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o bin/linux/resourcemanager cmd/resourcemanager/main.go
 	GOOS=linux GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o bin/linux/nodemanager cmd/nodemanager/main.go
 	GOOS=linux GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o bin/linux/client cmd/client/main.go
+	GOOS=linux GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o bin/applicationmaster cmd/applicationmaster/main.go
+	@echo "Build completed!"
 
 # 清理构建文件
 clean:
@@ -167,3 +169,21 @@ dev-setup: deps build
 # 发布构建
 release: clean test build
 	@echo "Release build completed!"
+
+# Swagger 文档生成
+swagger:
+	@echo "Generating Swagger documentation..."
+	@command -v swag >/dev/null 2>&1 || { echo >&2 "swag is required but not installed. Installing..."; go install github.com/swaggo/swag/cmd/swag@latest; }
+	swag init -g cmd/resourcemanager/main.go -o docs --parseDependency
+	@echo "Swagger documentation generated!"
+
+# 安装 Swagger 工具
+install-swagger:
+	@echo "Installing Swagger tools..."
+	go install github.com/swaggo/swag/cmd/swag@latest
+	@echo "Swagger tools installed!"
+
+# 启动带 Swagger 文档的服务
+run-rm-swagger: swagger
+	@echo "Starting ResourceManager with Swagger documentation..."
+	./bin/resourcemanager -config configs/resourcemanager.yaml
