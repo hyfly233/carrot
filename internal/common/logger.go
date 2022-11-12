@@ -22,22 +22,22 @@ type loggerKeyType string
 const loggerKey loggerKeyType = "logger"
 
 var (
-	logger       *zap.Logger
-	sugar        *zap.SugaredLogger
-	kafkaWriter  *kafka.Writer
-	dorisBuffer  []LogEntry
-	dorisMutex   sync.Mutex
-	dorisConfig  LogDorisConfig
-	logConfig    LogConfig
-	loggerOnce   sync.Once
+	logger      *zap.Logger
+	sugar       *zap.SugaredLogger
+	kafkaWriter *kafka.Writer
+	dorisBuffer []LogEntry
+	dorisMutex  sync.Mutex
+	dorisConfig LogDorisConfig
+	logConfig   LogConfig
+	loggerOnce  sync.Once
 )
 
 // LogEntry 日志条目结构
 type LogEntry struct {
-	Timestamp string `json:"timestamp"`
-	Level     string `json:"level"`
-	Component string `json:"component"`
-	Message   string `json:"message"`
+	Timestamp string                 `json:"timestamp"`
+	Level     string                 `json:"level"`
+	Component string                 `json:"component"`
+	Message   string                 `json:"message"`
 	Fields    map[string]interface{} `json:"fields,omitempty"`
 }
 
@@ -73,34 +73,34 @@ func NewHourlyRotateWriter(config LogFileConfig) *HourlyRotateWriter {
 // Write 实现 io.Writer 接口，支持按小时轮转
 func (w *HourlyRotateWriter) Write(p []byte) (n int, err error) {
 	currentHour := time.Now().Format("2006-01-02-15")
-	
+
 	// 如果小时发生变化，更新文件名
 	if currentHour != w.currentHour {
 		w.currentHour = currentHour
 		newFilename := filepath.Join(w.directory, fmt.Sprintf("carrot-%s.log", currentHour))
-		
+
 		// 更新文件名
 		w.Logger.Filename = newFilename
-		
+
 		// 启动每日压缩任务（异步）
 		if logConfig.FileOutput.DailyCompression {
 			go w.compressPreviousDayLogs()
 		}
 	}
-	
+
 	return w.Logger.Write(p)
 }
 
 // compressPreviousDayLogs 压缩前一天的日志文件
 func (w *HourlyRotateWriter) compressPreviousDayLogs() {
 	yesterday := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
-	
+
 	// 查找前一天的日志文件
 	files, err := filepath.Glob(filepath.Join(w.directory, fmt.Sprintf("carrot-%s-*.log", yesterday)))
 	if err != nil {
 		return
 	}
-	
+
 	// 压缩每个文件
 	for _, file := range files {
 		// 使用 lumberjack 的压缩功能
@@ -119,7 +119,7 @@ func (w *HourlyRotateWriter) compressFile(filename string) error {
 // parseSize 解析文件大小字符串
 func parseSize(sizeStr string) int {
 	sizeStr = strings.ToUpper(strings.TrimSpace(sizeStr))
-	
+
 	var multiplier int = 1
 	if strings.HasSuffix(sizeStr, "KB") {
 		multiplier = 1024
@@ -131,7 +131,7 @@ func parseSize(sizeStr string) int {
 		multiplier = 1024 * 1024 * 1024
 		sizeStr = strings.TrimSuffix(sizeStr, "GB")
 	}
-	
+
 	// 解析数字部分
 	var size int
 	fmt.Sscanf(sizeStr, "%d", &size)
@@ -143,7 +143,7 @@ func InitLogger(config LogConfig) error {
 	var err error
 	loggerOnce.Do(func() {
 		logConfig = config
-		
+
 		// 设置日志级别
 		var level zapcore.Level
 		switch strings.ToLower(config.Level) {
@@ -158,7 +158,7 @@ func InitLogger(config LogConfig) error {
 		default:
 			level = zapcore.InfoLevel
 		}
-		
+
 		// 创建编码器配置
 		encoderConfig := zap.NewProductionEncoderConfig()
 		if config.Development {
@@ -166,10 +166,10 @@ func InitLogger(config LogConfig) error {
 		}
 		encoderConfig.TimeKey = "timestamp"
 		encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-		
+
 		// 创建核心写入器列表
 		var cores []zapcore.Core
-		
+
 		// 控制台输出
 		if config.ConsoleOutput.Enabled {
 			consoleEncoder := zapcore.NewConsoleEncoder(encoderConfig)
@@ -179,14 +179,14 @@ func InitLogger(config LogConfig) error {
 			}
 			cores = append(cores, zapcore.NewCore(consoleEncoder, zapcore.AddSync(os.Stdout), level))
 		}
-		
+
 		// 文件输出
 		if config.FileOutput.Enabled {
 			fileWriter := NewHourlyRotateWriter(config.FileOutput)
 			fileEncoder := zapcore.NewJSONEncoder(encoderConfig)
 			cores = append(cores, zapcore.NewCore(fileEncoder, zapcore.AddSync(fileWriter), level))
 		}
-		
+
 		// Kafka输出
 		if config.KafkaOutput.Enabled {
 			kafkaCore, kafkaErr := createKafkaCore(config.KafkaOutput, encoderConfig, level)
@@ -196,25 +196,25 @@ func InitLogger(config LogConfig) error {
 				fmt.Printf("Failed to initialize Kafka logging: %v\n", kafkaErr)
 			}
 		}
-		
+
 		// Doris输出
 		if config.DorisOutput.Enabled {
 			dorisConfig = config.DorisOutput
 			dorisCore := createDorisCore(config.DorisOutput, encoderConfig, level)
 			cores = append(cores, dorisCore)
-			
+
 			// 启动定期刷新Doris缓冲区
 			go startDorisFlushScheduler()
 		}
-		
+
 		// 创建复合核心
 		core := zapcore.NewTee(cores...)
-		
+
 		// 创建日志器
 		logger = zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
 		sugar = logger.Sugar()
 	})
-	
+
 	return err
 }
 
@@ -225,7 +225,7 @@ func createKafkaCore(config LogKafkaConfig, encoderConfig zapcore.EncoderConfig,
 	if err != nil {
 		timeout = 10 * time.Second
 	}
-	
+
 	// 创建Kafka写入器
 	kafkaWriter = &kafka.Writer{
 		Addr:         kafka.TCP(config.Brokers...),
@@ -235,10 +235,10 @@ func createKafkaCore(config LogKafkaConfig, encoderConfig zapcore.EncoderConfig,
 		RequiredAcks: kafka.RequireOne,
 		Async:        true,
 	}
-	
+
 	// 创建Kafka写入器适配器
 	kafkaWriterAdapter := &KafkaWriterAdapter{writer: kafkaWriter}
-	
+
 	// 创建编码器和核心
 	encoder := zapcore.NewJSONEncoder(encoderConfig)
 	return zapcore.NewCore(encoder, zapcore.AddSync(kafkaWriterAdapter), level), nil
@@ -256,10 +256,10 @@ func (w *KafkaWriterAdapter) Write(p []byte) (n int, err error) {
 		Value: p,
 		Time:  time.Now(),
 	}
-	
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	
+
 	err = w.writer.WriteMessages(ctx, message)
 	if err != nil {
 		return 0, err
@@ -286,18 +286,18 @@ func (w *DorisWriterAdapter) Write(p []byte) (n int, err error) {
 	if err := json.Unmarshal(p, &entry); err != nil {
 		return 0, err
 	}
-	
+
 	// 添加到缓冲区
 	dorisMutex.Lock()
 	dorisBuffer = append(dorisBuffer, entry)
 	shouldFlush := len(dorisBuffer) >= w.config.BatchSize
 	dorisMutex.Unlock()
-	
+
 	// 如果达到批量大小，立即刷新
 	if shouldFlush {
 		go flushDorisBuffer()
 	}
-	
+
 	return len(p), nil
 }
 
@@ -307,10 +307,10 @@ func startDorisFlushScheduler() {
 	if err != nil {
 		interval = 30 * time.Second
 	}
-	
+
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-ticker.C:
@@ -326,13 +326,13 @@ func flushDorisBuffer() {
 		dorisMutex.Unlock()
 		return
 	}
-	
+
 	// 复制缓冲区并清空
 	entries := make([]LogEntry, len(dorisBuffer))
 	copy(entries, dorisBuffer)
 	dorisBuffer = dorisBuffer[:0]
 	dorisMutex.Unlock()
-	
+
 	// 发送到Doris
 	if err := sendToDoris(entries); err != nil {
 		fmt.Printf("Failed to send logs to Doris: %v\n", err)
@@ -351,24 +351,24 @@ func sendToDoris(entries []LogEntry) error {
 		}
 		lines = append(lines, string(data))
 	}
-	
+
 	if len(lines) == 0 {
 		return nil
 	}
-	
+
 	// 发送Stream Load请求
 	payload := strings.Join(lines, "\n")
 	req, err := http.NewRequest("PUT", dorisConfig.StreamLoadURL, strings.NewReader(payload))
 	if err != nil {
 		return err
 	}
-	
+
 	// 设置认证
 	req.SetBasicAuth(dorisConfig.Username, dorisConfig.Password)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("format", "json")
 	req.Header.Set("strip_outer_array", "true")
-	
+
 	// 发送请求
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
@@ -376,12 +376,12 @@ func sendToDoris(entries []LogEntry) error {
 		return err
 	}
 	defer resp.Body.Close()
-	
+
 	// 检查响应
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("Doris Stream Load failed with status: %d", resp.StatusCode)
 	}
-	
+
 	return nil
 }
 
@@ -433,12 +433,12 @@ func Sync() {
 	if logger != nil {
 		_ = logger.Sync()
 	}
-	
+
 	// 刷新Kafka写入器
 	if kafkaWriter != nil {
 		kafkaWriter.Close()
 	}
-	
+
 	// 刷新Doris缓冲区
 	flushDorisBuffer()
 }
