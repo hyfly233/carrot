@@ -1,0 +1,168 @@
+syntax = "proto3";
+
+package carrot.nodemanager.v1;
+
+option go_package = "carrot/api/proto/nodemanager";
+
+import "google/protobuf/timestamp.proto";
+
+// NodeManager gRPC 服务定义
+service NodeManagerService {
+  // 节点注册
+  rpc RegisterNode(RegisterNodeRequest) returns (RegisterNodeResponse);
+  
+  // 节点心跳
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+  
+  // 获取节点状态
+  rpc GetNodeStatus(GetNodeStatusRequest) returns (GetNodeStatusResponse);
+}
+
+// 节点注册请求
+message RegisterNodeRequest {
+  NodeInfo node_info = 1;
+  ResourceCapability total_capability = 2;
+  string http_address = 3;
+}
+
+// 节点注册响应
+message RegisterNodeResponse {
+  bool success = 1;
+  string message = 2;
+  int64 registration_timestamp = 3;
+}
+
+// 心跳请求
+message HeartbeatRequest {
+  string node_id = 1;
+  ResourceUsage used_resources = 2;
+  repeated ContainerStatus container_statuses = 3;
+  google.protobuf.Timestamp timestamp = 4;
+  HealthStatus health_status = 5;
+}
+
+// 心跳响应
+message HeartbeatResponse {
+  bool success = 1;
+  string message = 2;
+  repeated ContainerAction container_actions = 3;
+  int64 response_id = 4;
+  int32 heartbeat_interval = 5; // 秒
+}
+
+// 获取节点状态请求
+message GetNodeStatusRequest {
+  string node_id = 1;
+}
+
+// 获取节点状态响应
+message GetNodeStatusResponse {
+  NodeInfo node_info = 1;
+  ResourceCapability total_capability = 2;
+  ResourceUsage used_resources = 3;
+  repeated ContainerStatus container_statuses = 4;
+  HealthStatus health_status = 5;
+  NodeState state = 6;
+}
+
+// 节点信息
+message NodeInfo {
+  string node_id = 1;
+  string hostname = 2;
+  string ip_address = 3;
+  int32 port = 4;
+  string rack_name = 5;
+  repeated string labels = 6;
+}
+
+// 资源能力
+message ResourceCapability {
+  int64 memory_mb = 1;
+  int32 vcores = 2;
+  map<string, int64> extended_resources = 3; // GPU, 存储等扩展资源
+}
+
+// 资源使用情况
+message ResourceUsage {
+  int64 memory_mb = 1;
+  int32 vcores = 2;
+  map<string, int64> extended_resources = 3;
+  double cpu_usage_percent = 4;
+  double memory_usage_percent = 5;
+}
+
+// 容器状态
+message ContainerStatus {
+  string container_id = 1;
+  string application_id = 2;
+  ContainerState state = 3;
+  int32 exit_code = 4;
+  string diagnostics = 5;
+  ResourceUsage resource_usage = 6;
+  google.protobuf.Timestamp start_time = 7;
+  google.protobuf.Timestamp finish_time = 8;
+}
+
+// 容器操作
+message ContainerAction {
+  string container_id = 1;
+  ActionType action = 2;
+  string reason = 3;
+}
+
+// 健康状态
+message HealthStatus {
+  HealthState state = 1;
+  string last_health_report = 2;
+  google.protobuf.Timestamp last_health_update = 3;
+  repeated HealthCheck health_checks = 4;
+}
+
+// 健康检查
+message HealthCheck {
+  string name = 1;
+  HealthState state = 2;
+  string message = 3;
+  google.protobuf.Timestamp timestamp = 4;
+}
+
+// 枚举类型
+
+// 容器状态枚举
+enum ContainerState {
+  CONTAINER_STATE_UNSPECIFIED = 0;
+  CONTAINER_STATE_NEW = 1;
+  CONTAINER_STATE_RUNNING = 2;
+  CONTAINER_STATE_COMPLETE = 3;
+  CONTAINER_STATE_FAILED = 4;
+  CONTAINER_STATE_KILLED = 5;
+}
+
+// 容器操作类型
+enum ActionType {
+  ACTION_TYPE_UNSPECIFIED = 0;
+  ACTION_TYPE_LAUNCH = 1;
+  ACTION_TYPE_STOP = 2;
+  ACTION_TYPE_KILL = 3;
+  ACTION_TYPE_CLEANUP = 4;
+}
+
+// 健康状态枚举
+enum HealthState {
+  HEALTH_STATE_UNSPECIFIED = 0;
+  HEALTH_STATE_HEALTHY = 1;
+  HEALTH_STATE_UNHEALTHY = 2;
+  HEALTH_STATE_UNKNOWN = 3;
+}
+
+// 节点状态枚举
+enum NodeState {
+  NODE_STATE_UNSPECIFIED = 0;
+  NODE_STATE_NEW = 1;
+  NODE_STATE_RUNNING = 2;
+  NODE_STATE_UNHEALTHY = 3;
+  NODE_STATE_DECOMMISSIONING = 4;
+  NODE_STATE_DECOMMISSIONED = 5;
+  NODE_STATE_LOST = 6;
+  NODE_STATE_REBOOTED = 7;
+}

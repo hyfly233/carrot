@@ -18,9 +18,19 @@
    - 生成了完整的 API 文档 (JSON/YAML)
    - Swagger UI 可通过 `/swagger/index.html` 访问
 
+### 📋 当前进行中
+
+- [🔄] **第二阶段: RM ↔ NM 心跳通信迁移到 gRPC**
+  - [x] 设计 protobuf 服务定义
+  - [x] 生成 Go 代码
+  - [x] 添加 gRPC 依赖 (google.golang.org/grpc, google.golang.org/protobuf)
+  - [🔄] 实现 ResourceManager gRPC 服务器
+  - [ ] 实现 NodeManager gRPC 客户端
+  - [ ] 集成到现有系统
+  - [ ] 测试 gRPC 通信
+  
 ### 📋 下一阶段计划
 
-- [ ] **第二阶段: RM ↔ NM 心跳通信迁移到 gRPC**
 - [ ] **第三阶段: AM ↔ RM 资源管理 API 迁移**
 - [ ] **第四阶段: AM ↔ NM 容器管理 API 迁移**
 

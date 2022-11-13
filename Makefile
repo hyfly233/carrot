@@ -1,4 +1,4 @@
-.PHONY: build clean test lint fmt vet run-rm run-nm run-client docker-build swagger
+.PHONY: build clean test lint fmt vet run-rm run-nm run-client docker-build swagger proto-gen
 
 # 默认目标
 all: fmt vet lint test build
@@ -91,6 +91,26 @@ deps:
 	@echo "Updating dependencies..."
 	$(GOMOD) tidy
 	$(GOMOD) download
+
+# 生成 protobuf 代码
+proto-gen:
+	@echo "Generating protobuf code..."
+	@mkdir -p api/proto/nodemanager/v1
+	@mkdir -p api/proto/resourcemanager/v1
+	protoc --go_out=. --go_opt=paths=source_relative \
+		--go-grpc_out=. --go-grpc_opt=paths=source_relative \
+		api/proto/nodemanager.proto
+	protoc --go_out=. --go_opt=paths=source_relative \
+		--go-grpc_out=. --go-grpc_opt=paths=source_relative \
+		api/proto/resourcemanager.proto
+	@echo "Protobuf code generated!"
+
+# 清理生成的 protobuf 代码
+proto-clean:
+	@echo "Cleaning generated protobuf code..."
+	rm -f api/proto/*.pb.go
+	rm -f api/proto/*_grpc.pb.go
+	@echo "Protobuf code cleaned!"
 
 # 运行 ResourceManager
 run-rm:
