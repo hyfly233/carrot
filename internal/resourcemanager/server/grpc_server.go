@@ -155,8 +155,12 @@ func (s *ResourceManagerGRPCServer) Start(port int) error {
 	s.grpcServer = grpc.NewServer()
 	rmpb.RegisterResourceManagerServiceServer(s.grpcServer, s)
 
-	log.Printf("gRPC server starting on port %d", port)
-	return s.grpcServer.Serve(lis)
+	log.Printf("ResourceManager gRPC server starting on port %d", port)
+	err = s.grpcServer.Serve(lis)
+	if err != nil {
+		log.Printf("gRPC server error: %v", err)
+	}
+	return err
 }
 
 // Stop 停止 gRPC 服务器

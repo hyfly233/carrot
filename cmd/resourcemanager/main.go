@@ -54,14 +54,16 @@ func main() {
 
 	logger.Info("Configuration loaded",
 		zap.String("cluster_name", config.Cluster.Name),
-		zap.Int("port", config.ResourceManager.Port),
+		zap.Int("http_port", config.ResourceManager.Port),
+		zap.Int("grpc_port", config.ResourceManager.GRPCPort),
 		zap.String("scheduler_type", config.Scheduler.Type))
 
 	// 创建ResourceManager
 	rm := resourcemanager.NewResourceManager(config)
 
 	logger.Info("Starting ResourceManager server",
-		zap.Int("port", config.ResourceManager.Port),
+		zap.Int("http_port", config.ResourceManager.Port),
+		zap.Int("grpc_port", config.ResourceManager.GRPCPort),
 		zap.String("swagger_url", fmt.Sprintf("http://localhost:%d/swagger/index.html", config.ResourceManager.Port)))
 
 	// 优雅关闭处理
@@ -71,7 +73,7 @@ func main() {
 
 	// 启动服务
 	go func() {
-		if err := rm.Start(config.ResourceManager.Port); err != nil {
+		if err := rm.Start(config.ResourceManager.Port, config.ResourceManager.GRPCPort); err != nil {
 			// 只有在不是正常关闭的情况下才记录错误
 			if !errors.Is(err, http.ErrServerClosed) {
 				logger.Fatal("Failed to start ResourceManager", zap.Error(err))

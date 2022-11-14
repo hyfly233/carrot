@@ -27,7 +27,8 @@ type ResourceManager struct {
 	appIDCounter     int32
 	clusterTimestamp int64
 	httpServer       *http.Server
-	ginServer        *server.GinServer // 新增 Gin 服务器
+	ginServer        *server.GinServer          // HTTP 服务器
+	grpcServer       *server.ResourceManagerGRPCServer // gRPC 服务器
 	config           *common.Config
 	logger           *zap.Logger
 	ctx              context.Context
@@ -99,16 +100,20 @@ func NewResourceManager(config *common.Config) *ResourceManager {
 	rm.logger.Info("Scheduler initialized",
 		zap.String("type", schedulerType))
 
-	// 初始化 Gin 服务器
+	// 初始化 HTTP 服务器
 	rm.ginServer = server.NewGinServer(rm, rm.logger)
+
+	// 初始化 gRPC 服务器
+	rm.grpcServer = server.NewResourceManagerGRPCServer(rm)
 
 	return rm
 }
 
 // Start 启动资源管理器
-func (rm *ResourceManager) Start(port int) error {
+func (rm *ResourceManager) Start(httpPort, grpcPort int) error {
 	rm.logger.Info("ResourceManager starting",
-		zap.Int("port", port),
+		zap.Int("http_port", httpPort),
+		zap.Int("grpc_port", grpcPort),
 		zap.Int64("cluster_timestamp", rm.clusterTimestamp),
 		zap.Duration("heartbeat_timeout", rm.nodeHeartbeatTimeout),
 		zap.Duration("monitor_interval", rm.nodeMonitorInterval))
@@ -123,8 +128,17 @@ func (rm *ResourceManager) Start(port int) error {
 	// 启动心跳监测
 	go rm.startNodeMonitor()
 
-	// 启动 Gin 服务器
-	return rm.ginServer.Start(port)
+	// 启动 gRPC 服务器
+	go func() {
+		rm.logger.Info("Starting gRPC server", zap.Int("port", grpcPort))
+		if err := rm.grpcServer.Start(grpcPort); err != nil {
+			rm.logger.Error("Failed to start gRPC server", zap.Error(err))
+		}
+	}()
+
+	// 启动 HTTP 服务器
+	rm.logger.Info("Starting HTTP server", zap.Int("port", httpPort))
+	return rm.ginServer.Start(httpPort)
 }
 
 // Stop 停止资源管理器
@@ -137,7 +151,12 @@ func (rm *ResourceManager) Stop() error {
 	// 取消上下文
 	rm.cancel()
 
-	// 关闭 Gin 服务器
+	// 停止 gRPC 服务器
+	if rm.grpcServer != nil {
+		rm.grpcServer.Stop()
+	}
+
+	// 关闭 HTTP 服务器
 	if rm.ginServer != nil {
 		return rm.ginServer.Stop()
 	}

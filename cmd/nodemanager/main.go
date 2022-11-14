@@ -44,6 +44,7 @@ func main() {
 		zap.String("cluster_name", config.Cluster.Name),
 		zap.Int("port", config.NodeManager.Port),
 		zap.String("rm_url", config.NodeManager.ResourceManagerURL),
+		zap.String("rm_grpc_url", config.NodeManager.ResourceManagerGRPCURL),
 		zap.Int64("memory", config.NodeManager.ContainerMemoryLimitMB),
 		zap.Int32("vcores", config.NodeManager.ContainerVCoresLimit))
 
@@ -57,7 +58,7 @@ func main() {
 		VCores: config.NodeManager.ContainerVCoresLimit,
 	}
 
-	nm := nodemanager.NewNodeManager(nodeID, totalResource, config.NodeManager.ResourceManagerURL)
+	nm := nodemanager.NewNodeManager(nodeID, totalResource, config.NodeManager.ResourceManagerURL, config.NodeManager.ResourceManagerGRPCURL)
 
 	// 优雅关闭处理
 	_, cancel := context.WithCancel(context.Background())

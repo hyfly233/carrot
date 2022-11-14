@@ -26,6 +26,7 @@ type Config struct {
 // ResourceManagerConfig ResourceManager配置
 type ResourceManagerConfig struct {
 	Port                   int           `yaml:"port"`
+	GRPCPort               int           `yaml:"grpc_port"`
 	Address                string        `yaml:"address"`
 	HeartbeatInterval      time.Duration `yaml:"heartbeat_interval"`
 	NodeExpiryTimeout      time.Duration `yaml:"node_expiry_timeout"`
@@ -37,6 +38,7 @@ type NodeManagerConfig struct {
 	Port                   int           `yaml:"port"`
 	Address                string        `yaml:"address"`
 	ResourceManagerURL     string        `yaml:"resourcemanager_url"`
+	ResourceManagerGRPCURL string        `yaml:"resourcemanager_grpc_url"`
 	HeartbeatInterval      time.Duration `yaml:"heartbeat_interval"`
 	ContainerCleanupDelay  time.Duration `yaml:"container_cleanup_delay"`
 	ContainerMemoryLimitMB int64         `yaml:"container_memory_limit_mb"`
@@ -193,6 +195,7 @@ func GetDefaultConfig() *Config {
 		},
 		ResourceManager: ResourceManagerConfig{
 			Port:                   8088,
+			GRPCPort:               9088,
 			Address:                "0.0.0.0",
 			HeartbeatInterval:      3 * time.Second,
 			NodeExpiryTimeout:      30 * time.Second,
@@ -202,6 +205,7 @@ func GetDefaultConfig() *Config {
 			Port:                   8042,
 			Address:                "0.0.0.0",
 			ResourceManagerURL:     "http://localhost:8088",
+			ResourceManagerGRPCURL: "localhost:9088",
 			HeartbeatInterval:      3 * time.Second,
 			ContainerCleanupDelay:  5 * time.Second,
 			ContainerMemoryLimitMB: 8192,

@@ -31,6 +31,7 @@ nodemanager:
   port: 8042
   address: "0.0.0.0"
   resourcemanager_url: "http://localhost:8088"
+  resourcemanager_grpc_url: "localhost:9088"
   heartbeat_interval: 3s
   container_cleanup_delay: 5s
   container_memory_limit_mb: 8192
