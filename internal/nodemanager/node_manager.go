@@ -21,32 +21,32 @@ import (
 
 // NodeManager 节点管理器
 type NodeManager struct {
-	mu                    sync.RWMutex
-	nodeID                common.NodeID
-	resourceManagerURL    string
+	mu                     sync.RWMutex
+	nodeID                 common.NodeID
+	resourceManagerURL     string
 	resourceManagerGRPCURL string
-	grpcClient            *GRPCClient
-	totalResource         common.Resource
-	usedResource          common.Resource
-	containers            map[string]*containermanager.Container
-	httpServer            *http.Server
-	heartbeatInterval     time.Duration
-	stopChan              chan struct{}
-	logger                *zap.Logger
+	grpcClient             *GRPCClient
+	totalResource          common.Resource
+	usedResource           common.Resource
+	containers             map[string]*containermanager.Container
+	httpServer             *http.Server
+	heartbeatInterval      time.Duration
+	stopChan               chan struct{}
+	logger                 *zap.Logger
 }
 
 // NewNodeManager 创建新的节点管理器
 func NewNodeManager(nodeID common.NodeID, totalResource common.Resource, rmURL, rmGRPCURL string) *NodeManager {
 	return &NodeManager{
-		nodeID:                nodeID,
-		resourceManagerURL:    rmURL,
+		nodeID:                 nodeID,
+		resourceManagerURL:     rmURL,
 		resourceManagerGRPCURL: rmGRPCURL,
-		totalResource:      totalResource,
-		usedResource:       common.Resource{Memory: 0, VCores: 0},
-		containers:         make(map[string]*containermanager.Container),
-		heartbeatInterval:  3 * time.Second,
-		stopChan:           make(chan struct{}),
-		logger:             common.ComponentLogger(fmt.Sprintf("nm-%s", nodeID.String())),
+		totalResource:          totalResource,
+		usedResource:           common.Resource{Memory: 0, VCores: 0},
+		containers:             make(map[string]*containermanager.Container),
+		heartbeatInterval:      3 * time.Second,
+		stopChan:               make(chan struct{}),
+		logger:                 common.ComponentLogger(fmt.Sprintf("nm-%s", nodeID.String())),
 	}
 }
 
@@ -187,14 +187,14 @@ func (nm *NodeManager) registerWithRM() error {
 			RackName:  "default-rack",
 			Labels:    []string{},
 		}
-		
+
 		capability := &ResourceCapability{
 			MemoryMB: nm.totalResource.Memory,
 			VCores:   int(nm.totalResource.VCores),
 		}
-		
+
 		httpAddress := fmt.Sprintf("http://%s:%d", nm.nodeID.Host, nm.nodeID.Port)
-		
+
 		err := nm.grpcClient.RegisterNode(nodeInfo, capability, httpAddress)
 		if err != nil {
 			nm.logger.Warn("gRPC registration failed, falling back to HTTP", zap.Error(err))
@@ -266,22 +266,22 @@ func (nm *NodeManager) sendHeartbeat() {
 			MemoryMB: int64(usedResource.Memory),
 			VCores:   int(usedResource.VCores),
 		}
-		
+
 		containerStatuses := make([]*ContainerStatus, len(containers))
 		for i, container := range containers {
 			containerStatuses[i] = &ContainerStatus{
-				ContainerID:   fmt.Sprintf("container_%d_%d_%d", 
+				ContainerID: fmt.Sprintf("container_%d_%d_%d",
 					container.ID.ApplicationAttemptID.ApplicationID.ClusterTimestamp,
 					container.ID.ApplicationAttemptID.ApplicationID.ID,
 					container.ID.ContainerID),
 				ApplicationID: fmt.Sprintf("application_%d_%d",
 					container.ID.ApplicationAttemptID.ApplicationID.ClusterTimestamp,
 					container.ID.ApplicationAttemptID.ApplicationID.ID),
-				State:         container.State,
-				ExitCode:      0,
+				State:    container.State,
+				ExitCode: 0,
 			}
 		}
-		
+
 		if _, err := nm.grpcClient.SendHeartbeat(usage, containerStatuses); err != nil {
 			nm.logger.Warn("gRPC heartbeat failed, falling back to HTTP", zap.Error(err))
 		} else {

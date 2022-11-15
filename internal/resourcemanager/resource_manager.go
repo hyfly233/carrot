@@ -27,7 +27,7 @@ type ResourceManager struct {
 	appIDCounter     int32
 	clusterTimestamp int64
 	httpServer       *http.Server
-	ginServer        *server.GinServer          // HTTP 服务器
+	ginServer        *server.GinServer                 // HTTP 服务器
 	grpcServer       *server.ResourceManagerGRPCServer // gRPC 服务器
 	config           *common.Config
 	logger           *zap.Logger
@@ -588,7 +588,7 @@ func (rm *ResourceManager) handleClusterInfo(w http.ResponseWriter, r *http.Requ
 				"isLeader":       rm.IsLeader(),
 			}
 		}
-		
+
 		// 添加集群节点信息
 		clusterNodes := rm.GetClusterNodes()
 		nodeList := make([]map[string]interface{}, 0, len(clusterNodes))
@@ -868,7 +868,7 @@ func (rm *ResourceManager) initClusterManager() error {
 		rm.config.ResourceManager.Address,
 		int32(rm.config.ResourceManager.Port),
 		map[string]string{
-			"role": "resourcemanager",
+			"role":    "resourcemanager",
 			"version": "1.0.0",
 		},
 	)
@@ -972,7 +972,7 @@ func (rm *ResourceManager) onNodeLeft(node *common.ClusterNode) {
 			delete(rm.nodes, nodeID)
 			rm.logger.Info("Removed node from registry",
 				zap.String("node", nodeID))
-			
+
 			// 处理该节点上的容器
 			rm.handleFailedNode(rmNode)
 		}
@@ -984,7 +984,7 @@ func (rm *ResourceManager) onNodeLeft(node *common.ClusterNode) {
 func (rm *ResourceManager) onLeaderChange(oldLeader, newLeader *common.ClusterNode) {
 	if newLeader != nil && rm.clusterManager != nil {
 		rm.isLeader = rm.clusterManager.IsLeader()
-		
+
 		rm.logger.Info("Leader changed",
 			zap.Bool("is_leader", rm.isLeader),
 			zap.String("new_leader", newLeader.ID.String()))
@@ -1005,7 +1005,7 @@ func (rm *ResourceManager) handleFailedNode(node *nodemanager.Node) {
 	for _, container := range node.Containers {
 		container.Status = "FAILED"
 		container.State = "COMPLETE"
-		
+
 		rm.logger.Warn("Container failed due to node failure",
 			zap.Any("container_id", container.ID),
 			zap.String("node", node.ID.String()))

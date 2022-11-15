@@ -40,6 +40,9 @@ func main() {
 		zap.String("config_file", *configFile),
 		zap.Bool("development", *development))
 
+	// 调试：直接打印 gRPC URL
+	logger.Info("Debug: gRPC URL", zap.String("value", config.NodeManager.ResourceManagerGRPCURL), zap.Int("length", len(config.NodeManager.ResourceManagerGRPCURL)))
+
 	logger.Info("Configuration loaded",
 		zap.String("cluster_name", config.Cluster.Name),
 		zap.Int("port", config.NodeManager.Port),
@@ -47,6 +50,9 @@ func main() {
 		zap.String("rm_grpc_url", config.NodeManager.ResourceManagerGRPCURL),
 		zap.Int64("memory", config.NodeManager.ContainerMemoryLimitMB),
 		zap.Int32("vcores", config.NodeManager.ContainerVCoresLimit))
+
+	// 调试：直接打印 gRPC URL
+	logger.Info("Debug: gRPC URL", zap.String("value", config.NodeManager.ResourceManagerGRPCURL), zap.Int("length", len(config.NodeManager.ResourceManagerGRPCURL)))
 
 	nodeID := common.NodeID{
 		Host: config.NodeManager.Address,

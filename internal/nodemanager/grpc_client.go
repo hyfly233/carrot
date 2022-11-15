@@ -15,11 +15,11 @@ import (
 
 // GRPCClient NodeManager 的 gRPC 客户端
 type GRPCClient struct {
-	conn         *grpc.ClientConn
-	client       rmpb.ResourceManagerServiceClient
-	nodeID       string
-	rmAddress    string
-	connected    bool
+	conn      *grpc.ClientConn
+	client    rmpb.ResourceManagerServiceClient
+	nodeID    string
+	rmAddress string
+	connected bool
 }
 
 // NewGRPCClient 创建新的 gRPC 客户端
@@ -41,7 +41,7 @@ func (c *GRPCClient) Connect() error {
 	c.conn = conn
 	c.client = rmpb.NewResourceManagerServiceClient(conn)
 	c.connected = true
-	
+
 	log.Printf("Connected to ResourceManager at %s", c.rmAddress)
 	return nil
 }
