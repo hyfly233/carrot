@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"sync"
 	"time"
-	
+
 	"carrot/internal/common"
 	"go.uber.org/zap"
 )
@@ -16,24 +16,24 @@ type DefaultHealthChecker struct {
 	localNode      *common.ClusterNode
 	clusterManager *ClusterManager
 	logger         *zap.Logger
-	
+
 	// 健康检查
-	healthChecks   map[string]func() *common.HealthIssue
-	healthMutex    sync.RWMutex
-	
+	healthChecks map[string]func() *common.HealthIssue
+	healthMutex  sync.RWMutex
+
 	// 节点健康状态
-	nodeHealth     *common.NodeHealth
-	healthMutex2   sync.RWMutex
-	
+	nodeHealth   *common.NodeHealth
+	healthMutex2 sync.RWMutex
+
 	// 控制
-	stopChan       chan struct{}
-	checkInterval  time.Duration
+	stopChan      chan struct{}
+	checkInterval time.Duration
 }
 
 // NewDefaultHealthChecker 创建默认健康检查器
-func NewDefaultHealthChecker(config common.ClusterConfig, localNode *common.ClusterNode, 
+func NewDefaultHealthChecker(config common.ClusterConfig, localNode *common.ClusterNode,
 	clusterManager *ClusterManager, logger *zap.Logger) (*DefaultHealthChecker, error) {
-	
+
 	hc := &DefaultHealthChecker{
 		config:         config,
 		localNode:      localNode,
@@ -49,23 +49,23 @@ func NewDefaultHealthChecker(config common.ClusterConfig, localNode *common.Clus
 			Metrics:   make(map[string]float64),
 		},
 	}
-	
+
 	// 注册默认健康检查
 	hc.registerDefaultChecks()
-	
+
 	return hc, nil
 }
 
 // Start 启动健康检查
 func (hc *DefaultHealthChecker) Start(ctx context.Context) error {
 	hc.logger.Info("Starting health checker")
-	
+
 	// 启动定期健康检查
 	go hc.healthCheckLoop(ctx)
-	
+
 	// 启动节点监控
 	go hc.monitorNodes(ctx)
-	
+
 	hc.logger.Info("Health checker started")
 	return nil
 }
@@ -82,7 +82,7 @@ func (hc *DefaultHealthChecker) CheckNode(nodeID common.NodeID) (*common.NodeHea
 	if nodeID.String() == hc.localNode.ID.String() {
 		return hc.GetHealthStatus(), nil
 	}
-	
+
 	// 对于远程节点，这里应该发送健康检查请求
 	// 简化实现：返回基本状态
 	return &common.NodeHealth{
@@ -97,7 +97,7 @@ func (hc *DefaultHealthChecker) CheckNode(nodeID common.NodeID) (*common.NodeHea
 func (hc *DefaultHealthChecker) RegisterHealthCheck(name string, checker func() *common.HealthIssue) {
 	hc.healthMutex.Lock()
 	defer hc.healthMutex.Unlock()
-	
+
 	hc.healthChecks[name] = checker
 	hc.logger.Info("Health check registered", zap.String("name", name))
 }
@@ -106,7 +106,7 @@ func (hc *DefaultHealthChecker) RegisterHealthCheck(name string, checker func() 
 func (hc *DefaultHealthChecker) GetHealthStatus() *common.NodeHealth {
 	hc.healthMutex2.RLock()
 	defer hc.healthMutex2.RUnlock()
-	
+
 	// 复制健康状态
 	health := &common.NodeHealth{
 		Status:    hc.nodeHealth.Status,
@@ -114,12 +114,12 @@ func (hc *DefaultHealthChecker) GetHealthStatus() *common.NodeHealth {
 		Issues:    make([]common.HealthIssue, len(hc.nodeHealth.Issues)),
 		Metrics:   make(map[string]float64),
 	}
-	
+
 	copy(health.Issues, hc.nodeHealth.Issues)
 	for k, v := range hc.nodeHealth.Metrics {
 		health.Metrics[k] = v
 	}
-	
+
 	return health
 }
 
@@ -128,13 +128,13 @@ func (hc *DefaultHealthChecker) GetHealthStatus() *common.NodeHealth {
 func (hc *DefaultHealthChecker) registerDefaultChecks() {
 	// 内存检查
 	hc.RegisterHealthCheck("memory", hc.checkMemory)
-	
+
 	// 磁盘检查
 	hc.RegisterHealthCheck("disk", hc.checkDisk)
-	
+
 	// CPU检查
 	hc.RegisterHealthCheck("cpu", hc.checkCPU)
-	
+
 	// 网络检查
 	hc.RegisterHealthCheck("network", hc.checkNetwork)
 }
@@ -142,7 +142,7 @@ func (hc *DefaultHealthChecker) registerDefaultChecks() {
 func (hc *DefaultHealthChecker) healthCheckLoop(ctx context.Context) {
 	ticker := time.NewTicker(hc.checkInterval)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-ticker.C:
@@ -157,34 +157,34 @@ func (hc *DefaultHealthChecker) healthCheckLoop(ctx context.Context) {
 
 func (hc *DefaultHealthChecker) performHealthCheck() {
 	hc.logger.Debug("Performing health check")
-	
+
 	hc.healthMutex.RLock()
 	checks := make(map[string]func() *common.HealthIssue)
 	for name, check := range hc.healthChecks {
 		checks[name] = check
 	}
 	hc.healthMutex.RUnlock()
-	
+
 	var issues []common.HealthIssue
 	metrics := make(map[string]float64)
-	
+
 	// 执行所有健康检查
 	for name, check := range checks {
 		if issue := check(); issue != nil {
 			issue.Timestamp = time.Now()
 			issues = append(issues, *issue)
-			hc.logger.Warn("Health check failed", 
+			hc.logger.Warn("Health check failed",
 				zap.String("check", name),
 				zap.String("message", issue.Message))
 		}
 	}
-	
+
 	// 收集系统指标
 	hc.collectMetrics(metrics)
-	
+
 	// 确定整体健康状态
 	status := hc.determineHealthStatus(issues)
-	
+
 	// 更新健康状态
 	hc.healthMutex2.Lock()
 	hc.nodeHealth.Status = status
@@ -192,7 +192,7 @@ func (hc *DefaultHealthChecker) performHealthCheck() {
 	hc.nodeHealth.Issues = issues
 	hc.nodeHealth.Metrics = metrics
 	hc.healthMutex2.Unlock()
-	
+
 	// 更新本地节点的健康状态
 	hc.localNode.Health = *hc.nodeHealth
 }
@@ -200,7 +200,7 @@ func (hc *DefaultHealthChecker) performHealthCheck() {
 func (hc *DefaultHealthChecker) checkMemory() *common.HealthIssue {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
-	
+
 	// 简单的内存检查：如果堆内存超过1GB，发出警告
 	if m.HeapInuse > 1024*1024*1024 {
 		return &common.HealthIssue{
@@ -209,7 +209,7 @@ func (hc *DefaultHealthChecker) checkMemory() *common.HealthIssue {
 			Severity: "warning",
 		}
 	}
-	
+
 	return nil
 }
 
@@ -234,7 +234,7 @@ func (hc *DefaultHealthChecker) checkNetwork() *common.HealthIssue {
 func (hc *DefaultHealthChecker) collectMetrics(metrics map[string]float64) {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
-	
+
 	metrics["memory.heap_inuse"] = float64(m.HeapInuse)
 	metrics["memory.heap_sys"] = float64(m.HeapSys)
 	metrics["memory.stack_inuse"] = float64(m.StackInuse)
@@ -246,10 +246,10 @@ func (hc *DefaultHealthChecker) determineHealthStatus(issues []common.HealthIssu
 	if len(issues) == 0 {
 		return common.HealthStatusHealthy
 	}
-	
+
 	hasCritical := false
 	hasWarning := false
-	
+
 	for _, issue := range issues {
 		switch issue.Severity {
 		case "critical":
@@ -258,21 +258,21 @@ func (hc *DefaultHealthChecker) determineHealthStatus(issues []common.HealthIssu
 			hasWarning = true
 		}
 	}
-	
+
 	if hasCritical {
 		return common.HealthStatusCritical
 	}
 	if hasWarning {
 		return common.HealthStatusWarning
 	}
-	
+
 	return common.HealthStatusHealthy
 }
 
 func (hc *DefaultHealthChecker) monitorNodes(ctx context.Context) {
 	ticker := time.NewTicker(time.Minute) // 每分钟检查一次节点状态
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-ticker.C:
@@ -287,19 +287,19 @@ func (hc *DefaultHealthChecker) monitorNodes(ctx context.Context) {
 
 func (hc *DefaultHealthChecker) checkClusterNodesHealth() {
 	nodes := hc.clusterManager.GetNodes()
-	
+
 	for nodeID, node := range nodes {
 		if nodeID == hc.localNode.ID.String() {
 			continue // 跳过本地节点
 		}
-		
+
 		// 检查节点是否响应
 		lastHeartbeat := node.LastHeartbeat
 		if time.Since(lastHeartbeat) > hc.config.FailureDetectionWindow {
-			hc.logger.Warn("Node appears to be down", 
+			hc.logger.Warn("Node appears to be down",
 				zap.String("node", nodeID),
 				zap.Duration("since_last_heartbeat", time.Since(lastHeartbeat)))
-			
+
 			// 发布节点失败事件
 			hc.clusterManager.publishEvent(common.ClusterEvent{
 				Type:      common.ClusterEventNodeFailed,
@@ -307,7 +307,7 @@ func (hc *DefaultHealthChecker) checkClusterNodesHealth() {
 				Timestamp: time.Now(),
 				Severity:  common.EventSeverityError,
 				Data: map[string]interface{}{
-					"reason": "heartbeat_timeout",
+					"reason":         "heartbeat_timeout",
 					"last_heartbeat": lastHeartbeat,
 				},
 			})

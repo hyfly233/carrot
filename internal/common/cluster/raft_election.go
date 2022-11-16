@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"sync"
 	"time"
-	
+
 	"carrot/internal/common"
 	"go.uber.org/zap"
 )
@@ -16,24 +16,24 @@ type RaftElection struct {
 	localNode      *common.ClusterNode
 	clusterManager *ClusterManager
 	logger         *zap.Logger
-	
+
 	// Raft状态
-	state          ElectionState
-	currentTerm    int64
-	votedFor       *common.NodeID
-	lastHeartbeat  time.Time
-	
+	state         ElectionState
+	currentTerm   int64
+	votedFor      *common.NodeID
+	lastHeartbeat time.Time
+
 	// 选举相关
 	votes          map[string]bool
 	leaderID       *common.NodeID
 	electionTimer  *time.Timer
 	heartbeatTimer *time.Timer
-	
+
 	// 回调函数
 	onLeaderChange []func(old, new *common.NodeID)
-	
+
 	// 同步
-	mutex sync.RWMutex
+	mutex    sync.RWMutex
 	stopChan chan struct{}
 }
 
@@ -47,9 +47,9 @@ const (
 )
 
 // NewRaftElection 创建Raft选举实例
-func NewRaftElection(config common.ClusterConfig, localNode *common.ClusterNode, 
+func NewRaftElection(config common.ClusterConfig, localNode *common.ClusterNode,
 	clusterManager *ClusterManager, logger *zap.Logger) (*RaftElection, error) {
-	
+
 	return &RaftElection{
 		config:         config,
 		localNode:      localNode,
@@ -68,22 +68,22 @@ func (re *RaftElection) StartElection() error {
 	defer re.mutex.Unlock()
 
 	re.logger.Info("Starting election", zap.Int64("term", re.currentTerm+1))
-	
+
 	// 增加任期
 	re.currentTerm++
-	
+
 	// 转换为候选者状态
 	re.state = StateCandidate
 	re.votedFor = &re.localNode.ID
 	re.votes = make(map[string]bool)
 	re.votes[re.localNode.ID.String()] = true // 给自己投票
-	
+
 	// 重置选举定时器
 	re.resetElectionTimer()
-	
+
 	// 向其他节点请求投票
 	go re.requestVotes()
-	
+
 	return nil
 }
 
@@ -91,14 +91,14 @@ func (re *RaftElection) StartElection() error {
 func (re *RaftElection) Stop() error {
 	re.logger.Info("Stopping election")
 	close(re.stopChan)
-	
+
 	if re.electionTimer != nil {
 		re.electionTimer.Stop()
 	}
 	if re.heartbeatTimer != nil {
 		re.heartbeatTimer.Stop()
 	}
-	
+
 	return nil
 }
 
@@ -112,23 +112,23 @@ func (re *RaftElection) StepDown() error {
 	}
 
 	re.logger.Info("Stepping down as leader")
-	
+
 	oldLeader := re.leaderID
-	
+
 	// 转换为跟随者
 	re.state = StateFollower
 	re.leaderID = nil
-	
+
 	if re.heartbeatTimer != nil {
 		re.heartbeatTimer.Stop()
 	}
-	
+
 	// 重置选举定时器
 	re.resetElectionTimer()
-	
+
 	// 通知回调
 	re.notifyLeaderChange(oldLeader, nil)
-	
+
 	return nil
 }
 
@@ -143,11 +143,11 @@ func (re *RaftElection) IsLeader() bool {
 func (re *RaftElection) GetLeader() (*common.NodeID, error) {
 	re.mutex.RLock()
 	defer re.mutex.RUnlock()
-	
+
 	if re.leaderID == nil {
 		return nil, fmt.Errorf("no leader elected")
 	}
-	
+
 	return re.leaderID, nil
 }
 
@@ -177,11 +177,11 @@ func (re *RaftElection) HandleVoteRequest(term int64, candidateID common.NodeID)
 	if re.votedFor == nil || re.votedFor.String() == candidateID.String() {
 		re.votedFor = &candidateID
 		re.lastHeartbeat = time.Now()
-		
-		re.logger.Info("Voted for candidate", 
+
+		re.logger.Info("Voted for candidate",
 			zap.String("candidate", candidateID.String()),
 			zap.Int64("term", term))
-		
+
 		return true
 	}
 
@@ -197,14 +197,14 @@ func (re *RaftElection) HandleHeartbeat(term int64, leaderID common.NodeID) {
 	if term >= re.currentTerm {
 		re.currentTerm = term
 		re.state = StateFollower
-		
+
 		oldLeader := re.leaderID
 		re.leaderID = &leaderID
 		re.lastHeartbeat = time.Now()
-		
+
 		// 重置选举定时器
 		re.resetElectionTimer()
-		
+
 		// 如果领导者发生变化，通知回调
 		if oldLeader == nil || oldLeader.String() != leaderID.String() {
 			re.notifyLeaderChange(oldLeader, &leaderID)
@@ -216,15 +216,15 @@ func (re *RaftElection) HandleHeartbeat(term int64, leaderID common.NodeID) {
 
 func (re *RaftElection) requestVotes() {
 	nodes := re.clusterManager.GetNodes()
-	
+
 	for nodeID, node := range nodes {
 		if nodeID == re.localNode.ID.String() {
 			continue // 跳过自己
 		}
-		
+
 		go re.sendVoteRequest(node)
 	}
-	
+
 	// 等待投票结果
 	re.checkElectionResult()
 }
@@ -232,10 +232,10 @@ func (re *RaftElection) requestVotes() {
 func (re *RaftElection) sendVoteRequest(node *common.ClusterNode) {
 	// 这里应该发送实际的网络请求
 	// 为了简化，我们假设其他节点会调用 HandleVoteRequest
-	
+
 	// 模拟网络延迟和投票响应
 	time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond)
-	
+
 	// 模拟投票结果 (在实际实现中，这应该通过网络通信实现)
 	if re.shouldVoteFor(node) {
 		re.mutex.Lock()
@@ -251,7 +251,7 @@ func (re *RaftElection) shouldVoteFor(node *common.ClusterNode) bool {
 
 func (re *RaftElection) checkElectionResult() {
 	time.Sleep(re.config.ElectionTimeout / 2) // 等待一半的选举超时时间
-	
+
 	re.mutex.Lock()
 	defer re.mutex.Unlock()
 
@@ -263,7 +263,7 @@ func (re *RaftElection) checkElectionResult() {
 	majorityNeeded := len(nodes)/2 + 1
 	votesReceived := len(re.votes)
 
-	re.logger.Debug("Election result", 
+	re.logger.Debug("Election result",
 		zap.Int("votes_received", votesReceived),
 		zap.Int("majority_needed", majorityNeeded))
 
@@ -279,22 +279,22 @@ func (re *RaftElection) checkElectionResult() {
 
 func (re *RaftElection) becomeLeader() {
 	re.logger.Info("Became leader", zap.Int64("term", re.currentTerm))
-	
+
 	oldLeader := re.leaderID
 	re.state = StateLeader
 	re.leaderID = &re.localNode.ID
-	
+
 	// 停止选举定时器
 	if re.electionTimer != nil {
 		re.electionTimer.Stop()
 	}
-	
+
 	// 开始发送心跳
 	re.startHeartbeat()
-	
+
 	// 通知回调
 	re.notifyLeaderChange(oldLeader, &re.localNode.ID)
-	
+
 	// 发布领导者选举事件
 	re.clusterManager.publishEvent(common.ClusterEvent{
 		Type:      common.ClusterEventLeaderElected,
@@ -306,7 +306,7 @@ func (re *RaftElection) becomeLeader() {
 
 func (re *RaftElection) startHeartbeat() {
 	re.heartbeatTimer = time.NewTimer(re.config.HeartbeatInterval)
-	
+
 	go func() {
 		for {
 			select {
@@ -324,12 +324,12 @@ func (re *RaftElection) startHeartbeat() {
 
 func (re *RaftElection) sendHeartbeats() {
 	nodes := re.clusterManager.GetNodes()
-	
+
 	for nodeID, node := range nodes {
 		if nodeID == re.localNode.ID.String() {
 			continue // 跳过自己
 		}
-		
+
 		go re.sendHeartbeat(node)
 	}
 }
@@ -337,20 +337,20 @@ func (re *RaftElection) sendHeartbeats() {
 func (re *RaftElection) sendHeartbeat(node *common.ClusterNode) {
 	// 这里应该发送实际的心跳网络请求
 	// 为了简化，我们假设心跳总是成功的
-	
+
 	re.logger.Debug("Sent heartbeat", zap.String("node", node.ID.String()))
 }
 
 func (re *RaftElection) resetElectionTimer() {
-	timeout := re.config.ElectionTimeout + 
+	timeout := re.config.ElectionTimeout +
 		time.Duration(rand.Intn(int(re.config.ElectionTimeout/time.Millisecond)))*time.Millisecond
-	
+
 	if re.electionTimer != nil {
 		re.electionTimer.Stop()
 	}
-	
+
 	re.electionTimer = time.NewTimer(timeout)
-	
+
 	go func() {
 		select {
 		case <-re.electionTimer.C:

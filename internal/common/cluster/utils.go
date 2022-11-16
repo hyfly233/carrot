@@ -3,7 +3,7 @@ package cluster
 import (
 	"fmt"
 	"time"
-	
+
 	"carrot/internal/common"
 )
 
@@ -12,7 +12,7 @@ func CreateLocalNode(nodeType common.NodeType, host string, port int32, metadata
 	if metadata == nil {
 		metadata = make(map[string]string)
 	}
-	
+
 	return &common.ClusterNode{
 		ID: common.NodeID{
 			Host: host,
@@ -48,27 +48,27 @@ func ValidateClusterConfig(config common.ClusterConfig) error {
 	if config.Name == "" {
 		return fmt.Errorf("cluster name cannot be empty")
 	}
-	
+
 	if config.MinNodes < 1 {
 		return fmt.Errorf("minimum nodes must be at least 1")
 	}
-	
+
 	if config.MaxNodes < config.MinNodes {
 		return fmt.Errorf("maximum nodes must be greater than or equal to minimum nodes")
 	}
-	
+
 	if config.ElectionTimeout <= 0 {
 		return fmt.Errorf("election timeout must be positive")
 	}
-	
+
 	if config.HeartbeatInterval <= 0 {
 		return fmt.Errorf("heartbeat interval must be positive")
 	}
-	
+
 	if config.FailureDetectionWindow <= config.HeartbeatInterval {
 		return fmt.Errorf("failure detection window must be greater than heartbeat interval")
 	}
-	
+
 	validDiscoveryMethods := []string{"static", "dns", "etcd", "consul"}
 	validMethod := false
 	for _, method := range validDiscoveryMethods {
@@ -80,7 +80,7 @@ func ValidateClusterConfig(config common.ClusterConfig) error {
 	if !validMethod {
 		return fmt.Errorf("invalid discovery method: %s", config.DiscoveryMethod)
 	}
-	
+
 	return nil
 }
 
@@ -104,30 +104,30 @@ func IsNodeHealthy(node *common.ClusterNode, maxHeartbeatAge time.Duration) bool
 	if time.Since(node.LastHeartbeat) > maxHeartbeatAge {
 		return false
 	}
-	
+
 	// 检查健康状态
 	if node.Health.Status == common.HealthStatusCritical {
 		return false
 	}
-	
+
 	// 检查节点状态
 	if node.State == common.NodeStateFailed {
 		return false
 	}
-	
+
 	return true
 }
 
 // GetHealthyNodes 获取健康的节点列表
 func GetHealthyNodes(nodes map[string]*common.ClusterNode, maxHeartbeatAge time.Duration) []*common.ClusterNode {
 	var healthyNodes []*common.ClusterNode
-	
+
 	for _, node := range nodes {
 		if IsNodeHealthy(node, maxHeartbeatAge) {
 			healthyNodes = append(healthyNodes, node)
 		}
 	}
-	
+
 	return healthyNodes
 }
 
@@ -137,24 +137,24 @@ func CalculateClusterResources(nodes map[string]*common.ClusterNode) (total, use
 		if IsNodeHealthy(node, 5*time.Minute) {
 			total.Memory += node.Capabilities.Resources.Memory
 			total.VCores += node.Capabilities.Resources.VCores
-			
+
 			// 这里应该从实际的资源使用情况计算，简化为固定比例
 			usedRatio := 0.3 // 假设使用了30%的资源
 			used.Memory += int64(float64(node.Capabilities.Resources.Memory) * usedRatio)
 			used.VCores += int32(float64(node.Capabilities.Resources.VCores) * usedRatio)
 		}
 	}
-	
+
 	available.Memory = total.Memory - used.Memory
 	available.VCores = total.VCores - used.VCores
-	
+
 	if available.Memory < 0 {
 		available.Memory = 0
 	}
 	if available.VCores < 0 {
 		available.VCores = 0
 	}
-	
+
 	return
 }
 

@@ -6,21 +6,21 @@ import (
 	"net"
 	"sync"
 	"time"
-	
+
 	"carrot/internal/common"
 	"go.uber.org/zap"
 )
 
 // DNSDiscovery DNS服务发现实现
 type DNSDiscovery struct {
-	config      common.ClusterConfig
-	localNode   *common.ClusterNode
-	logger      *zap.Logger
-	nodes       map[string]*common.ClusterNode
-	nodesMutex  sync.RWMutex
-	stopChan    chan struct{}
-	watchers    []func([]common.ClusterNode)
-	
+	config     common.ClusterConfig
+	localNode  *common.ClusterNode
+	logger     *zap.Logger
+	nodes      map[string]*common.ClusterNode
+	nodesMutex sync.RWMutex
+	stopChan   chan struct{}
+	watchers   []func([]common.ClusterNode)
+
 	// DNS配置
 	serviceName string
 	domain      string
@@ -34,17 +34,17 @@ func NewDNSDiscovery(config common.ClusterConfig, localNode *common.ClusterNode,
 	if !ok {
 		serviceName = "carrot"
 	}
-	
+
 	domain, ok := config.DiscoveryConfig["domain"].(string)
 	if !ok {
 		domain = "local"
 	}
-	
+
 	port := int32(8088)
 	if p, ok := config.DiscoveryConfig["port"].(int); ok {
 		port = int32(p)
 	}
-	
+
 	return &DNSDiscovery{
 		config:      config,
 		localNode:   localNode,
@@ -60,7 +60,7 @@ func NewDNSDiscovery(config common.ClusterConfig, localNode *common.ClusterNode,
 
 // Start 启动DNS服务发现
 func (dd *DNSDiscovery) Start(ctx context.Context) error {
-	dd.logger.Info("Starting DNS discovery", 
+	dd.logger.Info("Starting DNS discovery",
 		zap.String("service", dd.serviceName),
 		zap.String("domain", dd.domain))
 
@@ -105,32 +105,32 @@ func (dd *DNSDiscovery) DiscoverNodes() ([]common.ClusterNode, error) {
 // RegisterNode 注册节点
 func (dd *DNSDiscovery) RegisterNode(node *common.ClusterNode) error {
 	nodeID := node.ID.String()
-	
+
 	dd.nodesMutex.Lock()
 	dd.nodes[nodeID] = node
 	dd.nodesMutex.Unlock()
 
 	dd.logger.Info("Node registered", zap.String("node", nodeID))
-	
+
 	// 通知观察者
 	dd.notifyWatchers()
-	
+
 	return nil
 }
 
 // UnregisterNode 注销节点
 func (dd *DNSDiscovery) UnregisterNode(nodeID common.NodeID) error {
 	nodeIDStr := nodeID.String()
-	
+
 	dd.nodesMutex.Lock()
 	delete(dd.nodes, nodeIDStr)
 	dd.nodesMutex.Unlock()
 
 	dd.logger.Info("Node unregistered", zap.String("node", nodeIDStr))
-	
+
 	// 通知观察者
 	dd.notifyWatchers()
-	
+
 	return nil
 }
 
@@ -163,9 +163,9 @@ func (dd *DNSDiscovery) discoveryLoop(ctx context.Context) {
 func (dd *DNSDiscovery) performDNSLookup() error {
 	// 构建查询地址
 	hostname := fmt.Sprintf("%s.%s", dd.serviceName, dd.domain)
-	
+
 	dd.logger.Debug("Performing DNS lookup", zap.String("hostname", hostname))
-	
+
 	// 查询A记录
 	ips, err := net.LookupIP(hostname)
 	if err != nil {
@@ -183,23 +183,23 @@ func (dd *DNSDiscovery) performDNSLookup() error {
 
 	// 更新节点列表
 	newNodes := make(map[string]*common.ClusterNode)
-	
+
 	for _, ip := range ips {
 		ipStr := ip.String()
 		port := dd.port
-		
+
 		// 如果有SRV记录，使用SRV记录中的端口
 		if srvPort, exists := portMap[ipStr+"."]; exists {
 			port = int32(srvPort)
 		}
-		
+
 		nodeID := fmt.Sprintf("%s:%d", ipStr, port)
-		
+
 		// 检查是否是新节点
 		dd.nodesMutex.RLock()
 		existingNode, exists := dd.nodes[nodeID]
 		dd.nodesMutex.RUnlock()
-		
+
 		if exists {
 			newNodes[nodeID] = existingNode
 		} else {
@@ -222,10 +222,10 @@ func (dd *DNSDiscovery) performDNSLookup() error {
 					Metrics:   make(map[string]float64),
 				},
 			}
-			
+
 			newNodes[nodeID] = node
-			
-			dd.logger.Info("Discovered new node via DNS", 
+
+			dd.logger.Info("Discovered new node via DNS",
 				zap.String("node", nodeID))
 		}
 	}

@@ -12,38 +12,38 @@ import (
 
 // ClusterManager 集群管理器
 type ClusterManager struct {
-	config        common.ClusterConfig
-	logger        *zap.Logger
-	localNode     *common.ClusterNode
-	clusterInfo   *common.ClusterInfo
-	nodes         map[string]*common.ClusterNode
-	nodesMutex    sync.RWMutex
-	eventChan     chan common.ClusterEvent
-	stopChan      chan struct{}
-	
+	config      common.ClusterConfig
+	logger      *zap.Logger
+	localNode   *common.ClusterNode
+	clusterInfo *common.ClusterInfo
+	nodes       map[string]*common.ClusterNode
+	nodesMutex  sync.RWMutex
+	eventChan   chan common.ClusterEvent
+	stopChan    chan struct{}
+
 	// 组件
 	discovery     Discovery
 	election      Election
 	healthChecker HealthChecker
 	eventHandler  EventHandler
-	
+
 	// 回调函数
-	onNodeJoined  []func(*common.ClusterNode)
-	onNodeLeft    []func(*common.ClusterNode)
+	onNodeJoined   []func(*common.ClusterNode)
+	onNodeLeft     []func(*common.ClusterNode)
 	onLeaderChange []func(*common.ClusterNode, *common.ClusterNode)
 }
 
 // NewClusterManager 创建新的集群管理器
 func NewClusterManager(config common.ClusterConfig, localNode *common.ClusterNode, logger *zap.Logger) *ClusterManager {
 	cm := &ClusterManager{
-		config:      config,
-		logger:      logger,
-		localNode:   localNode,
-		nodes:       make(map[string]*common.ClusterNode),
-		eventChan:   make(chan common.ClusterEvent, 100),
-		stopChan:    make(chan struct{}),
-		onNodeJoined: make([]func(*common.ClusterNode), 0),
-		onNodeLeft:   make([]func(*common.ClusterNode), 0),
+		config:         config,
+		logger:         logger,
+		localNode:      localNode,
+		nodes:          make(map[string]*common.ClusterNode),
+		eventChan:      make(chan common.ClusterEvent, 100),
+		stopChan:       make(chan struct{}),
+		onNodeJoined:   make([]func(*common.ClusterNode), 0),
+		onNodeLeft:     make([]func(*common.ClusterNode), 0),
 		onLeaderChange: make([]func(*common.ClusterNode, *common.ClusterNode), 0),
 	}
 
@@ -69,7 +69,7 @@ func NewClusterManager(config common.ClusterConfig, localNode *common.ClusterNod
 
 // Start 启动集群管理器
 func (cm *ClusterManager) Start(ctx context.Context) error {
-	cm.logger.Info("Starting cluster manager", 
+	cm.logger.Info("Starting cluster manager",
 		zap.String("cluster", cm.config.Name),
 		zap.String("node", cm.localNode.ID.String()))
 
@@ -134,14 +134,14 @@ func (cm *ClusterManager) GetClusterInfo() *common.ClusterInfo {
 
 	// 更新统计信息
 	cm.updateStatistics()
-	
+
 	// 复制当前状态
 	info := *cm.clusterInfo
 	info.Nodes = make(map[string]common.ClusterNode)
 	for id, node := range cm.nodes {
 		info.Nodes[id] = *node
 	}
-	
+
 	return &info
 }
 
@@ -167,7 +167,7 @@ func (cm *ClusterManager) GetNode(nodeID string) (*common.ClusterNode, bool) {
 	if !exists {
 		return nil, false
 	}
-	
+
 	nodeCopy := *node
 	return &nodeCopy, true
 }
@@ -177,7 +177,7 @@ func (cm *ClusterManager) GetLeader() (*common.ClusterNode, bool) {
 	if cm.clusterInfo.Leader == nil {
 		return nil, false
 	}
-	
+
 	return cm.GetNode(cm.clusterInfo.Leader.String())
 }
 
@@ -257,7 +257,7 @@ func (cm *ClusterManager) registerLocalNode() {
 	cm.localNode.State = common.NodeStateJoining
 	cm.localNode.JoinTime = time.Now()
 	cm.localNode.LastHeartbeat = time.Now()
-	
+
 	cm.nodesMutex.Lock()
 	cm.nodes[cm.localNode.ID.String()] = cm.localNode
 	cm.nodesMutex.Unlock()
@@ -307,7 +307,7 @@ func (cm *ClusterManager) handleEvents(ctx context.Context) {
 }
 
 func (cm *ClusterManager) processEvent(event common.ClusterEvent) {
-	cm.logger.Debug("Processing cluster event", 
+	cm.logger.Debug("Processing cluster event",
 		zap.String("type", string(event.Type)),
 		zap.String("source", event.Source.String()))
 
@@ -339,7 +339,7 @@ func (cm *ClusterManager) handleNodeJoined(event common.ClusterEvent) {
 
 func (cm *ClusterManager) handleNodeLeft(event common.ClusterEvent) {
 	nodeID := event.Source.String()
-	
+
 	cm.nodesMutex.Lock()
 	node, exists := cm.nodes[nodeID]
 	if exists {
@@ -356,7 +356,7 @@ func (cm *ClusterManager) handleNodeLeft(event common.ClusterEvent) {
 
 func (cm *ClusterManager) handleNodeFailed(event common.ClusterEvent) {
 	nodeID := event.Source.String()
-	
+
 	cm.nodesMutex.Lock()
 	if node, exists := cm.nodes[nodeID]; exists {
 		node.State = common.NodeStateFailed
@@ -387,7 +387,7 @@ func (cm *ClusterManager) handleLeaderElected(event common.ClusterEvent) {
 
 func (cm *ClusterManager) addNode(node *common.ClusterNode) {
 	nodeID := node.ID.String()
-	
+
 	cm.nodesMutex.Lock()
 	cm.nodes[nodeID] = node
 	cm.nodesMutex.Unlock()
@@ -436,7 +436,7 @@ func (cm *ClusterManager) updateClusterState() {
 
 	activeNodes := 0
 	failedNodes := 0
-	
+
 	for _, node := range cm.nodes {
 		switch node.State {
 		case common.NodeStateActive:

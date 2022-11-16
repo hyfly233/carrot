@@ -5,20 +5,20 @@ import (
 	"fmt"
 	"sync"
 	"time"
-	
+
 	"carrot/internal/common"
 	"go.uber.org/zap"
 )
 
 // StaticDiscovery 静态服务发现实现
 type StaticDiscovery struct {
-	config    common.ClusterConfig
-	localNode *common.ClusterNode
-	logger    *zap.Logger
-	nodes     map[string]*common.ClusterNode
+	config     common.ClusterConfig
+	localNode  *common.ClusterNode
+	logger     *zap.Logger
+	nodes      map[string]*common.ClusterNode
 	nodesMutex sync.RWMutex
-	stopChan  chan struct{}
-	watchers  []func([]common.ClusterNode)
+	stopChan   chan struct{}
+	watchers   []func([]common.ClusterNode)
 }
 
 // NewStaticDiscovery 创建静态服务发现实例
@@ -78,32 +78,32 @@ func (sd *StaticDiscovery) DiscoverNodes() ([]common.ClusterNode, error) {
 // RegisterNode 注册节点
 func (sd *StaticDiscovery) RegisterNode(node *common.ClusterNode) error {
 	nodeID := node.ID.String()
-	
+
 	sd.nodesMutex.Lock()
 	sd.nodes[nodeID] = node
 	sd.nodesMutex.Unlock()
 
 	sd.logger.Info("Node registered", zap.String("node", nodeID))
-	
+
 	// 通知观察者
 	sd.notifyWatchers()
-	
+
 	return nil
 }
 
 // UnregisterNode 注销节点
 func (sd *StaticDiscovery) UnregisterNode(nodeID common.NodeID) error {
 	nodeIDStr := nodeID.String()
-	
+
 	sd.nodesMutex.Lock()
 	delete(sd.nodes, nodeIDStr)
 	sd.nodesMutex.Unlock()
 
 	sd.logger.Info("Node unregistered", zap.String("node", nodeIDStr))
-	
+
 	// 通知观察者
 	sd.notifyWatchers()
-	
+
 	return nil
 }
 
@@ -132,7 +132,7 @@ func (sd *StaticDiscovery) loadStaticNodes() error {
 
 		node, err := sd.parseNodeConfig(nodeMap)
 		if err != nil {
-			sd.logger.Warn("Failed to parse node configuration", 
+			sd.logger.Warn("Failed to parse node configuration",
 				zap.Int("index", i), zap.Error(err))
 			continue
 		}

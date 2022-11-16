@@ -2,7 +2,7 @@ package cluster
 
 import (
 	"sync"
-	
+
 	"carrot/internal/common"
 	"go.uber.org/zap"
 )
@@ -31,19 +31,19 @@ func (eh *DefaultEventHandler) HandleEvent(event common.ClusterEvent) error {
 	eh.mutex.RUnlock()
 
 	if !exists {
-		eh.logger.Debug("No processors for event type", 
+		eh.logger.Debug("No processors for event type",
 			zap.String("type", string(event.Type)))
 		return nil
 	}
 
-	eh.logger.Debug("Processing event", 
+	eh.logger.Debug("Processing event",
 		zap.String("type", string(event.Type)),
 		zap.String("source", event.Source.String()))
 
 	// 执行所有注册的处理器
 	for _, processor := range processors {
 		if err := processor(event); err != nil {
-			eh.logger.Error("Event processor failed", 
+			eh.logger.Error("Event processor failed",
 				zap.String("type", string(event.Type)),
 				zap.Error(err))
 		}
@@ -53,9 +53,9 @@ func (eh *DefaultEventHandler) HandleEvent(event common.ClusterEvent) error {
 }
 
 // RegisterEventProcessor 注册事件处理器
-func (eh *DefaultEventHandler) RegisterEventProcessor(eventType common.ClusterEventType, 
+func (eh *DefaultEventHandler) RegisterEventProcessor(eventType common.ClusterEventType,
 	processor func(common.ClusterEvent) error) {
-	
+
 	eh.mutex.Lock()
 	defer eh.mutex.Unlock()
 
@@ -65,6 +65,6 @@ func (eh *DefaultEventHandler) RegisterEventProcessor(eventType common.ClusterEv
 
 	eh.processors[eventType] = append(eh.processors[eventType], processor)
 
-	eh.logger.Info("Event processor registered", 
+	eh.logger.Info("Event processor registered",
 		zap.String("type", string(eventType)))
 }

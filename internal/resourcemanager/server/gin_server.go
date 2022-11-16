@@ -171,14 +171,14 @@ func (s *GinServer) handleApplicationsList(c *gin.Context) {
 
 // ApplicationSubmissionRequest 应用程序提交请求
 type ApplicationSubmissionRequest struct {
-	ApplicationID   common.ApplicationID            `json:"application_id" binding:"required"`
-	ApplicationName string                          `json:"application_name" binding:"required"`
-	ApplicationType string                          `json:"application_type" binding:"required"`
-	Queue           string                          `json:"queue" binding:"required"`
-	Priority        int32                           `json:"priority"`
-	Resource        common.Resource                 `json:"resource" binding:"required"`
-	AMContainerSpec common.ContainerLaunchContext   `json:"am_container_spec" binding:"required"`
-	MaxAppAttempts  int32                           `json:"max_app_attempts"`
+	ApplicationID   common.ApplicationID          `json:"application_id" binding:"required"`
+	ApplicationName string                        `json:"application_name" binding:"required"`
+	ApplicationType string                        `json:"application_type" binding:"required"`
+	Queue           string                        `json:"queue" binding:"required"`
+	Priority        int32                         `json:"priority"`
+	Resource        common.Resource               `json:"resource" binding:"required"`
+	AMContainerSpec common.ContainerLaunchContext `json:"am_container_spec" binding:"required"`
+	MaxAppAttempts  int32                         `json:"max_app_attempts"`
 }
 
 // handleApplicationSubmit 处理应用程序提交请求
@@ -230,7 +230,7 @@ func (s *GinServer) handleApplicationSubmit(c *gin.Context) {
 // @Router /cluster/apps/new-application [post]
 func (s *GinServer) handleNewApplication(c *gin.Context) {
 	clusterTimestamp := s.rm.GetClusterTimestamp()
-	
+
 	// 生成新的应用程序ID (简化实现)
 	appID := &common.ApplicationID{
 		ClusterTimestamp: clusterTimestamp,
@@ -251,7 +251,7 @@ func (s *GinServer) handleNewApplication(c *gin.Context) {
 // @Router /cluster/apps/{appId} [get]
 func (s *GinServer) handleApplicationGet(c *gin.Context) {
 	appId := c.Param("appId")
-	
+
 	apps := s.rm.GetApplications()
 	for _, app := range apps {
 		if app.ApplicationID.String() == appId {
@@ -275,10 +275,10 @@ func (s *GinServer) handleApplicationGet(c *gin.Context) {
 // @Router /cluster/apps/{appId} [delete]
 func (s *GinServer) handleApplicationDelete(c *gin.Context) {
 	appId := c.Param("appId")
-	
+
 	// 这里应该实现实际的应用程序终止逻辑
 	s.logger.Info("Terminating application", zap.String("appId", appId))
-	
+
 	c.JSON(http.StatusOK, gin.H{"message": "Application terminated successfully"})
 }
 
@@ -336,8 +336,8 @@ func (s *GinServer) handleNodeRegistration(c *gin.Context) {
 
 // NodeHeartbeatRequest 节点心跳请求
 type NodeHeartbeatRequest struct {
-	NodeID       common.NodeID      `json:"node_id" binding:"required"`
-	UsedResource common.Resource    `json:"used_resource" binding:"required"`
+	NodeID       common.NodeID       `json:"node_id" binding:"required"`
+	UsedResource common.Resource     `json:"used_resource" binding:"required"`
 	Containers   []*common.Container `json:"containers"`
 }
 
