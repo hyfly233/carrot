@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"carrot/internal/common"
+
 	"go.uber.org/zap"
 )
 
@@ -77,7 +78,7 @@ func (sd *StaticDiscovery) DiscoverNodes() ([]common.ClusterNode, error) {
 
 // RegisterNode 注册节点
 func (sd *StaticDiscovery) RegisterNode(node *common.ClusterNode) error {
-	nodeID := node.ID.String()
+	nodeID := node.ID.HostPortString()
 
 	sd.nodesMutex.Lock()
 	sd.nodes[nodeID] = node
@@ -93,7 +94,7 @@ func (sd *StaticDiscovery) RegisterNode(node *common.ClusterNode) error {
 
 // UnregisterNode 注销节点
 func (sd *StaticDiscovery) UnregisterNode(nodeID common.NodeID) error {
-	nodeIDStr := nodeID.String()
+	nodeIDStr := nodeID.HostPortString()
 
 	sd.nodesMutex.Lock()
 	delete(sd.nodes, nodeIDStr)
@@ -137,7 +138,7 @@ func (sd *StaticDiscovery) loadStaticNodes() error {
 			continue
 		}
 
-		sd.nodes[node.ID.String()] = node
+		sd.nodes[node.ID.HostPortString()] = node
 	}
 
 	sd.logger.Info("Loaded static nodes", zap.Int("count", len(sd.nodes)))
@@ -213,7 +214,7 @@ func (sd *StaticDiscovery) updateNodeHeartbeats() {
 	defer sd.nodesMutex.Unlock()
 
 	// 更新本地节点的心跳
-	if localNode, exists := sd.nodes[sd.localNode.ID.String()]; exists {
+	if localNode, exists := sd.nodes[sd.localNode.ID.HostPortString()]; exists {
 		localNode.LastHeartbeat = time.Now()
 	}
 }

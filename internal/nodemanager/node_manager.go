@@ -46,14 +46,14 @@ func NewNodeManager(nodeID common.NodeID, totalResource common.Resource, rmURL, 
 		containers:             make(map[string]*containermanager.Container),
 		heartbeatInterval:      3 * time.Second,
 		stopChan:               make(chan struct{}),
-		logger:                 common.ComponentLogger(fmt.Sprintf("nm-%s", nodeID.String())),
+		logger:                 common.ComponentLogger(fmt.Sprintf("nm-%s", nodeID.HostPortString())),
 	}
 }
 
 // Start 启动节点管理器
 func (nm *NodeManager) Start(port int) error {
 	// 初始化 gRPC 客户端
-	grpcClient := NewGRPCClient(nm.nodeID.String(), nm.resourceManagerGRPCURL)
+	grpcClient := NewGRPCClient(nm.nodeID.HostPortString(), nm.resourceManagerGRPCURL)
 	if err := grpcClient.Connect(); err != nil {
 		nm.logger.Warn("Failed to connect to RM via gRPC, falling back to HTTP", zap.Error(err))
 	} else {
@@ -180,7 +180,7 @@ func (nm *NodeManager) registerWithRM() error {
 	// 优先尝试 gRPC
 	if nm.grpcClient != nil && nm.grpcClient.connected {
 		nodeInfo := &NodeInfo{
-			NodeID:    nm.nodeID.String(),
+			NodeID:    nm.nodeID.HostPortString(),
 			Hostname:  nm.nodeID.Host,
 			IPAddress: nm.nodeID.Host,
 			Port:      int(nm.nodeID.Port),

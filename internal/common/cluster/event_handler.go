@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"carrot/internal/common"
+
 	"go.uber.org/zap"
 )
 
@@ -38,7 +39,7 @@ func (eh *DefaultEventHandler) HandleEvent(event common.ClusterEvent) error {
 
 	eh.logger.Debug("Processing event",
 		zap.String("type", string(event.Type)),
-		zap.String("source", event.Source.String()))
+		zap.String("source", event.Source.HostPortString()))
 
 	// 执行所有注册的处理器
 	for _, processor := range processors {

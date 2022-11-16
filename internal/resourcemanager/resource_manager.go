@@ -594,7 +594,7 @@ func (rm *ResourceManager) handleClusterInfo(w http.ResponseWriter, r *http.Requ
 		nodeList := make([]map[string]interface{}, 0, len(clusterNodes))
 		for _, node := range clusterNodes {
 			nodeInfo := map[string]interface{}{
-				"id":            node.ID.String(),
+				"id":            node.ID.HostPortString(),
 				"type":          string(node.Type),
 				"state":         string(node.State),
 				"roles":         node.Roles,
@@ -948,25 +948,25 @@ func (rm *ResourceManager) GetClusterNodes() map[string]*common.ClusterNode {
 // onNodeJoined 处理节点加入事件
 func (rm *ResourceManager) onNodeJoined(node *common.ClusterNode) {
 	rm.logger.Info("Cluster node joined",
-		zap.String("node", node.ID.String()),
+		zap.String("node", node.ID.HostPortString()),
 		zap.String("type", string(node.Type)))
 
 	// 如果是NodeManager节点，等待它主动注册
 	if node.Type == common.NodeTypeNodeManager {
 		rm.logger.Info("NodeManager joined cluster, waiting for registration",
-			zap.String("node", node.ID.String()))
+			zap.String("node", node.ID.HostPortString()))
 	}
 }
 
 // onNodeLeft 处理节点离开事件
 func (rm *ResourceManager) onNodeLeft(node *common.ClusterNode) {
 	rm.logger.Info("Cluster node left",
-		zap.String("node", node.ID.String()),
+		zap.String("node", node.ID.HostPortString()),
 		zap.String("type", string(node.Type)))
 
 	// 如果是NodeManager节点，从注册列表中移除
 	if node.Type == common.NodeTypeNodeManager {
-		nodeID := node.ID.String()
+		nodeID := node.ID.HostPortString()
 		rm.mu.Lock()
 		if rmNode, exists := rm.nodes[nodeID]; exists {
 			delete(rm.nodes, nodeID)
@@ -987,7 +987,7 @@ func (rm *ResourceManager) onLeaderChange(oldLeader, newLeader *common.ClusterNo
 
 		rm.logger.Info("Leader changed",
 			zap.Bool("is_leader", rm.isLeader),
-			zap.String("new_leader", newLeader.ID.String()))
+			zap.String("new_leader", newLeader.ID.HostPortString()))
 
 		if rm.isLeader {
 			rm.logger.Info("Became cluster leader, taking over resource management")
@@ -1008,13 +1008,13 @@ func (rm *ResourceManager) handleFailedNode(node *nodemanager.Node) {
 
 		rm.logger.Warn("Container failed due to node failure",
 			zap.Any("container_id", container.ID),
-			zap.String("node", node.ID.String()))
+			zap.String("node", node.ID.HostPortString()))
 	}
 
 	// 通知调度器节点失败，可能需要重新调度应用
 	if rm.scheduler != nil {
 		rm.logger.Debug("Notifying scheduler of node failure",
-			zap.String("node", node.ID.String()))
+			zap.String("node", node.ID.HostPortString()))
 	}
 }
 
@@ -1028,7 +1028,7 @@ func (rm *ResourceManager) validateLeadership() error {
 	if rm.requiresLeadership() {
 		leader, exists := rm.clusterManager.GetLeader()
 		if exists {
-			return fmt.Errorf("operation requires leadership, current leader: %v", leader.ID.String())
+			return fmt.Errorf("operation requires leadership, current leader: %v", leader.ID.HostPortString())
 		}
 		return fmt.Errorf("operation requires leadership, no leader elected")
 	}

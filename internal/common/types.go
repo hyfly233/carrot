@@ -61,7 +61,7 @@ type NodeID struct {
 	Port int32  `json:"port"`
 }
 
-func (ni *NodeID) String() string {
+func (ni *NodeID) HostPortString() string {
 	return fmt.Sprintf("%s:%d", ni.Host, ni.Port)
 }
 

@@ -71,7 +71,7 @@ func NewClusterManager(config common.ClusterConfig, localNode *common.ClusterNod
 func (cm *ClusterManager) Start(ctx context.Context) error {
 	cm.logger.Info("Starting cluster manager",
 		zap.String("cluster", cm.config.Name),
-		zap.String("node", cm.localNode.ID.String()))
+		zap.String("node", cm.localNode.ID.HostPortString()))
 
 	// 初始化组件
 	if err := cm.initializeComponents(); err != nil {
@@ -178,7 +178,7 @@ func (cm *ClusterManager) GetLeader() (*common.ClusterNode, bool) {
 		return nil, false
 	}
 
-	return cm.GetNode(cm.clusterInfo.Leader.String())
+	return cm.GetNode(cm.clusterInfo.Leader.HostPortString())
 }
 
 // IsLeader 检查本地节点是否为领导者
@@ -187,7 +187,7 @@ func (cm *ClusterManager) IsLeader() bool {
 	if !exists {
 		return false
 	}
-	return leader.ID.String() == cm.localNode.ID.String()
+	return leader.ID.HostPortString() == cm.localNode.ID.HostPortString()
 }
 
 // JoinCluster 加入集群
@@ -259,7 +259,7 @@ func (cm *ClusterManager) registerLocalNode() {
 	cm.localNode.LastHeartbeat = time.Now()
 
 	cm.nodesMutex.Lock()
-	cm.nodes[cm.localNode.ID.String()] = cm.localNode
+	cm.nodes[cm.localNode.ID.HostPortString()] = cm.localNode
 	cm.nodesMutex.Unlock()
 }
 
@@ -309,7 +309,7 @@ func (cm *ClusterManager) handleEvents(ctx context.Context) {
 func (cm *ClusterManager) processEvent(event common.ClusterEvent) {
 	cm.logger.Debug("Processing cluster event",
 		zap.String("type", string(event.Type)),
-		zap.String("source", event.Source.String()))
+		zap.String("source", event.Source.HostPortString()))
 
 	switch event.Type {
 	case common.ClusterEventNodeJoined:
@@ -331,14 +331,14 @@ func (cm *ClusterManager) processEvent(event common.ClusterEvent) {
 func (cm *ClusterManager) handleNodeJoined(event common.ClusterEvent) {
 	// 实现节点加入逻辑
 	for _, callback := range cm.onNodeJoined {
-		if node, exists := cm.GetNode(event.Source.String()); exists {
+		if node, exists := cm.GetNode(event.Source.HostPortString()); exists {
 			callback(node)
 		}
 	}
 }
 
 func (cm *ClusterManager) handleNodeLeft(event common.ClusterEvent) {
-	nodeID := event.Source.String()
+	nodeID := event.Source.HostPortString()
 
 	cm.nodesMutex.Lock()
 	node, exists := cm.nodes[nodeID]
@@ -355,7 +355,7 @@ func (cm *ClusterManager) handleNodeLeft(event common.ClusterEvent) {
 }
 
 func (cm *ClusterManager) handleNodeFailed(event common.ClusterEvent) {
-	nodeID := event.Source.String()
+	nodeID := event.Source.HostPortString()
 
 	cm.nodesMutex.Lock()
 	if node, exists := cm.nodes[nodeID]; exists {
@@ -365,7 +365,7 @@ func (cm *ClusterManager) handleNodeFailed(event common.ClusterEvent) {
 	cm.nodesMutex.Unlock()
 
 	// 如果失败的是领导者，触发重新选举
-	if cm.clusterInfo.Leader != nil && cm.clusterInfo.Leader.String() == nodeID {
+	if cm.clusterInfo.Leader != nil && cm.clusterInfo.Leader.HostPortString() == nodeID {
 		cm.election.StartElection()
 	}
 }
@@ -378,15 +378,15 @@ func (cm *ClusterManager) handleLeaderElected(event common.ClusterEvent) {
 	for _, callback := range cm.onLeaderChange {
 		var oldNode, newNode *common.ClusterNode
 		if oldLeader != nil {
-			oldNode, _ = cm.GetNode(oldLeader.String())
+			oldNode, _ = cm.GetNode(oldLeader.HostPortString())
 		}
-		newNode, _ = cm.GetNode(event.Source.String())
+		newNode, _ = cm.GetNode(event.Source.HostPortString())
 		callback(oldNode, newNode)
 	}
 }
 
 func (cm *ClusterManager) addNode(node *common.ClusterNode) {
-	nodeID := node.ID.String()
+	nodeID := node.ID.HostPortString()
 
 	cm.nodesMutex.Lock()
 	cm.nodes[nodeID] = node

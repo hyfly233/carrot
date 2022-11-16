@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"carrot/internal/common"
+
 	"go.uber.org/zap"
 )
 
@@ -76,7 +77,7 @@ func (re *RaftElection) StartElection() error {
 	re.state = StateCandidate
 	re.votedFor = &re.localNode.ID
 	re.votes = make(map[string]bool)
-	re.votes[re.localNode.ID.String()] = true // 给自己投票
+	re.votes[re.localNode.ID.HostPortString()] = true // 给自己投票
 
 	// 重置选举定时器
 	re.resetElectionTimer()
@@ -174,12 +175,12 @@ func (re *RaftElection) HandleVoteRequest(term int64, candidateID common.NodeID)
 	}
 
 	// 如果还没有投票或者已经投给了该候选者，投票
-	if re.votedFor == nil || re.votedFor.String() == candidateID.String() {
+	if re.votedFor == nil || re.votedFor.HostPortString() == candidateID.HostPortString() {
 		re.votedFor = &candidateID
 		re.lastHeartbeat = time.Now()
 
 		re.logger.Info("Voted for candidate",
-			zap.String("candidate", candidateID.String()),
+			zap.String("candidate", candidateID.HostPortString()),
 			zap.Int64("term", term))
 
 		return true
@@ -206,7 +207,7 @@ func (re *RaftElection) HandleHeartbeat(term int64, leaderID common.NodeID) {
 		re.resetElectionTimer()
 
 		// 如果领导者发生变化，通知回调
-		if oldLeader == nil || oldLeader.String() != leaderID.String() {
+		if oldLeader == nil || oldLeader.HostPortString() != leaderID.HostPortString() {
 			re.notifyLeaderChange(oldLeader, &leaderID)
 		}
 	}
@@ -218,7 +219,7 @@ func (re *RaftElection) requestVotes() {
 	nodes := re.clusterManager.GetNodes()
 
 	for nodeID, node := range nodes {
-		if nodeID == re.localNode.ID.String() {
+		if nodeID == re.localNode.ID.HostPortString() {
 			continue // 跳过自己
 		}
 
@@ -239,7 +240,7 @@ func (re *RaftElection) sendVoteRequest(node *common.ClusterNode) {
 	// 模拟投票结果 (在实际实现中，这应该通过网络通信实现)
 	if re.shouldVoteFor(node) {
 		re.mutex.Lock()
-		re.votes[node.ID.String()] = true
+		re.votes[node.ID.HostPortString()] = true
 		re.mutex.Unlock()
 	}
 }
@@ -326,7 +327,7 @@ func (re *RaftElection) sendHeartbeats() {
 	nodes := re.clusterManager.GetNodes()
 
 	for nodeID, node := range nodes {
-		if nodeID == re.localNode.ID.String() {
+		if nodeID == re.localNode.ID.HostPortString() {
 			continue // 跳过自己
 		}
 
@@ -338,7 +339,7 @@ func (re *RaftElection) sendHeartbeat(node *common.ClusterNode) {
 	// 这里应该发送实际的心跳网络请求
 	// 为了简化，我们假设心跳总是成功的
 
-	re.logger.Debug("Sent heartbeat", zap.String("node", node.ID.String()))
+	re.logger.Debug("Sent heartbeat", zap.String("node", node.ID.HostPortString()))
 }
 
 func (re *RaftElection) resetElectionTimer() {

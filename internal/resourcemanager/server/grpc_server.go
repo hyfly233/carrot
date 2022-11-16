@@ -296,7 +296,7 @@ func (s *ResourceManagerGRPCServer) GetNodes(ctx context.Context, req *rmpb.GetN
 	for _, nodeReport := range nodes {
 		rmpbNode := &rmpb.Node{
 			NodeInfo: &rmpb.NodeInfo{
-				NodeId:        nodeReport.NodeID.String(),
+				NodeId:        nodeReport.NodeID.HostPortString(),
 				Hostname:      nodeReport.NodeID.Host,
 				IpAddress:     nodeReport.NodeID.Host,
 				Port:          nodeReport.NodeID.Port,

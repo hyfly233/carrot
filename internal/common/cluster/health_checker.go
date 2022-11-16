@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"carrot/internal/common"
+
 	"go.uber.org/zap"
 )
 
@@ -79,7 +80,7 @@ func (hc *DefaultHealthChecker) Stop() error {
 
 // CheckNode 检查节点健康状态
 func (hc *DefaultHealthChecker) CheckNode(nodeID common.NodeID) (*common.NodeHealth, error) {
-	if nodeID.String() == hc.localNode.ID.String() {
+	if nodeID.HostPortString() == hc.localNode.ID.HostPortString() {
 		return hc.GetHealthStatus(), nil
 	}
 
@@ -289,7 +290,7 @@ func (hc *DefaultHealthChecker) checkClusterNodesHealth() {
 	nodes := hc.clusterManager.GetNodes()
 
 	for nodeID, node := range nodes {
-		if nodeID == hc.localNode.ID.String() {
+		if nodeID == hc.localNode.ID.HostPortString() {
 			continue // 跳过本地节点
 		}
 

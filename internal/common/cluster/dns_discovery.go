@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"carrot/internal/common"
+
 	"go.uber.org/zap"
 )
 
@@ -104,7 +105,7 @@ func (dd *DNSDiscovery) DiscoverNodes() ([]common.ClusterNode, error) {
 
 // RegisterNode 注册节点
 func (dd *DNSDiscovery) RegisterNode(node *common.ClusterNode) error {
-	nodeID := node.ID.String()
+	nodeID := node.ID.HostPortString()
 
 	dd.nodesMutex.Lock()
 	dd.nodes[nodeID] = node
@@ -120,7 +121,7 @@ func (dd *DNSDiscovery) RegisterNode(node *common.ClusterNode) error {
 
 // UnregisterNode 注销节点
 func (dd *DNSDiscovery) UnregisterNode(nodeID common.NodeID) error {
-	nodeIDStr := nodeID.String()
+	nodeIDStr := nodeID.HostPortString()
 
 	dd.nodesMutex.Lock()
 	delete(dd.nodes, nodeIDStr)
