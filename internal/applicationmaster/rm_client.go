@@ -28,9 +28,9 @@ type RegisterApplicationMasterRequest struct {
 
 // RegisterApplicationMasterResponse 注册 ApplicationMaster 响应
 type RegisterApplicationMasterResponse struct {
-	MaximumResourceCapability common.Resource `json:"maximum_resource_capability"`
-	ApplicationACLs           []string        `json:"application_acls"`
-	Queue                     string          `json:"queue"`
+	MaximumResourceCapability common.Resource   `json:"maximum_resource_capability"`
+	ApplicationACLs           map[string]string `json:"application_acls"`
+	Queue                     string            `json:"queue"`
 }
 
 // AllocateRequest 分配请求

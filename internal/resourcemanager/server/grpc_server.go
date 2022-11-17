@@ -305,12 +305,12 @@ func (s *ResourceManagerGRPCServer) GetNodes(ctx context.Context, req *rmpb.GetN
 				LastHeartbeat: timestamppb.New(nodeReport.LastHealthUpdate),
 			},
 			TotalCapability: &rmpb.ResourceCapability{
-				MemoryMb: nodeReport.Capability.Memory,
-				Vcores:   nodeReport.Capability.VCores,
+				MemoryMb: nodeReport.TotalResource.Memory,
+				Vcores:   nodeReport.TotalResource.VCores,
 			},
 			UsedResources: &rmpb.ResourceUsage{
-				MemoryMb: nodeReport.Used.Memory,
-				Vcores:   nodeReport.Used.VCores,
+				MemoryMb: nodeReport.UsedResource.Memory,
+				Vcores:   nodeReport.UsedResource.VCores,
 			},
 			State:         convertNodeStateFromString(nodeReport.State),
 			NumContainers: nodeReport.NumContainers,

@@ -286,12 +286,15 @@ type ApplicationReport struct {
 	ApplicationType string        `json:"application_type"`
 	User            string        `json:"user"`
 	Queue           string        `json:"queue"`
+	Host            string        `json:"host"`
+	RPCPort         int           `json:"rpc_port"`
+	TrackingURL     string        `json:"tracking_url"`
 	StartTime       time.Time     `json:"start_time"`
 	FinishTime      time.Time     `json:"finish_time,omitempty"`
 	FinalStatus     string        `json:"final_status"`
 	State           string        `json:"state"`
 	Progress        float32       `json:"progress"`
-	TrackingURL     string        `json:"tracking_url"`
+	Diagnostics     string        `json:"diagnostics"`
 }
 
 // NodeReport 节点报告
@@ -299,13 +302,32 @@ type NodeReport struct {
 	NodeID           NodeID    `json:"node_id"`
 	HTTPAddress      string    `json:"http_address"`
 	RackName         string    `json:"rack_name"`
-	Used             Resource  `json:"used"`
-	Capability       Resource  `json:"capability"`
+	UsedResource     Resource  `json:"used_resource"`
+	TotalResource    Resource  `json:"total_resource"`
 	NumContainers    int32     `json:"num_containers"`
 	State            string    `json:"state"`
 	HealthReport     string    `json:"health_report"`
 	LastHealthUpdate time.Time `json:"last_health_update"`
 	NodeLabels       []string  `json:"node_labels"`
+	Containers       []string  `json:"containers"`
+}
+
+// ClusterMetrics 集群指标
+type ClusterMetrics struct {
+	AppsSubmitted         int `json:"apps_submitted"`
+	AppsCompleted         int `json:"apps_completed"`
+	AppsPending           int `json:"apps_pending"`
+	AppsRunning           int `json:"apps_running"`
+	AppsFailed            int `json:"apps_failed"`
+	AppsKilled            int `json:"apps_killed"`
+	ActiveNodes           int `json:"active_nodes"`
+	LostNodes             int `json:"lost_nodes"`
+	UnhealthyNodes        int `json:"unhealthy_nodes"`
+	DecommissionedNodes   int `json:"decommissioned_nodes"`
+	TotalNodes            int `json:"total_nodes"`
+	ReservedVirtualCores  int `json:"reserved_virtual_cores"`
+	AvailableVirtualCores int `json:"available_virtual_cores"`
+	AllocatedVirtualCores int `json:"allocated_virtual_cores"`
 }
 
 // ApplicationSubmissionContext 应用程序提交上下文

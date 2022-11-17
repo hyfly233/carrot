@@ -18,6 +18,7 @@ type ApplicationMaster struct {
 	applicationID        common.ApplicationID
 	applicationAttemptID common.ApplicationAttemptID
 	rmClient             *ResourceManagerClient
+	rmGRPCClient         *ApplicationMasterGRPCClient
 	nmClients            map[string]*NodeManagerClient
 	containers           map[string]*common.Container
 	pendingRequests      []*common.ContainerRequest
@@ -36,6 +37,7 @@ type ApplicationMaster struct {
 	heartbeatInterval    time.Duration
 	maxContainerRetries  int
 	shutdownHook         chan struct{}
+	useGRPC              bool
 }
 
 // ApplicationMasterConfig ApplicationMaster 配置
@@ -43,10 +45,12 @@ type ApplicationMasterConfig struct {
 	ApplicationID        common.ApplicationID
 	ApplicationAttemptID common.ApplicationAttemptID
 	RMAddress            string
+	RMGRPCAddress        string
 	TrackingURL          string
 	HeartbeatInterval    time.Duration
 	MaxContainerRetries  int
 	Port                 int
+	UseGRPC              bool
 }
 
 // NewApplicationMaster 创建新的 ApplicationMaster
@@ -77,6 +81,12 @@ func NewApplicationMaster(config *ApplicationMasterConfig) *ApplicationMaster {
 
 	// 创建 ResourceManager 客户端
 	am.rmClient = NewResourceManagerClient(config.RMAddress, am.logger)
+
+	// 设置gRPC标志并创建gRPC客户端
+	am.useGRPC = config.UseGRPC
+	if config.UseGRPC && config.RMGRPCAddress != "" {
+		am.rmGRPCClient = NewApplicationMasterGRPCClient(config.ApplicationID, config.RMGRPCAddress)
+	}
 
 	return am
 }
@@ -137,12 +147,35 @@ func (am *ApplicationMaster) Stop() error {
 		}
 	}
 
+	// 断开gRPC连接
+	if am.rmGRPCClient != nil {
+		if err := am.rmGRPCClient.Disconnect(); err != nil {
+			am.logger.Error("Failed to disconnect gRPC client", zap.Error(err))
+		}
+	}
+
 	am.logger.Info("ApplicationMaster stopped")
 	return nil
 }
 
 // registerWithRM 向 ResourceManager 注册
 func (am *ApplicationMaster) registerWithRM() error {
+	if am.useGRPC && am.rmGRPCClient != nil {
+		// 使用gRPC注册
+		if err := am.rmGRPCClient.Connect(); err != nil {
+			return fmt.Errorf("failed to connect to ResourceManager gRPC: %w", err)
+		}
+
+		_, err := am.rmGRPCClient.RegisterApplicationMaster("localhost", 0, am.trackingURL)
+		if err != nil {
+			return fmt.Errorf("failed to register via gRPC: %w", err)
+		}
+
+		am.logger.Info("Registered with ResourceManager via gRPC")
+		return nil
+	}
+
+	// 使用HTTP注册
 	request := &RegisterApplicationMasterRequest{
 		Host:        "localhost", // TODO: 获取实际主机名
 		RPCPort:     0,           // 不使用 RPC
@@ -164,6 +197,13 @@ func (am *ApplicationMaster) registerWithRM() error {
 
 // unregisterFromRM 从 ResourceManager 注销
 func (am *ApplicationMaster) unregisterFromRM() error {
+	if am.useGRPC && am.rmGRPCClient != nil {
+		// 使用gRPC注销
+		_, err := am.rmGRPCClient.FinishApplicationMaster(am.finalStatus, "Application completed successfully", am.trackingURL)
+		return err
+	}
+
+	// 使用HTTP注销
 	request := &FinishApplicationMasterRequest{
 		FinalApplicationStatus: am.finalStatus,
 		Diagnostics:            "Application completed successfully",
@@ -212,7 +252,17 @@ func (am *ApplicationMaster) sendHeartbeat() error {
 		Progress:            am.progress,
 	}
 
-	response, err := am.rmClient.Allocate(request)
+	var response *AllocateResponse
+	var err error
+
+	if am.useGRPC && am.rmGRPCClient != nil {
+		// 使用gRPC发送心跳
+		response, err = am.rmGRPCClient.Allocate(request)
+	} else {
+		// 使用HTTP发送心跳
+		response, err = am.rmClient.Allocate(request)
+	}
+
 	if err != nil {
 		return err
 	}

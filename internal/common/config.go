@@ -26,7 +26,8 @@ type Config struct {
 // ResourceManagerConfig ResourceManager配置
 type ResourceManagerConfig struct {
 	Port                   int           `yaml:"port"`
-	GRPCPort               int           `yaml:"grpc_port"`
+	GRPCPort               int           `yaml:"grpc_port"`    // NodeManager gRPC 端口
+	AMGRPCPort             int           `yaml:"am_grpc_port"` // ApplicationMaster gRPC 端口
 	Address                string        `yaml:"address"`
 	HeartbeatInterval      time.Duration `yaml:"heartbeat_interval"`
 	NodeExpiryTimeout      time.Duration `yaml:"node_expiry_timeout"`
@@ -195,7 +196,8 @@ func GetDefaultConfig() *Config {
 		},
 		ResourceManager: ResourceManagerConfig{
 			Port:                   8088,
-			GRPCPort:               9088,
+			GRPCPort:               9088, // NodeManager gRPC 端口
+			AMGRPCPort:             9089, // ApplicationMaster gRPC 端口
 			Address:                "0.0.0.0",
 			HeartbeatInterval:      3 * time.Second,
 			NodeExpiryTimeout:      30 * time.Second,

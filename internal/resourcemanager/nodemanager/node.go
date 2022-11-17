@@ -198,13 +198,14 @@ func (n *Node) ToNodeReport() *common.NodeReport {
 		NodeID:           n.ID,
 		HTTPAddress:      n.HTTPAddress,
 		RackName:         n.RackName,
-		Used:             n.UsedResource,
-		Capability:       n.TotalResource,
+		UsedResource:     n.UsedResource,
+		TotalResource:    n.TotalResource,
 		NumContainers:    n.NumContainers,
 		State:            n.State,
 		HealthReport:     n.HealthReport,
 		LastHealthUpdate: n.LastHeartbeat,
 		NodeLabels:       n.NodeLabels,
+		Containers:       []string{}, // 简化处理
 	}
 }
 

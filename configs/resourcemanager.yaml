@@ -29,7 +29,8 @@ cluster:
 # ResourceManager 配置
 resourcemanager:
   port: 8088
-  grpc_port: 9088
+  grpc_port: 9088        # NodeManager gRPC 端口
+  am_grpc_port: 9089     # ApplicationMaster gRPC 端口
   address: "0.0.0.0"
   heartbeat_interval: 3s
   node_expiry_timeout: 600s

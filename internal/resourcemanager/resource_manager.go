@@ -27,8 +27,9 @@ type ResourceManager struct {
 	appIDCounter     int32
 	clusterTimestamp int64
 	httpServer       *http.Server
-	ginServer        *server.GinServer                 // HTTP 服务器
-	grpcServer       *server.ResourceManagerGRPCServer // gRPC 服务器
+	ginServer        *server.GinServer                   // HTTP 服务器
+	grpcServer       *server.ResourceManagerGRPCServer   // NodeManager gRPC 服务器
+	amGRPCServer     *server.ApplicationMasterGRPCServer // ApplicationMaster gRPC 服务器
 	config           *common.Config
 	logger           *zap.Logger
 	ctx              context.Context
@@ -106,14 +107,18 @@ func NewResourceManager(config *common.Config) *ResourceManager {
 	// 初始化 gRPC 服务器
 	rm.grpcServer = server.NewResourceManagerGRPCServer(rm)
 
+	// 初始化 ApplicationMaster gRPC 服务器
+	rm.amGRPCServer = server.NewApplicationMasterGRPCServer(rm)
+
 	return rm
 }
 
 // Start 启动资源管理器
-func (rm *ResourceManager) Start(httpPort, grpcPort int) error {
+func (rm *ResourceManager) Start(httpPort, nmGRPCPort, amGRPCPort int) error {
 	rm.logger.Info("ResourceManager starting",
 		zap.Int("http_port", httpPort),
-		zap.Int("grpc_port", grpcPort),
+		zap.Int("nm_grpc_port", nmGRPCPort),
+		zap.Int("am_grpc_port", amGRPCPort),
 		zap.Int64("cluster_timestamp", rm.clusterTimestamp),
 		zap.Duration("heartbeat_timeout", rm.nodeHeartbeatTimeout),
 		zap.Duration("monitor_interval", rm.nodeMonitorInterval))
@@ -128,11 +133,19 @@ func (rm *ResourceManager) Start(httpPort, grpcPort int) error {
 	// 启动心跳监测
 	go rm.startNodeMonitor()
 
-	// 启动 gRPC 服务器
+	// 启动 NodeManager gRPC 服务器
 	go func() {
-		rm.logger.Info("Starting gRPC server", zap.Int("port", grpcPort))
-		if err := rm.grpcServer.Start(grpcPort); err != nil {
-			rm.logger.Error("Failed to start gRPC server", zap.Error(err))
+		rm.logger.Info("Starting NodeManager gRPC server", zap.Int("port", nmGRPCPort))
+		if err := rm.grpcServer.Start(nmGRPCPort); err != nil {
+			rm.logger.Error("Failed to start NodeManager gRPC server", zap.Error(err))
+		}
+	}()
+
+	// 启动 ApplicationMaster gRPC 服务器
+	go func() {
+		rm.logger.Info("Starting ApplicationMaster gRPC server", zap.Int("port", amGRPCPort))
+		if err := rm.amGRPCServer.Start(amGRPCPort); err != nil {
+			rm.logger.Error("Failed to start ApplicationMaster gRPC server", zap.Error(err))
 		}
 	}()
 
@@ -151,9 +164,14 @@ func (rm *ResourceManager) Stop() error {
 	// 取消上下文
 	rm.cancel()
 
-	// 停止 gRPC 服务器
+	// 停止 NodeManager gRPC 服务器
 	if rm.grpcServer != nil {
 		rm.grpcServer.Stop()
+	}
+
+	// 停止 ApplicationMaster gRPC 服务器
+	if rm.amGRPCServer != nil {
+		rm.amGRPCServer.Stop()
 	}
 
 	// 关闭 HTTP 服务器
@@ -357,11 +375,12 @@ func (rm *ResourceManager) GetNodes() []*common.NodeReport {
 			NodeID:           node.ID,
 			HTTPAddress:      node.HTTPAddress,
 			RackName:         node.RackName,
-			Used:             node.UsedResource,
-			Capability:       node.TotalResource,
+			UsedResource:     node.UsedResource,
+			TotalResource:    node.TotalResource,
 			NumContainers:    int32(len(node.Containers)),
 			State:            node.State,
 			LastHealthUpdate: node.LastHeartbeat,
+			Containers:       []string{}, // 简化处理
 		}
 		reports = append(reports, report)
 	}
@@ -1033,4 +1052,209 @@ func (rm *ResourceManager) validateLeadership() error {
 		return fmt.Errorf("operation requires leadership, no leader elected")
 	}
 	return nil
+}
+
+// ===== ApplicationMaster 管理方法 =====
+
+// RegisterApplicationMaster 注册 ApplicationMaster
+func (rm *ResourceManager) RegisterApplicationMaster(appID common.ApplicationID, host string, rpcPort int32, trackingURL string) (common.Resource, error) {
+	rm.mu.Lock()
+	defer rm.mu.Unlock()
+
+	// 查找应用程序
+	app, exists := rm.applications[appID.String()]
+	if !exists {
+		return common.Resource{}, fmt.Errorf("application not found: %s", appID.String())
+	}
+
+	// 更新应用程序的 AM 信息
+	app.AMHost = host
+	app.AMRPCPort = int(rpcPort)
+	app.TrackingURL = trackingURL
+	app.State = common.ApplicationStateRunning
+
+	rm.logger.Info("ApplicationMaster registered",
+		zap.String("app_id", appID.String()),
+		zap.String("host", host),
+		zap.Int32("rpc_port", rpcPort),
+		zap.String("tracking_url", trackingURL))
+
+	// 返回集群的最大资源容量
+	maxResource := common.Resource{
+		Memory: 16384, // 16GB，实际应该从集群配置获取
+		VCores: 16,    // 16核，实际应该从集群配置获取
+	}
+
+	return maxResource, nil
+}
+
+// AllocateContainers 分配容器
+func (rm *ResourceManager) AllocateContainers(appID common.ApplicationID, asks []*common.ContainerRequest, releases []common.ContainerID, completed []*common.Container, progress float32) ([]*common.Container, []common.NodeReport, error) {
+	rm.mu.Lock()
+	defer rm.mu.Unlock()
+
+	// 查找应用程序
+	app, exists := rm.applications[appID.String()]
+	if !exists {
+		return nil, nil, fmt.Errorf("application not found: %s", appID.String())
+	}
+
+	// 更新应用程序进度
+	app.Progress = progress
+
+	// 使用调度器分配容器
+	var allocatedContainers []*common.Container
+	for _, ask := range asks {
+		// 简化的分配逻辑，实际应该使用调度器
+		if len(rm.nodes) > 0 {
+			// 选择第一个可用节点
+			for _, node := range rm.nodes {
+				if node.AvailableResource.Memory >= ask.Resource.Memory && node.AvailableResource.VCores >= ask.Resource.VCores {
+					// 创建容器
+					container := &common.Container{
+						ID: common.ContainerID{
+							ApplicationAttemptID: common.ApplicationAttemptID{
+								ApplicationID: appID,
+								AttemptID:     1,
+							},
+							ContainerID: time.Now().UnixNano(), // 简化的容器ID生成
+						},
+						NodeID:   node.ID,
+						Resource: ask.Resource,
+						Status:   "ALLOCATED",
+						State:    "NEW",
+					}
+					allocatedContainers = append(allocatedContainers, container)
+
+					// 更新节点资源
+					node.AvailableResource.Memory -= ask.Resource.Memory
+					node.AvailableResource.VCores -= ask.Resource.VCores
+					break
+				}
+			}
+		}
+	}
+
+	// 处理释放的容器
+	for _, releaseID := range releases {
+		// 查找并释放容器
+		rm.logger.Info("Container released", zap.Any("container_id", releaseID))
+	}
+
+	// 生成节点报告
+	var updatedNodes []common.NodeReport
+	for _, node := range rm.nodes {
+		updatedNodes = append(updatedNodes, common.NodeReport{
+			NodeID:        node.ID,
+			HTTPAddress:   fmt.Sprintf("http://%s:%d", node.ID.Host, node.ID.Port),
+			UsedResource:  common.Resource{Memory: node.TotalResource.Memory - node.AvailableResource.Memory, VCores: node.TotalResource.VCores - node.AvailableResource.VCores},
+			TotalResource: node.TotalResource,
+			NumContainers: int32(len(node.Containers)),
+			State:         "RUNNING",
+			Containers:    []string{}, // 简化处理
+		})
+	}
+
+	return allocatedContainers, updatedNodes, nil
+}
+
+// FinishApplicationMaster 完成 ApplicationMaster
+func (rm *ResourceManager) FinishApplicationMaster(appID common.ApplicationID, finalStatus string, diagnostics string, trackingURL string) error {
+	rm.mu.Lock()
+	defer rm.mu.Unlock()
+
+	app, exists := rm.applications[appID.String()]
+	if !exists {
+		return fmt.Errorf("application not found: %s", appID.String())
+	}
+
+	// 更新应用程序状态
+	app.FinalStatus = finalStatus
+	app.TrackingURL = trackingURL
+	app.State = common.ApplicationStateFinished
+	app.FinishTime = time.Now()
+
+	rm.logger.Info("ApplicationMaster finished",
+		zap.String("app_id", appID.String()),
+		zap.String("final_status", finalStatus),
+		zap.String("diagnostics", diagnostics))
+
+	return nil
+}
+
+// GetApplicationReport 获取应用程序报告
+func (rm *ResourceManager) GetApplicationReport(appID common.ApplicationID) (*common.ApplicationReport, error) {
+	rm.mu.RLock()
+	defer rm.mu.RUnlock()
+
+	app, exists := rm.applications[appID.String()]
+	if !exists {
+		return nil, fmt.Errorf("application not found: %s", appID.String())
+	}
+
+	return &common.ApplicationReport{
+		ApplicationID:   appID,
+		ApplicationName: app.Name,
+		ApplicationType: app.Type,
+		User:            app.User,
+		Queue:           app.Queue,
+		Host:            app.AMHost,
+		RPCPort:         app.AMRPCPort,
+		TrackingURL:     app.TrackingURL,
+		StartTime:       app.StartTime,
+		FinishTime:      app.FinishTime,
+		FinalStatus:     app.FinalStatus,
+		State:           app.State,
+		Progress:        app.Progress,
+		Diagnostics:     "", // 可以添加诊断信息
+	}, nil
+}
+
+// GetClusterMetrics 获取集群指标
+func (rm *ResourceManager) GetClusterMetrics() (*common.ClusterMetrics, error) {
+	rm.mu.RLock()
+	defer rm.mu.RUnlock()
+
+	metrics := &common.ClusterMetrics{
+		AppsSubmitted:         len(rm.applications),
+		AppsCompleted:         0,
+		AppsPending:           0,
+		AppsRunning:           0,
+		AppsFailed:            0,
+		AppsKilled:            0,
+		ActiveNodes:           len(rm.nodes),
+		LostNodes:             0,
+		UnhealthyNodes:        0,
+		DecommissionedNodes:   0,
+		TotalNodes:            len(rm.nodes),
+		ReservedVirtualCores:  0,
+		AvailableVirtualCores: 0,
+		AllocatedVirtualCores: 0,
+	}
+
+	// 统计应用程序状态
+	for _, app := range rm.applications {
+		switch app.State {
+		case common.ApplicationStateRunning:
+			metrics.AppsRunning++
+		case common.ApplicationStateFinished:
+			if app.FinalStatus == common.FinalApplicationStatusSucceeded {
+				metrics.AppsCompleted++
+			} else {
+				metrics.AppsFailed++
+			}
+		case common.ApplicationStateSubmitted:
+			metrics.AppsPending++
+		case common.ApplicationStateKilled:
+			metrics.AppsKilled++
+		}
+	}
+
+	// 统计资源使用情况
+	for _, node := range rm.nodes {
+		metrics.AvailableVirtualCores += int(node.AvailableResource.VCores)
+		metrics.AllocatedVirtualCores += int(node.TotalResource.VCores - node.AvailableResource.VCores)
+	}
+
+	return metrics, nil
 }

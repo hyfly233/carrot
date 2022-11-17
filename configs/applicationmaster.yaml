@@ -18,6 +18,7 @@ cluster:
       - host: "localhost"
         port: 8088
         type: "resourcemanager"
+        grpc_port: 9089  # ApplicationMaster gRPC 端口
         metadata:
           role: "master"
 
