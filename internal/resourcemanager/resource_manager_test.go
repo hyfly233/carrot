@@ -55,11 +55,11 @@ func TestNodeRegistration(t *testing.T) {
 		if node.NodeID.Port != 8042 {
 			t.Errorf("Expected port 8042, got %d", node.NodeID.Port)
 		}
-		if node.Capability.Memory != 4096 {
-			t.Errorf("Expected memory 4096, got %d", node.Capability.Memory)
+		if node.TotalResource.Memory != 4096 {
+			t.Errorf("Expected memory 4096, got %d", node.TotalResource.Memory)
 		}
-		if node.Capability.VCores != 4 {
-			t.Errorf("Expected vcores 4, got %d", node.Capability.VCores)
+		if node.TotalResource.VCores != 4 {
+			t.Errorf("Expected vcores 4, got %d", node.TotalResource.VCores)
 		}
 	}
 }
@@ -198,11 +198,11 @@ func TestNodeHeartbeat(t *testing.T) {
 	}
 
 	for _, node := range nodes {
-		if node.Used.Memory != 1024 {
-			t.Errorf("Expected used memory 1024, got %d", node.Used.Memory)
+		if node.UsedResource.Memory != 1024 {
+			t.Errorf("Expected used memory 1024, got %d", node.UsedResource.Memory)
 		}
-		if node.Used.VCores != 1 {
-			t.Errorf("Expected used vcores 1, got %d", node.Used.VCores)
+		if node.UsedResource.VCores != 1 {
+			t.Errorf("Expected used vcores 1, got %d", node.UsedResource.VCores)
 		}
 	}
 }
