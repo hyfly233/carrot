@@ -27,6 +27,8 @@ type NodeManagerInterface interface {
 	StopContainer(containerID common.ContainerID) error
 	GetContainers() map[string]*common.Container
 	GetContainer(containerID common.ContainerID) (*common.Container, bool)
+	GetContainerStatus(containerID common.ContainerID) (*common.Container, error)
+	GetContainerLogs(containerID common.ContainerID, logType string) (string, error)
 	GetNodeID() common.NodeID
 	GetTotalResource() common.Resource
 	GetUsedResource() common.Resource
