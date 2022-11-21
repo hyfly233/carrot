@@ -3,10 +3,10 @@ package applicationmaster
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"sync"
 	"time"
 
+	ampb "carrot/api/proto/applicationmaster"
 	"carrot/internal/common"
 
 	"go.uber.org/zap"
@@ -17,27 +17,25 @@ type ApplicationMaster struct {
 	mu                   sync.RWMutex
 	applicationID        common.ApplicationID
 	applicationAttemptID common.ApplicationAttemptID
-	rmClient             *ResourceManagerClient
 	rmGRPCClient         *ApplicationMasterGRPCClient
-	nmClients            map[string]*NodeManagerClient
-	containers           map[string]*common.Container
-	pendingRequests      []*common.ContainerRequest
-	allocatedContainers  map[string]*common.Container
-	completedContainers  map[string]*common.Container
-	failedContainers     map[string]*common.Container
-	applicationState     string
-	finalStatus          string
-	progress             float32
-	trackingURL          string
-	httpServer           *http.Server
-	config               *common.Config
-	logger               *zap.Logger
-	ctx                  context.Context
-	cancel               context.CancelFunc
-	heartbeatInterval    time.Duration
-	maxContainerRetries  int
-	shutdownHook         chan struct{}
-	useGRPC              bool
+	// nmClients            map[string]*ContainerManagerGRPCClient // TODO: 重新实现容器管理gRPC客户端
+	containers          map[string]*common.Container
+	pendingRequests     []*common.ContainerRequest
+	allocatedContainers map[string]*common.Container
+	completedContainers map[string]*common.Container
+	failedContainers    map[string]*common.Container
+	applicationState    string
+	finalStatus         string
+	progress            float32
+	trackingURL         string
+	config              *common.Config
+	logger              *zap.Logger
+	ctx                 context.Context
+	cancel              context.CancelFunc
+	heartbeatInterval   time.Duration
+	maxContainerRetries int
+	shutdownHook        chan struct{}
+	useGRPC             bool
 }
 
 // ApplicationMasterConfig ApplicationMaster 配置
@@ -60,32 +58,32 @@ func NewApplicationMaster(config *ApplicationMasterConfig) *ApplicationMaster {
 	am := &ApplicationMaster{
 		applicationID:        config.ApplicationID,
 		applicationAttemptID: config.ApplicationAttemptID,
-		nmClients:            make(map[string]*NodeManagerClient),
-		containers:           make(map[string]*common.Container),
-		pendingRequests:      make([]*common.ContainerRequest, 0),
-		allocatedContainers:  make(map[string]*common.Container),
-		completedContainers:  make(map[string]*common.Container),
-		failedContainers:     make(map[string]*common.Container),
-		applicationState:     common.ApplicationStateRunning,
-		finalStatus:          common.FinalApplicationStatusUndefined,
-		progress:             0.0,
-		trackingURL:          config.TrackingURL,
-		config:               common.GetDefaultConfig(),
-		logger:               common.ComponentLogger("application-master"),
-		ctx:                  ctx,
-		cancel:               cancel,
-		heartbeatInterval:    config.HeartbeatInterval,
-		maxContainerRetries:  config.MaxContainerRetries,
-		shutdownHook:         make(chan struct{}, 1),
+		// nmClients:            make(map[string]*ContainerManagerGRPCClient), // TODO: 重新实现
+		containers:          make(map[string]*common.Container),
+		pendingRequests:     make([]*common.ContainerRequest, 0),
+		allocatedContainers: make(map[string]*common.Container),
+		completedContainers: make(map[string]*common.Container),
+		failedContainers:    make(map[string]*common.Container),
+		applicationState:    common.ApplicationStateRunning,
+		finalStatus:         common.FinalApplicationStatusUndefined,
+		progress:            0.0,
+		trackingURL:         config.TrackingURL,
+		config:              common.GetDefaultConfig(),
+		logger:              common.ComponentLogger("application-master"),
+		ctx:                 ctx,
+		cancel:              cancel,
+		heartbeatInterval:   config.HeartbeatInterval,
+		maxContainerRetries: config.MaxContainerRetries,
+		shutdownHook:        make(chan struct{}, 1),
 	}
 
-	// 创建 ResourceManager 客户端
-	am.rmClient = NewResourceManagerClient(config.RMAddress, am.logger)
-
-	// 设置gRPC标志并创建gRPC客户端
-	am.useGRPC = config.UseGRPC
-	if config.UseGRPC && config.RMGRPCAddress != "" {
+	// 创建 gRPC 客户端
+	if config.RMGRPCAddress != "" {
 		am.rmGRPCClient = NewApplicationMasterGRPCClient(config.ApplicationID, config.RMGRPCAddress)
+		am.useGRPC = true
+	} else {
+		am.logger.Error("ResourceManager gRPC address is required")
+		am.useGRPC = false
 	}
 
 	return am
@@ -100,11 +98,6 @@ func (am *ApplicationMaster) Start() error {
 	// 注册到 ResourceManager
 	if err := am.registerWithRM(); err != nil {
 		return fmt.Errorf("failed to register with ResourceManager: %w", err)
-	}
-
-	// 启动 HTTP 服务器
-	if err := am.startHTTPServer(); err != nil {
-		return fmt.Errorf("failed to start HTTP server: %w", err)
 	}
 
 	// 启动心跳
@@ -138,15 +131,6 @@ func (am *ApplicationMaster) Stop() error {
 		am.logger.Error("Failed to unregister from ResourceManager", zap.Error(err))
 	}
 
-	// 停止 HTTP 服务器
-	if am.httpServer != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		if err := am.httpServer.Shutdown(ctx); err != nil {
-			am.logger.Error("Failed to shutdown HTTP server", zap.Error(err))
-		}
-	}
-
 	// 断开gRPC连接
 	if am.rmGRPCClient != nil {
 		if err := am.rmGRPCClient.Disconnect(); err != nil {
@@ -175,42 +159,24 @@ func (am *ApplicationMaster) registerWithRM() error {
 		return nil
 	}
 
-	// 使用HTTP注册
-	request := &RegisterApplicationMasterRequest{
-		Host:        "localhost", // TODO: 获取实际主机名
-		RPCPort:     0,           // 不使用 RPC
-		TrackingURL: am.trackingURL,
-	}
-
-	response, err := am.rmClient.RegisterApplicationMaster(request)
+	// 使用gRPC注册
+	response, err := am.rmGRPCClient.RegisterApplicationMaster("localhost", 0, am.trackingURL)
 	if err != nil {
 		return err
 	}
 
 	am.logger.Info("Registered with ResourceManager",
 		zap.String("queue", response.Queue),
-		zap.Int64("max_memory", response.MaximumResourceCapability.Memory),
-		zap.Int32("max_vcores", response.MaximumResourceCapability.VCores))
+		zap.Int64("max_memory", response.MaximumResourceCapability.MemoryMb),
+		zap.Int32("max_vcores", response.MaximumResourceCapability.Vcores))
 
 	return nil
 }
 
 // unregisterFromRM 从 ResourceManager 注销
 func (am *ApplicationMaster) unregisterFromRM() error {
-	if am.useGRPC && am.rmGRPCClient != nil {
-		// 使用gRPC注销
-		_, err := am.rmGRPCClient.FinishApplicationMaster(am.finalStatus, "Application completed successfully", am.trackingURL)
-		return err
-	}
-
-	// 使用HTTP注销
-	request := &FinishApplicationMasterRequest{
-		FinalApplicationStatus: am.finalStatus,
-		Diagnostics:            "Application completed successfully",
-		TrackingURL:            am.trackingURL,
-	}
-
-	_, err := am.rmClient.FinishApplicationMaster(request)
+	// 使用gRPC注销
+	_, err := am.rmGRPCClient.FinishApplicationMaster(am.finalStatus, "Application completed successfully", am.trackingURL)
 	return err
 }
 
@@ -245,35 +211,57 @@ func (am *ApplicationMaster) sendHeartbeat() error {
 	}
 	am.completedContainers = make(map[string]*common.Container) // 清空已完成容器
 
-	request := &AllocateRequest{
-		Ask:                 am.pendingRequests,
-		Release:             []common.ContainerID{}, // TODO: 实现容器释放
-		CompletedContainers: completedContainers,
-		Progress:            am.progress,
-	}
-
-	var response *AllocateResponse
+	var response *ampb.AllocateResponse
 	var err error
 
-	if am.useGRPC && am.rmGRPCClient != nil {
-		// 使用gRPC发送心跳
-		response, err = am.rmGRPCClient.Allocate(request)
-	} else {
-		// 使用HTTP发送心跳
-		response, err = am.rmClient.Allocate(request)
-	}
+	// 使用gRPC发送心跳
+	response, err = am.rmGRPCClient.Allocate(am.pendingRequests, []common.ContainerID{}, completedContainers, am.progress)
 
 	if err != nil {
 		return err
 	}
 
 	// 处理新分配的容器
-	for _, container := range response.AllocatedContainers {
+	for _, pbContainer := range response.AllocatedContainers {
+		// 转换 protobuf 容器为内部类型
+		container := &common.Container{
+			ID: common.ContainerID{
+				ApplicationAttemptID: common.ApplicationAttemptID{
+					ApplicationID: common.ApplicationID{
+						ClusterTimestamp: am.applicationID.ClusterTimestamp,
+					},
+					AttemptID: am.applicationAttemptID.AttemptID,
+				},
+				ContainerID: pbContainer.Id.ContainerId,
+			},
+			NodeID: common.NodeID{
+				Host: pbContainer.NodeId.Host,
+				Port: pbContainer.NodeId.Port,
+			},
+			Resource: common.Resource{
+				Memory: pbContainer.Resource.MemoryMb,
+				VCores: pbContainer.Resource.Vcores,
+			},
+		}
 		am.handleNewContainer(container)
 	}
 
 	// 处理已完成的容器
-	for _, container := range response.CompletedContainers {
+	for _, pbStatus := range response.CompletedContainers {
+		// 转换 protobuf 容器状态为内部类型
+		container := &common.Container{
+			ID: common.ContainerID{
+				ApplicationAttemptID: common.ApplicationAttemptID{
+					ApplicationID: common.ApplicationID{
+						ClusterTimestamp: am.applicationID.ClusterTimestamp,
+					},
+					AttemptID: am.applicationAttemptID.AttemptID,
+				},
+				ContainerID: pbStatus.ContainerId.ContainerId,
+			},
+			Status: pbStatus.Diagnostics,
+			State:  fmt.Sprintf("%d", pbStatus.State),
+		}
 		am.handleCompletedContainer(container)
 	}
 
@@ -312,35 +300,13 @@ func (am *ApplicationMaster) handleCompletedContainer(container *common.Containe
 	delete(am.allocatedContainers, containerKey)
 }
 
-// launchContainer 启动容器
+// launchContainer 启动容器 (TODO: 重新实现使用 gRPC)
 func (am *ApplicationMaster) launchContainer(container *common.Container) {
-	nodeKey := am.getNodeKey(container.NodeID)
-
-	// 获取或创建 NodeManager 客户端
-	nmClient, err := am.getNMClient(container.NodeID)
-	if err != nil {
-		am.logger.Error("Failed to get NodeManager client", zap.Error(err))
-		return
-	}
-
-	// 创建容器启动上下文
-	launchContext := &common.ContainerLaunchContext{
-		Commands:    []string{"echo 'Hello from container'", "sleep 30"},
-		Environment: make(map[string]string),
-	}
-
-	// 启动容器
-	err = nmClient.StartContainer(container.ID, launchContext)
-	if err != nil {
-		am.logger.Error("Failed to start container",
-			zap.String("container_id", am.getContainerKey(container.ID)),
-			zap.Error(err))
-		return
-	}
-
-	am.logger.Info("Container started successfully",
+	am.logger.Info("Container launch requested but not implemented in gRPC mode",
 		zap.String("container_id", am.getContainerKey(container.ID)),
-		zap.String("node", nodeKey))
+		zap.String("node_id", fmt.Sprintf("%s:%d", container.NodeID.Host, container.NodeID.Port)))
+
+	// TODO: 实现 gRPC 容器启动
 }
 
 // RequestContainers 请求容器
@@ -354,7 +320,7 @@ func (am *ApplicationMaster) RequestContainers(requests []*common.ContainerReque
 		zap.Int("count", len(requests)))
 }
 
-// ReleaseContainer 释放容器
+// ReleaseContainer 释放容器 (TODO: 重新实现使用 gRPC)
 func (am *ApplicationMaster) ReleaseContainer(containerID common.ContainerID) error {
 	containerKey := am.getContainerKey(containerID)
 
@@ -367,41 +333,29 @@ func (am *ApplicationMaster) ReleaseContainer(containerID common.ContainerID) er
 	delete(am.allocatedContainers, containerKey)
 	am.mu.Unlock()
 
-	// 停止容器
-	nmClient, err := am.getNMClient(container.NodeID)
-	if err != nil {
-		return err
-	}
+	am.logger.Info("Container release requested but not implemented in gRPC mode",
+		zap.String("container_id", containerKey))
 
-	return nmClient.StopContainer(containerID)
+	// TODO: 实现 gRPC 容器释放
+	_ = container // 避免未使用变量警告
+	return nil
 }
 
-// releaseAllContainers 释放所有容器
+// releaseAllContainers 释放所有容器 (TODO: 重新实现使用 gRPC)
 func (am *ApplicationMaster) releaseAllContainers() {
 	am.mu.Lock()
 	defer am.mu.Unlock()
 
-	for containerKey, container := range am.allocatedContainers {
-		nmClient, err := am.getNMClient(container.NodeID)
-		if err != nil {
-			am.logger.Error("Failed to get NodeManager client for container release",
-				zap.String("container_id", containerKey),
-				zap.Error(err))
-			continue
-		}
+	am.logger.Info("Release all containers requested but not implemented in gRPC mode",
+		zap.Int("container_count", len(am.allocatedContainers)))
 
-		if err := nmClient.StopContainer(container.ID); err != nil {
-			am.logger.Error("Failed to stop container",
-				zap.String("container_id", containerKey),
-				zap.Error(err))
-		}
-	}
-
+	// TODO: 实现 gRPC 容器批量释放
 	am.allocatedContainers = make(map[string]*common.Container)
 }
 
+/* TODO: 重新实现容器管理功能，使用 gRPC
 // getNMClient 获取 NodeManager 客户端
-func (am *ApplicationMaster) getNMClient(nodeID common.NodeID) (*NodeManagerClient, error) {
+func (am *ApplicationMaster) getNMClient(nodeID common.NodeID) (*ContainerManagerGRPCClient, error) {
 	nodeKey := am.getNodeKey(nodeID)
 
 	am.mu.Lock()
@@ -411,13 +365,17 @@ func (am *ApplicationMaster) getNMClient(nodeID common.NodeID) (*NodeManagerClie
 		return client, nil
 	}
 
-	// 创建新的客户端
-	address := fmt.Sprintf("http://%s:%d", nodeID.Host, nodeID.Port)
-	client := NewNodeManagerClient(address, am.logger)
-	am.nmClients[nodeKey] = client
+	// 创建新的 gRPC 客户端
+	address := fmt.Sprintf("%s:%d", nodeID.Host, nodeID.Port+1000) // gRPC端口
+	client, err := NewContainerManagerGRPCClient(address)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create gRPC client: %v", err)
+	}
 
+	am.nmClients[nodeKey] = client
 	return client, nil
 }
+*/
 
 // monitorContainers 监控容器状态
 func (am *ApplicationMaster) monitorContainers() {
@@ -436,34 +394,16 @@ func (am *ApplicationMaster) monitorContainers() {
 	}
 }
 
-// checkContainerStatus 检查容器状态
+// checkContainerStatus 检查容器状态 (TODO: 重新实现使用 gRPC)
 func (am *ApplicationMaster) checkContainerStatus() {
 	am.mu.RLock()
-	containers := make([]*common.Container, 0, len(am.allocatedContainers))
-	for _, container := range am.allocatedContainers {
-		containers = append(containers, container)
-	}
+	containerCount := len(am.allocatedContainers)
 	am.mu.RUnlock()
 
-	for _, container := range containers {
-		nmClient, err := am.getNMClient(container.NodeID)
-		if err != nil {
-			continue
-		}
+	am.logger.Debug("Container status check requested but not implemented in gRPC mode",
+		zap.Int("container_count", containerCount))
 
-		status, err := nmClient.GetContainerStatus(container.ID)
-		if err != nil {
-			am.logger.Error("Failed to get container status",
-				zap.String("container_id", am.getContainerKey(container.ID)),
-				zap.Error(err))
-			continue
-		}
-
-		// 更新容器状态
-		if status.State != container.State {
-			am.updateContainerState(container.ID, status.State)
-		}
-	}
+	// TODO: 实现 gRPC 容器状态检查
 }
 
 // updateContainerState 更新容器状态

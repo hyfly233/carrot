@@ -56,7 +56,7 @@ func (c *ApplicationMasterGRPCClient) Disconnect() error {
 }
 
 // RegisterApplicationMaster 注册 ApplicationMaster
-func (c *ApplicationMasterGRPCClient) RegisterApplicationMaster(host string, rpcPort int32, trackingURL string) (*RegisterApplicationMasterResponse, error) {
+func (c *ApplicationMasterGRPCClient) RegisterApplicationMaster(host string, rpcPort int32, trackingURL string) (*ampb.RegisterApplicationMasterResponse, error) {
 	if !c.connected {
 		return nil, fmt.Errorf("not connected to ResourceManager")
 	}
@@ -77,54 +77,42 @@ func (c *ApplicationMasterGRPCClient) RegisterApplicationMaster(host string, rpc
 
 	log.Printf("ApplicationMaster registered successfully")
 
-	// 转换ACL列表为map
-	aclMap := make(map[string]string)
-	for _, acl := range resp.ApplicationAcls {
-		aclMap[acl] = "true"
-	}
-
-	return &RegisterApplicationMasterResponse{
-		MaximumResourceCapability: common.Resource{
-			Memory: resp.MaximumResourceCapability.MemoryMb,
-			VCores: resp.MaximumResourceCapability.Vcores,
-		},
-		ApplicationACLs: aclMap,
-		Queue:           resp.Queue,
-	}, nil
+	// 直接返回 protobuf 响应
+	return resp, nil
 }
 
 // Allocate 发送资源分配请求
-func (c *ApplicationMasterGRPCClient) Allocate(allocateReq *AllocateRequest) (*AllocateResponse, error) {
+func (c *ApplicationMasterGRPCClient) Allocate(ask []*common.ContainerRequest, release []common.ContainerID, completedContainers []*common.Container, progress float32) (*ampb.AllocateResponse, error) {
 	if !c.connected {
 		return nil, fmt.Errorf("not connected to ResourceManager")
 	}
 
 	// 转换容器请求
 	var pbAsks []*ampb.ContainerRequest
-	for _, ask := range allocateReq.Ask {
+	for _, askReq := range ask {
 		pbAsks = append(pbAsks, &ampb.ContainerRequest{
 			Capability: &ampb.Resource{
-				MemoryMb: ask.Resource.Memory,
-				Vcores:   ask.Resource.VCores,
+				MemoryMb: askReq.Resource.Memory,
+				Vcores:   askReq.Resource.VCores,
 			},
-			Priority:            ask.Priority,
+			Priority:            askReq.Priority,
 			RelaxLocality:       true, // 简化处理
-			NodeLabelExpression: ask.NodeLabel,
+			NodeLabelExpression: askReq.NodeLabel,
 		})
 	}
 
 	// 转换释放的容器
 	var pbReleases []*ampb.ContainerID
-	for _, release := range allocateReq.Release {
+	for _, releaseID := range release {
 		pbReleases = append(pbReleases, &ampb.ContainerID{
-			ApplicationAttemptId: fmt.Sprintf("%s_%d", release.ApplicationAttemptID.ApplicationID.String(), release.ApplicationAttemptID.AttemptID),
-			ContainerId:          release.ContainerID,
+			ApplicationAttemptId: fmt.Sprintf("%s_%d", releaseID.ApplicationAttemptID.ApplicationID.String(), releaseID.ApplicationAttemptID.AttemptID),
+			ContainerId:          releaseID.ContainerID,
 		})
 	}
 
 	// 转换已完成的容器状态
 	var pbCompleted []*ampb.ContainerStatus
-	for _, completed := range allocateReq.CompletedContainers {
+	for _, completed := range completedContainers {
 		pbCompleted = append(pbCompleted, &ampb.ContainerStatus{
 			ContainerId: &ampb.ContainerID{
 				ApplicationAttemptId: fmt.Sprintf("%s_%d", completed.ID.ApplicationAttemptID.ApplicationID.String(), completed.ID.ApplicationAttemptID.AttemptID),
@@ -139,7 +127,7 @@ func (c *ApplicationMasterGRPCClient) Allocate(allocateReq *AllocateRequest) (*A
 		Ask:                 pbAsks,
 		Release:             pbReleases,
 		CompletedContainers: pbCompleted,
-		Progress:            allocateReq.Progress,
+		Progress:            progress,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -196,17 +184,11 @@ func (c *ApplicationMasterGRPCClient) Allocate(allocateReq *AllocateRequest) (*A
 		})
 	}
 
-	return &AllocateResponse{
-		AllocatedContainers: allocatedContainers,
-		CompletedContainers: []*common.Container{}, // 简化处理
-		Limit:               resp.Limit,
-		UpdatedNodes:        updatedNodes,
-		NumClusterNodes:     resp.NumClusterNodes,
-	}, nil
+	return resp, nil
 }
 
 // FinishApplicationMaster 完成 ApplicationMaster
-func (c *ApplicationMasterGRPCClient) FinishApplicationMaster(finalStatus string, diagnostics string, trackingURL string) (*FinishApplicationMasterResponse, error) {
+func (c *ApplicationMasterGRPCClient) FinishApplicationMaster(finalStatus string, diagnostics string, trackingURL string) (*ampb.FinishApplicationMasterResponse, error) {
 	if !c.connected {
 		return nil, fmt.Errorf("not connected to ResourceManager")
 	}
@@ -227,9 +209,7 @@ func (c *ApplicationMasterGRPCClient) FinishApplicationMaster(finalStatus string
 
 	log.Printf("ApplicationMaster finished successfully")
 
-	return &FinishApplicationMasterResponse{
-		IsUnregistered: resp.IsUnregistered,
-	}, nil
+	return resp, nil
 }
 
 // GetApplicationReport 获取应用程序报告
@@ -275,7 +255,7 @@ func (c *ApplicationMasterGRPCClient) GetApplicationReport() (*common.Applicatio
 }
 
 // GetClusterMetrics 获取集群指标
-func (c *ApplicationMasterGRPCClient) GetClusterMetrics() (*ClusterMetrics, error) {
+func (c *ApplicationMasterGRPCClient) GetClusterMetrics() (*ampb.GetClusterMetricsResponse, error) {
 	if !c.connected {
 		return nil, fmt.Errorf("not connected to ResourceManager")
 	}
@@ -290,30 +270,5 @@ func (c *ApplicationMasterGRPCClient) GetClusterMetrics() (*ClusterMetrics, erro
 		return nil, fmt.Errorf("failed to get cluster metrics: %v", err)
 	}
 
-	return &ClusterMetrics{
-		AppsSubmitted:         resp.ClusterMetrics.AppsSubmitted,
-		AppsCompleted:         resp.ClusterMetrics.AppsCompleted,
-		AppsPending:           resp.ClusterMetrics.AppsPending,
-		AppsRunning:           resp.ClusterMetrics.AppsRunning,
-		AppsFailed:            resp.ClusterMetrics.AppsFailed,
-		AppsKilled:            resp.ClusterMetrics.AppsKilled,
-		ActiveNodes:           resp.ClusterMetrics.ActiveNodes,
-		LostNodes:             resp.ClusterMetrics.LostNodes,
-		UnhealthyNodes:        resp.ClusterMetrics.UnhealthyNodes,
-		DecommissionedNodes:   resp.ClusterMetrics.DecommissionedNodes,
-		TotalNodes:            resp.ClusterMetrics.TotalNodes,
-		ReservedVirtualCores:  resp.ClusterMetrics.ReservedVirtualCores,
-		AvailableVirtualCores: resp.ClusterMetrics.AvailableVirtualCores,
-		AllocatedVirtualCores: resp.ClusterMetrics.AllocatedVirtualCores,
-		// 其他字段使用默认值
-		ReservedMB:          0,
-		AvailableMB:         0,
-		AllocatedMB:         0,
-		ContainersAllocated: 0,
-		ContainersReserved:  0,
-		ContainersPending:   0,
-		TotalMB:             0,
-		TotalVirtualCores:   resp.ClusterMetrics.AvailableVirtualCores + resp.ClusterMetrics.AllocatedVirtualCores,
-		RebootedNodes:       0,
-	}, nil
+	return resp, nil
 }

@@ -64,7 +64,7 @@ func main() {
 		VCores: config.NodeManager.ContainerVCoresLimit,
 	}
 
-	nm := nodemanager.NewNodeManager(nodeID, totalResource, config.NodeManager.ResourceManagerURL, config.NodeManager.ResourceManagerGRPCURL)
+	nm := nodemanager.NewNodeManager(nodeID, totalResource, "", config.NodeManager.ResourceManagerGRPCURL)
 
 	// 优雅关闭处理
 	_, cancel := context.WithCancel(context.Background())
