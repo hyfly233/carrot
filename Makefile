@@ -29,7 +29,6 @@ build:
 	@mkdir -p bin
 	$(GOBUILD) $(LDFLAGS) -o bin/resourcemanager cmd/resourcemanager/main.go
 	$(GOBUILD) $(LDFLAGS) -o bin/nodemanager cmd/nodemanager/main.go
-	$(GOBUILD) $(LDFLAGS) -o bin/client cmd/client/main.go
 	$(GOBUILD) $(LDFLAGS) -o bin/applicationmaster cmd/applicationmaster/main.go
 	@echo "Build completed!"
 
@@ -39,7 +38,6 @@ build-linux:
 	@mkdir -p bin/linux
 	GOOS=linux GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o bin/linux/resourcemanager cmd/resourcemanager/main.go
 	GOOS=linux GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o bin/linux/nodemanager cmd/nodemanager/main.go
-	GOOS=linux GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o bin/linux/client cmd/client/main.go
 	GOOS=linux GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o bin/applicationmaster cmd/applicationmaster/main.go
 	@echo "Build completed!"
 
