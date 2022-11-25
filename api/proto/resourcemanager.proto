@@ -12,13 +12,13 @@ service ResourceManagerService {
   rpc RegisterNode(RegisterNodeRequest) returns (RegisterNodeResponse);
   rpc NodeHeartbeat(NodeHeartbeatRequest) returns (NodeHeartbeatResponse);
   rpc GetNodes(GetNodesRequest) returns (GetNodesResponse);
-  
+
   // 应用程序管理
   rpc SubmitApplication(SubmitApplicationRequest) returns (SubmitApplicationResponse);
   rpc GetApplications(GetApplicationsRequest) returns (GetApplicationsResponse);
   rpc GetApplication(GetApplicationRequest) returns (GetApplicationResponse);
   rpc KillApplication(KillApplicationRequest) returns (KillApplicationResponse);
-  
+
   // 集群信息
   rpc GetClusterInfo(GetClusterInfoRequest) returns (GetClusterInfoResponse);
   rpc GetClusterMetrics(GetClusterMetricsRequest) returns (GetClusterMetricsResponse);

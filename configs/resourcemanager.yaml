@@ -73,7 +73,7 @@ log:
     daily_compression: true
   kafka_output:
     enabled: false
-    brokers: ["localhost:9092"]
+    brokers: [ "localhost:9092" ]
     topic: "carrot-rm-logs"
     batch_size: 100
     timeout: "10s"

@@ -10,10 +10,10 @@ import "google/protobuf/timestamp.proto";
 service NodeManagerService {
   // 节点注册
   rpc RegisterNode(RegisterNodeRequest) returns (RegisterNodeResponse);
-  
+
   // 节点心跳
   rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
-  
+
   // 获取节点状态
   rpc GetNodeStatus(GetNodeStatusRequest) returns (GetNodeStatusResponse);
 }

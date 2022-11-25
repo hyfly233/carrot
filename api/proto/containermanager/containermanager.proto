@@ -9,149 +9,149 @@ option go_package = "carrot/api/proto/containermanager";
 // ContainerManagerService 容器管理gRPC服务
 // ApplicationMaster通过此服务与NodeManager进行容器生命周期管理
 service ContainerManagerService {
-    // StartContainer 启动容器
-    rpc StartContainer(StartContainerRequest) returns (StartContainerResponse);
-    
-    // StopContainer 停止容器
-    rpc StopContainer(StopContainerRequest) returns (StopContainerResponse);
-    
-    // GetContainerStatus 获取容器状态
-    rpc GetContainerStatus(GetContainerStatusRequest) returns (GetContainerStatusResponse);
-    
-    // GetContainerLogs 获取容器日志
-    rpc GetContainerLogs(GetContainerLogsRequest) returns (GetContainerLogsResponse);
-    
-    // ListContainers 列出所有容器
-    rpc ListContainers(ListContainersRequest) returns (ListContainersResponse);
+  // StartContainer 启动容器
+  rpc StartContainer(StartContainerRequest) returns (StartContainerResponse);
+
+  // StopContainer 停止容器
+  rpc StopContainer(StopContainerRequest) returns (StopContainerResponse);
+
+  // GetContainerStatus 获取容器状态
+  rpc GetContainerStatus(GetContainerStatusRequest) returns (GetContainerStatusResponse);
+
+  // GetContainerLogs 获取容器日志
+  rpc GetContainerLogs(GetContainerLogsRequest) returns (GetContainerLogsResponse);
+
+  // ListContainers 列出所有容器
+  rpc ListContainers(ListContainersRequest) returns (ListContainersResponse);
 }
 
 // 资源定义
 message Resource {
-    int64 memory_mb = 1;  // 内存，MB
-    int32 vcores = 2;     // 虚拟核心数
+  int64 memory_mb = 1;  // 内存，MB
+  int32 vcores = 2;     // 虚拟核心数
 }
 
 // 容器ID
 message ContainerID {
-    string application_attempt_id = 1;  // 应用尝试ID
-    int64 container_id = 2;             // 容器ID
+  string application_attempt_id = 1;  // 应用尝试ID
+  int64 container_id = 2;             // 容器ID
 }
 
 // 节点ID
 message NodeID {
-    string host = 1;  // 主机名
-    int32 port = 2;   // 端口
+  string host = 1;  // 主机名
+  int32 port = 2;   // 端口
 }
 
 // 容器启动上下文
 message ContainerLaunchContext {
-    repeated string commands = 1;                  // 启动命令
-    map<string, string> environment = 2;          // 环境变量
-    repeated LocalResource local_resources = 3;   // 本地资源
-    string working_directory = 4;                 // 工作目录
-    map<string, string> service_data = 5;         // 服务数据
+  repeated string commands = 1;                  // 启动命令
+  map<string, string> environment = 2;          // 环境变量
+  repeated LocalResource local_resources = 3;   // 本地资源
+  string working_directory = 4;                 // 工作目录
+  map<string, string> service_data = 5;         // 服务数据
 }
 
 // 本地资源
 message LocalResource {
-    string url = 1;           // 资源URL
-    int64 size = 2;           // 文件大小
-    google.protobuf.Timestamp timestamp = 3;  // 时间戳
-    string type = 4;          // 资源类型 (FILE, ARCHIVE等)
-    string visibility = 5;    // 可见性 (PUBLIC, PRIVATE, APPLICATION)
-    string pattern = 6;       // 解压模式
+  string url = 1;           // 资源URL
+  int64 size = 2;           // 文件大小
+  google.protobuf.Timestamp timestamp = 3;  // 时间戳
+  string type = 4;          // 资源类型 (FILE, ARCHIVE等)
+  string visibility = 5;    // 可见性 (PUBLIC, PRIVATE, APPLICATION)
+  string pattern = 6;       // 解压模式
 }
 
 // 容器状态
 enum ContainerState {
-    CONTAINER_NEW = 0;
-    CONTAINER_RUNNING = 1;
-    CONTAINER_COMPLETE = 2;
-    CONTAINER_FAILED = 3;
-    CONTAINER_KILLED = 4;
+  CONTAINER_NEW = 0;
+  CONTAINER_RUNNING = 1;
+  CONTAINER_COMPLETE = 2;
+  CONTAINER_FAILED = 3;
+  CONTAINER_KILLED = 4;
 }
 
 // 容器状态信息
 message ContainerStatus {
-    ContainerID container_id = 1;
-    ContainerState state = 2;
-    int32 exit_code = 3;
-    string diagnostics = 4;
-    google.protobuf.Timestamp start_time = 5;
-    google.protobuf.Timestamp finish_time = 6;
-    Resource allocated_resource = 7;
-    string node_http_address = 8;
+  ContainerID container_id = 1;
+  ContainerState state = 2;
+  int32 exit_code = 3;
+  string diagnostics = 4;
+  google.protobuf.Timestamp start_time = 5;
+  google.protobuf.Timestamp finish_time = 6;
+  Resource allocated_resource = 7;
+  string node_http_address = 8;
 }
 
 // 容器信息
 message Container {
-    ContainerID id = 1;
-    NodeID node_id = 2;
-    Resource resource = 3;
-    string container_token = 4;
-    ContainerState state = 5;
-    string diagnostics = 6;
+  ContainerID id = 1;
+  NodeID node_id = 2;
+  Resource resource = 3;
+  string container_token = 4;
+  ContainerState state = 5;
+  string diagnostics = 6;
 }
 
 // StartContainer 请求
 message StartContainerRequest {
-    ContainerID container_id = 1;
-    ContainerLaunchContext launch_context = 2;
-    Resource allocated_resource = 3;
-    string container_token = 4;
+  ContainerID container_id = 1;
+  ContainerLaunchContext launch_context = 2;
+  Resource allocated_resource = 3;
+  string container_token = 4;
 }
 
 // StartContainer 响应
 message StartContainerResponse {
-    bool success = 1;
-    string message = 2;
-    string node_http_address = 3;
+  bool success = 1;
+  string message = 2;
+  string node_http_address = 3;
 }
 
 // StopContainer 请求
 message StopContainerRequest {
-    ContainerID container_id = 1;
+  ContainerID container_id = 1;
 }
 
 // StopContainer 响应
 message StopContainerResponse {
-    bool success = 1;
-    string message = 2;
+  bool success = 1;
+  string message = 2;
 }
 
 // GetContainerStatus 请求
 message GetContainerStatusRequest {
-    ContainerID container_id = 1;
+  ContainerID container_id = 1;
 }
 
 // GetContainerStatus 响应
 message GetContainerStatusResponse {
-    ContainerStatus container_status = 1;
+  ContainerStatus container_status = 1;
 }
 
 // GetContainerLogs 请求
 message GetContainerLogsRequest {
-    ContainerID container_id = 1;
-    string log_type = 2;        // stdout, stderr, syslog等
-    int64 start_offset = 3;     // 开始偏移量
-    int64 length = 4;           // 读取长度，-1表示全部
+  ContainerID container_id = 1;
+  string log_type = 2;        // stdout, stderr, syslog等
+  int64 start_offset = 3;     // 开始偏移量
+  int64 length = 4;           // 读取长度，-1表示全部
 }
 
 // GetContainerLogs 响应
 message GetContainerLogsResponse {
-    string log_content = 1;
-    int64 total_size = 2;
-    bool has_more = 3;
+  string log_content = 1;
+  int64 total_size = 2;
+  bool has_more = 3;
 }
 
 // ListContainers 请求
 message ListContainersRequest {
-    // 可以添加过滤条件
-    ContainerState state_filter = 1;  // 状态过滤，0表示不过滤
+  // 可以添加过滤条件
+  ContainerState state_filter = 1;  // 状态过滤，0表示不过滤
 }
 
 // ListContainers 响应
 message ListContainersResponse {
-    repeated Container containers = 1;
-    int32 total_count = 2;
+  repeated Container containers = 1;
+  int32 total_count = 2;
 }

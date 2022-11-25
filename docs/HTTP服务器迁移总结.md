@@ -2,11 +2,13 @@
 
 ## 迁移概述
 
-已成功将 ApplicationMaster、ResourceManager 和 NodeManager 的 HTTP 相关代码迁移到对应的 `server` 目录下的 `http_server.go` 中，并预留了 gRPC、TCP 等其他通信协议的逻辑。
+已成功将 ApplicationMaster、ResourceManager 和 NodeManager 的 HTTP 相关代码迁移到对应的 `server` 目录下的
+`http_server.go` 中，并预留了 gRPC、TCP 等其他通信协议的逻辑。
 
 ## 迁移的文件结构
 
 ### ApplicationMaster
+
 ```
 internal/applicationmaster/server/
 ├── http_server.go    # HTTP 服务器实现
@@ -16,6 +18,7 @@ internal/applicationmaster/server/
 ```
 
 ### ResourceManager
+
 ```
 internal/resourcemanager/server/
 ├── http_server.go    # HTTP 服务器实现
@@ -24,6 +27,7 @@ internal/resourcemanager/server/
 ```
 
 ### NodeManager
+
 ```
 internal/nodemanager/server/
 ├── http_server.go    # HTTP 服务器实现
@@ -34,21 +38,25 @@ internal/nodemanager/server/
 ## 主要特性
 
 ### 1. 模块化设计
+
 - 每个组件的 HTTP 服务器代码都独立封装在各自的 `server` 包中
 - 通过接口定义实现了松耦合设计
 - 支持依赖注入和接口替换
 
 ### 2. 统一的服务器管理
+
 - `ServerManager` 提供统一的服务器管理功能
 - 支持多种服务器类型的注册、启动和停止
 - 提供批量操作和状态查询功能
 
 ### 3. 预留的扩展性
+
 - 支持 HTTP、gRPC、TCP、UDP 多种通信协议
 - 预留了 gRPC、TCP、UDP 服务器的接口和基础实现框架
 - 便于未来添加新的通信协议支持
 
 ### 4. 完善的错误处理
+
 - 定义了统一的错误类型
 - 提供了清晰的错误信息
 - 支持错误传播和处理
@@ -56,6 +64,7 @@ internal/nodemanager/server/
 ## 迁移的功能
 
 ### ApplicationMaster HTTP 服务器
+
 - 应用程序信息查询 (`/ws/v1/appmaster/info`)
 - 应用程序状态查询 (`/ws/v1/appmaster/status`)
 - 容器管理 (`/ws/v1/appmaster/containers`)
@@ -65,6 +74,7 @@ internal/nodemanager/server/
 - Web UI 界面
 
 ### ResourceManager HTTP 服务器
+
 - 集群信息 (`/ws/v1/cluster/info`)
 - 应用程序管理 (`/ws/v1/cluster/apps`)
 - 节点管理 (`/ws/v1/cluster/nodes`)
@@ -73,6 +83,7 @@ internal/nodemanager/server/
 - 节点健康状态 (`/ws/v1/cluster/nodes/health`)
 
 ### NodeManager HTTP 服务器
+
 - 容器管理 (`/ws/v1/node/containers`)
 - 单个容器操作 (`/ws/v1/node/containers/{containerId}`)
 - 节点信息 (`/ws/v1/node/info`)
@@ -81,6 +92,7 @@ internal/nodemanager/server/
 ## 使用方式
 
 ### 1. 基本使用
+
 ```go
 // 创建 HTTP 服务器
 httpServer := server.NewHTTPServer(component, logger)
@@ -93,6 +105,7 @@ err := httpServer.Stop()
 ```
 
 ### 2. 使用服务器管理器
+
 ```go
 // 创建服务器管理器
 serverManager := server.NewServerManager(logger)
@@ -112,7 +125,9 @@ err := serverManager.StopAllServers()
 ```
 
 ### 3. 适配现有代码
+
 通过适配器模式，可以将现有的组件适配到新的接口：
+
 ```go
 // 创建适配器
 adapter := NewApplicationMasterAdapter(existingAM)
@@ -124,6 +139,7 @@ httpServer := server.NewHTTPServer(adapter, logger)
 ## 预留的扩展功能
 
 ### gRPC 服务器 (预留)
+
 ```go
 // 创建 gRPC 服务器
 grpcServer := server.NewGRPCServer(logger)
@@ -136,6 +152,7 @@ err := grpcServer.Start(8081)
 ```
 
 ### TCP 服务器 (预留)
+
 ```go
 // 创建 TCP 服务器
 tcpServer := server.NewTCPServer(logger)
@@ -150,6 +167,7 @@ err := tcpServer.Start(8082)
 ```
 
 ### UDP 服务器 (预留)
+
 ```go
 // 创建 UDP 服务器
 udpServer := server.NewUDPServer(logger)

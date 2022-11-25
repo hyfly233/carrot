@@ -4,26 +4,26 @@
 
 ### 🚀 快速开始
 
--   [📦 快速安装指南](./快速安装指南.md) - 钟快速搭建 Carrot YARN 集群
--   [🔧 开发指南](./开发指南.md) - 开发环境配置
--   [🏗️ 系统架构](./系统架构.md) - 深入了解 Carrot YARN 的架构设计
--   [📋 项目概述](./项目概述.md) - 项目背景、目标和特性介绍
+- [📦 快速安装指南](./快速安装指南.md) - 钟快速搭建 Carrot YARN 集群
+- [🔧 开发指南](./开发指南.md) - 开发环境配置
+- [🏗️ 系统架构](./系统架构.md) - 深入了解 Carrot YARN 的架构设计
+- [📋 项目概述](./项目概述.md) - 项目背景、目标和特性介绍
 
 ### 📚 参考文档
 
--   [📖 核心概念](./核心概念.md) - YARN 核心概念和 Carrot 实现详解
--   [⚙️ 配置参考](./配置参考.md) - 完整的配置选项和参数说明
--   [📊 API 参考](./API参考.md) - REST API 完整参考和 SDK 示例
--   [🔧 故障排除指南](./故障排除指南.md) - 常见问题诊断和解决方案
+- [📖 核心概念](./核心概念.md) - YARN 核心概念和 Carrot 实现详解
+- [⚙️ 配置参考](./配置参考.md) - 完整的配置选项和参数说明
+- [📊 API 参考](./API参考.md) - REST API 完整参考和 SDK 示例
+- [🔧 故障排除指南](./故障排除指南.md) - 常见问题诊断和解决方案
 
 ### 🔧 实现指南
 
--   [📘 实现指南](./实现指南.md) - 完整的技术实现说明
+- [📘 实现指南](./实现指南.md) - 完整的技术实现说明
 
 ### 🐛 调试指南
 
--   [🔍 调试指南](./调试指南.md) - 问题排查和性能优化
--   [🛠️ 调试方法总结](./调试方法总结.md) - 实用的调试技巧和工具
+- [🔍 调试指南](./调试指南.md) - 问题排查和性能优化
+- [🛠️ 调试方法总结](./调试方法总结.md) - 实用的调试技巧和工具
 
 ## 📋 文档使用指南
 
@@ -51,7 +51,7 @@
 
 ### 📖 外部资源
 
--   **YARN 官方文档**: [Apache Hadoop YARN](https://hadoop.apache.org/docs/current/hadoop-yarn/hadoop-yarn-site/YARN.html)
--   **Go 语言官网**: [golang.org](https://golang.org/)
--   **Docker 官方文档**: [docker.com](https://docs.docker.com/)
--   **Kubernetes 官方文档**: [kubernetes.io](https://kubernetes.io/docs/)
+- **YARN 官方文档**: [Apache Hadoop YARN](https://hadoop.apache.org/docs/current/hadoop-yarn/hadoop-yarn-site/YARN.html)
+- **Go 语言官网**: [golang.org](https://golang.org/)
+- **Docker 官方文档**: [docker.com](https://docs.docker.com/)
+- **Kubernetes 官方文档**: [kubernetes.io](https://kubernetes.io/docs/)

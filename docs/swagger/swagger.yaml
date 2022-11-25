@@ -110,12 +110,12 @@ definitions:
       resource:
         $ref: '#/definitions/carrot_internal_common.Resource'
     required:
-    - am_container_spec
-    - application_id
-    - application_name
-    - application_type
-    - queue
-    - resource
+      - am_container_spec
+      - application_id
+      - application_name
+      - application_type
+      - queue
+      - resource
     type: object
   internal_resourcemanager_server.NodeHeartbeatRequest:
     properties:
@@ -128,8 +128,8 @@ definitions:
       used_resource:
         $ref: '#/definitions/carrot_internal_common.Resource'
     required:
-    - node_id
-    - used_resource
+      - node_id
+      - used_resource
     type: object
   internal_resourcemanager_server.NodeRegistrationRequest:
     properties:
@@ -140,9 +140,9 @@ definitions:
       resource:
         $ref: '#/definitions/carrot_internal_common.Resource'
     required:
-    - http_address
-    - node_id
-    - resource
+      - http_address
+      - node_id
+      - resource
     type: object
 host: localhost:8088
 info:
@@ -161,7 +161,7 @@ paths:
     get:
       description: 获取集群中所有应用程序的列表
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: 应用程序列表
@@ -170,20 +170,20 @@ paths:
             type: object
       summary: 获取应用程序列表
       tags:
-      - applications
+        - applications
     post:
       consumes:
-      - application/json
+        - application/json
       description: 向 YARN 集群提交新的应用程序
       parameters:
-      - description: 应用程序提交信息
-        in: body
-        name: application
-        required: true
-        schema:
-          $ref: '#/definitions/internal_resourcemanager_server.ApplicationSubmissionRequest'
+        - description: 应用程序提交信息
+          in: body
+          name: application
+          required: true
+          schema:
+            $ref: '#/definitions/internal_resourcemanager_server.ApplicationSubmissionRequest'
       produces:
-      - application/json
+        - application/json
       responses:
         "201":
           description: 应用程序ID
@@ -202,16 +202,16 @@ paths:
             type: object
       summary: 提交应用程序
       tags:
-      - applications
+        - applications
   /cluster/apps/{appId}:
     delete:
       description: 终止并删除指定的应用程序
       parameters:
-      - description: 应用程序ID
-        in: path
-        name: appId
-        required: true
-        type: string
+        - description: 应用程序ID
+          in: path
+          name: appId
+          required: true
+          type: string
       responses:
         "200":
           description: 删除成功
@@ -225,17 +225,17 @@ paths:
             type: object
       summary: 删除应用程序
       tags:
-      - applications
+        - applications
     get:
       description: 根据应用程序ID获取应用程序的详细信息
       parameters:
-      - description: 应用程序ID
-        in: path
-        name: appId
-        required: true
-        type: string
+        - description: 应用程序ID
+          in: path
+          name: appId
+          required: true
+          type: string
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: 应用程序详情
@@ -249,12 +249,12 @@ paths:
             type: object
       summary: 获取应用程序详情
       tags:
-      - applications
+        - applications
   /cluster/apps/new-application:
     post:
       description: 为新应用程序分配唯一的应用程序ID
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: 新应用程序ID
@@ -263,12 +263,12 @@ paths:
             type: object
       summary: 获取新应用程序ID
       tags:
-      - applications
+        - applications
   /cluster/info:
     get:
       description: 获取 YARN 集群的基本信息和状态
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: 集群信息
@@ -277,12 +277,12 @@ paths:
             type: object
       summary: 获取集群信息
       tags:
-      - cluster
+        - cluster
   /cluster/nodes:
     get:
       description: 获取集群中所有节点的列表和状态信息
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: 节点列表
@@ -291,12 +291,12 @@ paths:
             type: object
       summary: 获取节点列表
       tags:
-      - nodes
+        - nodes
   /cluster/nodes/health:
     get:
       description: 获取集群中所有节点的健康状态统计
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: 节点健康状态
@@ -305,21 +305,21 @@ paths:
             type: object
       summary: 获取节点健康状态
       tags:
-      - nodes
+        - nodes
   /cluster/nodes/heartbeat:
     post:
       consumes:
-      - application/json
+        - application/json
       description: 节点管理器向资源管理器发送心跳信息
       parameters:
-      - description: 心跳信息
-        in: body
-        name: heartbeat
-        required: true
-        schema:
-          $ref: '#/definitions/internal_resourcemanager_server.NodeHeartbeatRequest'
+        - description: 心跳信息
+          in: body
+          name: heartbeat
+          required: true
+          schema:
+            $ref: '#/definitions/internal_resourcemanager_server.NodeHeartbeatRequest'
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: 心跳响应
@@ -338,21 +338,21 @@ paths:
             type: object
       summary: 节点心跳
       tags:
-      - nodes
+        - nodes
   /cluster/nodes/register:
     post:
       consumes:
-      - application/json
+        - application/json
       description: 向资源管理器注册新的节点管理器
       parameters:
-      - description: 节点注册信息
-        in: body
-        name: node
-        required: true
-        schema:
-          $ref: '#/definitions/internal_resourcemanager_server.NodeRegistrationRequest'
+        - description: 节点注册信息
+          in: body
+          name: node
+          required: true
+          schema:
+            $ref: '#/definitions/internal_resourcemanager_server.NodeRegistrationRequest'
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: 注册成功
@@ -371,5 +371,5 @@ paths:
             type: object
       summary: 注册节点
       tags:
-      - nodes
+        - nodes
 swagger: "2.0"

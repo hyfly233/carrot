@@ -4,14 +4,14 @@
 
 ## 📋 目录
 
--   [概述](#概述)
--   [认证](#认证)
--   [ResourceManager API](#resourcemanager-api)
--   [NodeManager API](#nodemanager-api)
--   [ApplicationMaster API](#applicationmaster-api)
--   [Client API](#client-api)
--   [错误处理](#错误处理)
--   [SDK 示例](#sdk-示例)
+- [概述](#概述)
+- [认证](#认证)
+- [ResourceManager API](#resourcemanager-api)
+- [NodeManager API](#nodemanager-api)
+- [ApplicationMaster API](#applicationmaster-api)
+- [Client API](#client-api)
+- [错误处理](#错误处理)
+- [SDK 示例](#sdk-示例)
 
 ## 🌐 概述
 
@@ -23,8 +23,8 @@
 
 ### 内容类型
 
--   **请求**: `application/json`
--   **响应**: `application/json`
+- **请求**: `application/json`
+- **响应**: `application/json`
 
 ### 基础 URL
 
@@ -245,13 +245,13 @@ GET /api/v1/applications?state=RUNNING&queue=default&limit=10&offset=0
 
 查询参数：
 
-| 参数     | 类型   | 描述         | 默认值 |
-| -------- | ------ | ------------ | ------ |
-| `state`  | string | 应用程序状态 | all    |
-| `queue`  | string | 队列名称     | all    |
-| `user`   | string | 用户名       | all    |
-| `limit`  | int    | 返回数量限制 | 100    |
-| `offset` | int    | 偏移量       | 0      |
+| 参数       | 类型     | 描述     | 默认值 |
+|----------|--------|--------|-----|
+| `state`  | string | 应用程序状态 | all |
+| `queue`  | string | 队列名称   | all |
+| `user`   | string | 用户名    | all |
+| `limit`  | int    | 返回数量限制 | 100 |
+| `offset` | int    | 偏移量    | 0   |
 
 #### 获取应用程序详情
 
@@ -287,10 +287,10 @@ GET /api/v1/nodes?state=RUNNING&healthy=true
 
 查询参数：
 
-| 参数      | 类型    | 描述     | 默认值 |
-| --------- | ------- | -------- | ------ |
-| `state`   | string  | 节点状态 | all    |
-| `healthy` | boolean | 健康状态 | all    |
+| 参数        | 类型      | 描述   | 默认值 |
+|-----------|---------|------|-----|
+| `state`   | string  | 节点状态 | all |
+| `healthy` | boolean | 健康状态 | all |
 
 响应：
 
@@ -448,10 +448,10 @@ GET /api/v1/containers/{container_id}/logs?start=0&end=1000
 
 查询参数：
 
-| 参数    | 类型 | 描述         | 默认值    |
-| ------- | ---- | ------------ | --------- |
-| `start` | int  | 起始字节位置 | 0         |
-| `end`   | int  | 结束字节位置 | -1 (全部) |
+| 参数      | 类型  | 描述     | 默认值     |
+|---------|-----|--------|---------|
+| `start` | int | 起始字节位置 | 0       |
+| `end`   | int | 结束字节位置 | -1 (全部) |
 
 ### 健康检查
 
@@ -636,15 +636,15 @@ GET /api/v1/client/cluster/overview
 
 ### 错误代码
 
-| 错误代码              | HTTP 状态码 | 描述           |
-| --------------------- | ----------- | -------------- |
-| `INVALID_REQUEST`     | 400         | 请求参数无效   |
-| `UNAUTHORIZED`        | 401         | 未授权访问     |
-| `FORBIDDEN`           | 403         | 权限不足       |
-| `NOT_FOUND`           | 404         | 资源不存在     |
-| `CONFLICT`            | 409         | 资源冲突       |
-| `INTERNAL_ERROR`      | 500         | 内部服务器错误 |
-| `SERVICE_UNAVAILABLE` | 503         | 服务不可用     |
+| 错误代码                  | HTTP 状态码 | 描述      |
+|-----------------------|----------|---------|
+| `INVALID_REQUEST`     | 400      | 请求参数无效  |
+| `UNAUTHORIZED`        | 401      | 未授权访问   |
+| `FORBIDDEN`           | 403      | 权限不足    |
+| `NOT_FOUND`           | 404      | 资源不存在   |
+| `CONFLICT`            | 409      | 资源冲突    |
+| `INTERNAL_ERROR`      | 500      | 内部服务器错误 |
+| `SERVICE_UNAVAILABLE` | 503      | 服务不可用   |
 
 ### 错误响应示例
 
@@ -672,51 +672,51 @@ GET /api/v1/client/cluster/overview
 package main
 
 import (
-    "context"
-    "fmt"
-    "log"
+	"context"
+	"fmt"
+	"log"
 
-    "github.com/hyfly233/carrot/pkg/client"
+	"github.com/hyfly233/carrot/pkg/client"
 )
 
 func main() {
-    // 创建客户端
-    config := &client.Config{
-        ResourceManagerURL: "http://localhost:8088",
-        Token: "your-jwt-token",
-    }
+	// 创建客户端
+	config := &client.Config{
+		ResourceManagerURL: "http://localhost:8088",
+		Token:              "your-jwt-token",
+	}
 
-    c := client.New(config)
+	c := client.New(config)
 
-    // 提交应用程序
-    app := &client.Application{
-        Name: "MyApp",
-        Type: "simple",
-        Queue: "default",
-        AMContainerSpec: &client.ContainerSpec{
-            Resource: &client.Resource{
-                Memory: 1024,
-                VCores: 1,
-            },
-            Commands: []string{"./my-app"},
-        },
-    }
+	// 提交应用程序
+	app := &client.Application{
+		Name:  "MyApp",
+		Type:  "simple",
+		Queue: "default",
+		AMContainerSpec: &client.ContainerSpec{
+			Resource: &client.Resource{
+				Memory: 1024,
+				VCores: 1,
+			},
+			Commands: []string{"./my-app"},
+		},
+	}
 
-    ctx := context.Background()
-    result, err := c.SubmitApplication(ctx, app)
-    if err != nil {
-        log.Fatal(err)
-    }
+	ctx := context.Background()
+	result, err := c.SubmitApplication(ctx, app)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    fmt.Printf("Application submitted: %s\n", result.ApplicationID)
+	fmt.Printf("Application submitted: %s\n", result.ApplicationID)
 
-    // 查询应用程序状态
-    status, err := c.GetApplicationStatus(ctx, result.ApplicationID)
-    if err != nil {
-        log.Fatal(err)
-    }
+	// 查询应用程序状态
+	status, err := c.GetApplicationStatus(ctx, result.ApplicationID)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    fmt.Printf("Application state: %s\n", status.State)
+	fmt.Printf("Application state: %s\n", status.State)
 }
 ```
 
@@ -761,7 +761,7 @@ except Exception as e:
 ### JavaScript SDK
 
 ```javascript
-const { CarrotClient } = require("carrot-yarn-client");
+const {CarrotClient} = require("carrot-yarn-client");
 
 // 创建客户端
 const client = new CarrotClient({
@@ -840,26 +840,26 @@ curl -X DELETE \
 
 ### 速率限制
 
-| 端点类型 | 限制          | 窗口期   |
-| -------- | ------------- | -------- |
+| 端点类型 | 限制            | 窗口期      |
+|------|---------------|----------|
 | 读取操作 | 1000 requests | 1 minute |
 | 写入操作 | 100 requests  | 1 minute |
 | 认证操作 | 10 requests   | 1 minute |
 
 ### 分页限制
 
--   最大页面大小: 1000
--   默认页面大小: 100
+- 最大页面大小: 1000
+- 默认页面大小: 100
 
 ### 超时设置
 
--   连接超时: 30 秒
--   读取超时: 30 秒
--   写入超时: 30 秒
+- 连接超时: 30 秒
+- 读取超时: 30 秒
+- 写入超时: 30 秒
 
 ## 📚 相关文档
 
--   [🏗️ 系统架构](./系统架构.md) - 理解系统设计
--   [🔧 开发指南](./开发指南.md) - 开发环境搭建
--   [⚙️ 配置参考](./配置参考.md) - 配置 API 参数
--   [📖 核心概念](./核心概念.md) - 理解 API 概念
+- [🏗️ 系统架构](./系统架构.md) - 理解系统设计
+- [🔧 开发指南](./开发指南.md) - 开发环境搭建
+- [⚙️ 配置参考](./配置参考.md) - 配置 API 参数
+- [📖 核心概念](./核心概念.md) - 理解 API 概念

@@ -8,210 +8,210 @@ import "google/protobuf/timestamp.proto";
 
 // ApplicationMaster 服务定义
 service ApplicationMasterService {
-    // 注册 ApplicationMaster 到 ResourceManager
-    rpc RegisterApplicationMaster(RegisterApplicationMasterRequest) returns (RegisterApplicationMasterResponse);
-    
-    // 资源分配请求 (心跳 + 容器请求/释放)
-    rpc Allocate(AllocateRequest) returns (AllocateResponse);
-    
-    // 完成 ApplicationMaster 生命周期
-    rpc FinishApplicationMaster(FinishApplicationMasterRequest) returns (FinishApplicationMasterResponse);
-    
-    // 获取应用程序报告
-    rpc GetApplicationReport(GetApplicationReportRequest) returns (GetApplicationReportResponse);
-    
-    // 获取集群指标
-    rpc GetClusterMetrics(GetClusterMetricsRequest) returns (GetClusterMetricsResponse);
+  // 注册 ApplicationMaster 到 ResourceManager
+  rpc RegisterApplicationMaster(RegisterApplicationMasterRequest) returns (RegisterApplicationMasterResponse);
+
+  // 资源分配请求 (心跳 + 容器请求/释放)
+  rpc Allocate(AllocateRequest) returns (AllocateResponse);
+
+  // 完成 ApplicationMaster 生命周期
+  rpc FinishApplicationMaster(FinishApplicationMasterRequest) returns (FinishApplicationMasterResponse);
+
+  // 获取应用程序报告
+  rpc GetApplicationReport(GetApplicationReportRequest) returns (GetApplicationReportResponse);
+
+  // 获取集群指标
+  rpc GetClusterMetrics(GetClusterMetricsRequest) returns (GetClusterMetricsResponse);
 }
 
 // ===== 数据类型定义 =====
 
 // 资源定义
 message Resource {
-    int64 memory_mb = 1;  // 内存（MB）
-    int32 vcores = 2;     // 虚拟核心数
+  int64 memory_mb = 1;  // 内存（MB）
+  int32 vcores = 2;     // 虚拟核心数
 }
 
 // 容器 ID
 message ContainerID {
-    string application_attempt_id = 1;
-    int64 container_id = 2;
+  string application_attempt_id = 1;
+  int64 container_id = 2;
 }
 
 // 应用程序 ID
 message ApplicationID {
-    int64 cluster_timestamp = 1;
-    int32 id = 2;
+  int64 cluster_timestamp = 1;
+  int32 id = 2;
 }
 
 // 应用程序尝试 ID
 message ApplicationAttemptID {
-    ApplicationID application_id = 1;
-    int32 attempt_id = 2;
+  ApplicationID application_id = 1;
+  int32 attempt_id = 2;
 }
 
 // 节点 ID
 message NodeID {
-    string host = 1;
-    int32 port = 2;
+  string host = 1;
+  int32 port = 2;
 }
 
 // 容器请求
 message ContainerRequest {
-    Resource capability = 1;            // 请求的资源
-    repeated string nodes = 2;          // 首选节点
-    repeated string racks = 3;          // 首选机架
-    int32 priority = 4;                 // 优先级
-    bool relax_locality = 5;            // 是否放松本地性约束
-    string node_label_expression = 6;   // 节点标签表达式
-    int64 execution_type = 7;           // 执行类型
+  Resource capability = 1;            // 请求的资源
+  repeated string nodes = 2;          // 首选节点
+  repeated string racks = 3;          // 首选机架
+  int32 priority = 4;                 // 优先级
+  bool relax_locality = 5;            // 是否放松本地性约束
+  string node_label_expression = 6;   // 节点标签表达式
+  int64 execution_type = 7;           // 执行类型
 }
 
 // 容器
 message Container {
-    ContainerID id = 1;                 // 容器 ID
-    NodeID node_id = 2;                 // 运行节点
-    string node_http_address = 3;       // 节点 HTTP 地址
-    Resource resource = 4;              // 分配的资源
-    int32 priority = 5;                 // 优先级
-    ContainerToken token = 6;           // 安全令牌
+  ContainerID id = 1;                 // 容器 ID
+  NodeID node_id = 2;                 // 运行节点
+  string node_http_address = 3;       // 节点 HTTP 地址
+  Resource resource = 4;              // 分配的资源
+  int32 priority = 5;                 // 优先级
+  ContainerToken token = 6;           // 安全令牌
 }
 
 // 容器令牌
 message ContainerToken {
-    bytes identifier = 1;               // 令牌标识符
-    bytes password = 2;                 // 令牌密码
-    string kind = 3;                    // 令牌类型
-    string service = 4;                 // 服务名称
+  bytes identifier = 1;               // 令牌标识符
+  bytes password = 2;                 // 令牌密码
+  string kind = 3;                    // 令牌类型
+  string service = 4;                 // 服务名称
 }
 
 // 容器状态
 message ContainerStatus {
-    ContainerID container_id = 1;       // 容器 ID
-    int32 state = 2;                    // 容器状态
-    string diagnostics = 3;             // 诊断信息
-    int32 exit_status = 4;              // 退出状态
+  ContainerID container_id = 1;       // 容器 ID
+  int32 state = 2;                    // 容器状态
+  string diagnostics = 3;             // 诊断信息
+  int32 exit_status = 4;              // 退出状态
 }
 
 // 节点报告
 message NodeReport {
-    NodeID node_id = 1;                 // 节点 ID
-    string node_http_address = 2;       // HTTP 地址
-    string node_rack_name = 3;          // 机架名称
-    Resource used = 4;                  // 已使用资源
-    Resource capability = 5;            // 总容量
-    int32 num_containers = 6;           // 容器数量
-    int32 node_state = 7;               // 节点状态
-    string health_report = 8;           // 健康报告
-    int64 last_health_report_time = 9;  // 最后健康报告时间
-    repeated string node_labels = 10;   // 节点标签
+  NodeID node_id = 1;                 // 节点 ID
+  string node_http_address = 2;       // HTTP 地址
+  string node_rack_name = 3;          // 机架名称
+  Resource used = 4;                  // 已使用资源
+  Resource capability = 5;            // 总容量
+  int32 num_containers = 6;           // 容器数量
+  int32 node_state = 7;               // 节点状态
+  string health_report = 8;           // 健康报告
+  int64 last_health_report_time = 9;  // 最后健康报告时间
+  repeated string node_labels = 10;   // 节点标签
 }
 
 // ===== 请求/响应消息 =====
 
 // 注册 ApplicationMaster 请求
 message RegisterApplicationMasterRequest {
-    string host = 1;                    // AM 主机地址
-    int32 rpc_port = 2;                 // AM RPC 端口
-    string tracking_url = 3;            // 跟踪 URL
+  string host = 1;                    // AM 主机地址
+  int32 rpc_port = 2;                 // AM RPC 端口
+  string tracking_url = 3;            // 跟踪 URL
 }
 
 // 注册 ApplicationMaster 响应
 message RegisterApplicationMasterResponse {
-    Resource maximum_resource_capability = 1;  // 最大资源容量
-    repeated string application_acls = 2;      // 应用程序 ACL
-    string queue = 3;                          // 队列名称
-    repeated string client_to_am_token_master_key = 4; // 客户端到 AM 的令牌主密钥
+  Resource maximum_resource_capability = 1;  // 最大资源容量
+  repeated string application_acls = 2;      // 应用程序 ACL
+  string queue = 3;                          // 队列名称
+  repeated string client_to_am_token_master_key = 4; // 客户端到 AM 的令牌主密钥
 }
 
 // 分配请求
 message AllocateRequest {
-    repeated ContainerRequest ask = 1;          // 请求的容器
-    repeated ContainerID release = 2;           // 释放的容器
-    repeated ContainerStatus completed_containers = 3; // 已完成容器状态
-    float progress = 4;                         // 应用程序进度
-    int32 response_id = 5;                      // 响应 ID
+  repeated ContainerRequest ask = 1;          // 请求的容器
+  repeated ContainerID release = 2;           // 释放的容器
+  repeated ContainerStatus completed_containers = 3; // 已完成容器状态
+  float progress = 4;                         // 应用程序进度
+  int32 response_id = 5;                      // 响应 ID
 }
 
 // 分配响应
 message AllocateResponse {
-    repeated Container allocated_containers = 1;    // 分配的容器
-    repeated ContainerStatus completed_containers = 2; // 已完成容器状态
-    int32 limit = 3;                                // 限制
-    repeated NodeReport updated_nodes = 4;          // 更新的节点
-    int32 num_cluster_nodes = 5;                   // 集群节点数
-    Resource available_resources = 6;               // 可用资源
-    int32 response_id = 7;                         // 响应 ID
+  repeated Container allocated_containers = 1;    // 分配的容器
+  repeated ContainerStatus completed_containers = 2; // 已完成容器状态
+  int32 limit = 3;                                // 限制
+  repeated NodeReport updated_nodes = 4;          // 更新的节点
+  int32 num_cluster_nodes = 5;                   // 集群节点数
+  Resource available_resources = 6;               // 可用资源
+  int32 response_id = 7;                         // 响应 ID
 }
 
 // 完成 ApplicationMaster 请求
 message FinishApplicationMasterRequest {
-    string final_application_status = 1;       // 最终应用程序状态
-    string diagnostics = 2;                    // 诊断信息
-    string tracking_url = 3;                   // 跟踪 URL
+  string final_application_status = 1;       // 最终应用程序状态
+  string diagnostics = 2;                    // 诊断信息
+  string tracking_url = 3;                   // 跟踪 URL
 }
 
 // 完成 ApplicationMaster 响应
 message FinishApplicationMasterResponse {
-    bool is_unregistered = 1;                  // 是否已注销
+  bool is_unregistered = 1;                  // 是否已注销
 }
 
 // 获取应用程序报告请求
 message GetApplicationReportRequest {
-    ApplicationID application_id = 1;           // 应用程序 ID
+  ApplicationID application_id = 1;           // 应用程序 ID
 }
 
 // 获取应用程序报告响应
 message GetApplicationReportResponse {
-    ApplicationReport application_report = 1;   // 应用程序报告
+  ApplicationReport application_report = 1;   // 应用程序报告
 }
 
 // 应用程序报告
 message ApplicationReport {
-    ApplicationID application_id = 1;           // 应用程序 ID
-    ApplicationAttemptID current_application_attempt_id = 2; // 当前尝试 ID
-    string user = 3;                            // 用户
-    string queue = 4;                           // 队列
-    string name = 5;                            // 应用程序名称
-    string host = 6;                            // 主机
-    int32 rpc_port = 7;                        // RPC 端口
-    string tracking_url = 8;                    // 跟踪 URL
-    string application_type = 9;                // 应用程序类型
-    int32 yarn_application_state = 10;          // YARN 应用程序状态
-    string final_application_status = 11;       // 最终状态
-    float progress = 12;                        // 进度
-    google.protobuf.Timestamp start_time = 13; // 开始时间
-    google.protobuf.Timestamp finish_time = 14; // 完成时间
-    string diagnostics = 15;                    // 诊断信息
+  ApplicationID application_id = 1;           // 应用程序 ID
+  ApplicationAttemptID current_application_attempt_id = 2; // 当前尝试 ID
+  string user = 3;                            // 用户
+  string queue = 4;                           // 队列
+  string name = 5;                            // 应用程序名称
+  string host = 6;                            // 主机
+  int32 rpc_port = 7;                        // RPC 端口
+  string tracking_url = 8;                    // 跟踪 URL
+  string application_type = 9;                // 应用程序类型
+  int32 yarn_application_state = 10;          // YARN 应用程序状态
+  string final_application_status = 11;       // 最终状态
+  float progress = 12;                        // 进度
+  google.protobuf.Timestamp start_time = 13; // 开始时间
+  google.protobuf.Timestamp finish_time = 14; // 完成时间
+  string diagnostics = 15;                    // 诊断信息
 }
 
 // 获取集群指标请求
 message GetClusterMetricsRequest {
-    // 空请求
+  // 空请求
 }
 
 // 获取集群指标响应
 message GetClusterMetricsResponse {
-    ClusterMetrics cluster_metrics = 1;         // 集群指标
+  ClusterMetrics cluster_metrics = 1;         // 集群指标
 }
 
 // 集群指标
 message ClusterMetrics {
-    int32 apps_submitted = 1;                   // 已提交应用程序数
-    int32 apps_completed = 2;                   // 已完成应用程序数
-    int32 apps_pending = 3;                     // 待处理应用程序数
-    int32 apps_running = 4;                     // 运行中应用程序数
-    int32 apps_failed = 5;                      // 失败应用程序数
-    int32 apps_killed = 6;                      // 被杀死应用程序数
-    Resource reserved_mb = 7;                   // 保留内存
-    Resource available_mb = 8;                  // 可用内存
-    Resource allocated_mb = 9;                  // 已分配内存
-    int32 reserved_virtual_cores = 10;          // 保留虚拟核心
-    int32 available_virtual_cores = 11;         // 可用虚拟核心
-    int32 allocated_virtual_cores = 12;         // 已分配虚拟核心
-    int32 active_nodes = 13;                    // 活跃节点数
-    int32 lost_nodes = 14;                      // 丢失节点数
-    int32 unhealthy_nodes = 15;                 // 不健康节点数
-    int32 decommissioned_nodes = 16;            // 退役节点数
-    int32 total_nodes = 17;                     // 总节点数
+  int32 apps_submitted = 1;                   // 已提交应用程序数
+  int32 apps_completed = 2;                   // 已完成应用程序数
+  int32 apps_pending = 3;                     // 待处理应用程序数
+  int32 apps_running = 4;                     // 运行中应用程序数
+  int32 apps_failed = 5;                      // 失败应用程序数
+  int32 apps_killed = 6;                      // 被杀死应用程序数
+  Resource reserved_mb = 7;                   // 保留内存
+  Resource available_mb = 8;                  // 可用内存
+  Resource allocated_mb = 9;                  // 已分配内存
+  int32 reserved_virtual_cores = 10;          // 保留虚拟核心
+  int32 available_virtual_cores = 11;         // 可用虚拟核心
+  int32 allocated_virtual_cores = 12;         // 已分配虚拟核心
+  int32 active_nodes = 13;                    // 活跃节点数
+  int32 lost_nodes = 14;                      // 丢失节点数
+  int32 unhealthy_nodes = 15;                 // 不健康节点数
+  int32 decommissioned_nodes = 16;            // 退役节点数
+  int32 total_nodes = 17;                     // 总节点数
 }
