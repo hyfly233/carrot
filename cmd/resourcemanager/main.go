@@ -18,16 +18,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// @title Carrot YARN ResourceManager API
-// @version 1.0
-// @description Carrot YARN 资源管理器 REST API 服务
-// @termsOfService http://swagger.io/terms/
-// @contact.name API Support
-// @contact.email support@carrot.io
-// @license.name Apache 2.0
-// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
-// @host localhost:8088
-// @BasePath /ws/v1
 func main() {
 	var (
 		configFile  = flag.String("config", "configs/resourcemanager.yaml", "Configuration file path")
@@ -48,11 +38,11 @@ func main() {
 	defer common.Sync()
 
 	logger := common.ComponentLogger("resourcemanager")
-	logger.Info("Starting YARN ResourceManager",
+	logger.Info("启动 Carrot ResourceManager",
 		zap.String("config_file", *configFile),
 		zap.Bool("development", *development))
 
-	logger.Info("Configuration loaded",
+	logger.Info("配置加载完成",
 		zap.String("cluster_name", config.Cluster.Name),
 		zap.Int("http_port", config.ResourceManager.Port),
 		zap.Int("grpc_port", config.ResourceManager.GRPCPort),
@@ -61,7 +51,7 @@ func main() {
 	// 创建ResourceManager
 	rm := resourcemanager.NewResourceManager(config)
 
-	logger.Info("Starting ResourceManager server",
+	logger.Info("启动 ResourceManager 服务",
 		zap.Int("http_port", config.ResourceManager.Port),
 		zap.Int("nm_grpc_port", config.ResourceManager.GRPCPort),
 		zap.Int("am_grpc_port", config.ResourceManager.AMGRPCPort),
@@ -84,11 +74,11 @@ func main() {
 
 	// 等待关闭信号
 	<-sigChan
-	logger.Info("Received shutdown signal")
+	logger.Info("接收到关闭信号，正在关闭 ResourceManager...")
 	cancel() // 取消context
 	if err := rm.Stop(); err != nil {
-		logger.Error("Error stopping ResourceManager", zap.Error(err))
+		logger.Error("关闭 ResourceManager 失败", zap.Error(err))
 	}
 
-	logger.Info("ResourceManager exited gracefully")
+	logger.Info("ResourceManager 正常退出...")
 }

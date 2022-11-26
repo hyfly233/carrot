@@ -77,15 +77,14 @@ func NewResourceManager(config *common.Config) *ResourceManager {
 
 	// 初始化集群管理器
 	if err := rm.initClusterManager(); err != nil {
-		rm.logger.Error("Failed to initialize cluster manager", zap.Error(err))
+		rm.logger.Error("初始化 ResourceManager 集群管理器失败", zap.Error(err))
 		// 不是致命错误，可以继续以单机模式运行
 	}
 
 	// 使用调度器工厂创建调度器
 	sch, err := scheduler.CreateScheduler(config)
 	if err != nil {
-		rm.logger.Error("Failed to create scheduler, falling back to FIFO",
-			zap.Error(err))
+		rm.logger.Error("无法创建调度程序，使用默认的 FIFO 策略", zap.Error(err))
 		// 回退到FIFO调度器
 		sch, _ = scheduler.CreateScheduler(nil)
 	}
@@ -98,8 +97,7 @@ func NewResourceManager(config *common.Config) *ResourceManager {
 		schedulerType = config.Scheduler.Type
 	}
 
-	rm.logger.Info("Scheduler initialized",
-		zap.String("type", schedulerType))
+	rm.logger.Info("调度器已初始化", zap.String("type", schedulerType))
 
 	// 初始化 HTTP 服务器
 	rm.ginServer = server.NewGinServer(rm, rm.logger)
@@ -866,19 +864,19 @@ func (rm *ResourceManager) GetNodeHealthStatus() map[string]int {
 // initClusterManager 初始化集群管理器
 func (rm *ResourceManager) initClusterManager() error {
 	if rm.config == nil {
-		rm.logger.Info("No config provided, running in standalone mode")
+		rm.logger.Info("未提供配置，以单节点模式运行")
 		return nil
 	}
 
 	// 如果集群名称为空，跳过集群初始化
 	if rm.config.Cluster.Name == "" {
-		rm.logger.Info("No cluster name configured, running in standalone mode")
+		rm.logger.Info("未配置集群名称，以单节点模式运行")
 		return nil
 	}
 
 	// 验证集群配置
 	if err := cluster.ValidateClusterConfig(rm.config.Cluster); err != nil {
-		return fmt.Errorf("invalid cluster config: %w", err)
+		return fmt.Errorf("无效的集群配置: %w", err)
 	}
 
 	// 创建本地节点信息
@@ -905,7 +903,7 @@ func (rm *ResourceManager) initClusterManager() error {
 
 	rm.clusterManager = cm
 
-	rm.logger.Info("Cluster manager initialized",
+	rm.logger.Info("ResourceManager 集群管理器已初始化",
 		zap.String("cluster", rm.config.Cluster.Name),
 		zap.String("discovery", rm.config.Cluster.DiscoveryMethod))
 
@@ -915,17 +913,17 @@ func (rm *ResourceManager) initClusterManager() error {
 // startClusterManager 启动集群管理器
 func (rm *ResourceManager) startClusterManager() error {
 	if rm.clusterManager == nil {
-		return fmt.Errorf("cluster manager not initialized")
+		return fmt.Errorf("集群管理器未初始化")
 	}
 
 	// 启动集群管理器
 	if err := rm.clusterManager.Start(rm.ctx); err != nil {
-		return fmt.Errorf("failed to start cluster manager: %w", err)
+		return fmt.Errorf("启动集群管理器失败: %w", err)
 	}
 
 	// 加入集群
 	if err := rm.clusterManager.JoinCluster(); err != nil {
-		rm.logger.Warn("Failed to join cluster, continuing in standalone mode", zap.Error(err))
+		rm.logger.Warn("无法加入集群，继续以单节点模式运行", zap.Error(err))
 	}
 
 	return nil
@@ -966,20 +964,20 @@ func (rm *ResourceManager) GetClusterNodes() map[string]*common.ClusterNode {
 
 // onNodeJoined 处理节点加入事件
 func (rm *ResourceManager) onNodeJoined(node *common.ClusterNode) {
-	rm.logger.Info("Cluster node joined",
+	rm.logger.Info("集群节点已加入",
 		zap.String("node", node.ID.HostPortString()),
 		zap.String("type", string(node.Type)))
 
 	// 如果是NodeManager节点，等待它主动注册
 	if node.Type == common.NodeTypeNodeManager {
-		rm.logger.Info("NodeManager joined cluster, waiting for registration",
+		rm.logger.Info("NodeManager已加入集群，等待注册",
 			zap.String("node", node.ID.HostPortString()))
 	}
 }
 
 // onNodeLeft 处理节点离开事件
 func (rm *ResourceManager) onNodeLeft(node *common.ClusterNode) {
-	rm.logger.Info("Cluster node left",
+	rm.logger.Info("集群节点已离开",
 		zap.String("node", node.ID.HostPortString()),
 		zap.String("type", string(node.Type)))
 
@@ -989,7 +987,7 @@ func (rm *ResourceManager) onNodeLeft(node *common.ClusterNode) {
 		rm.mu.Lock()
 		if rmNode, exists := rm.nodes[nodeID]; exists {
 			delete(rm.nodes, nodeID)
-			rm.logger.Info("Removed node from registry",
+			rm.logger.Info("从注册表中删除节点",
 				zap.String("node", nodeID))
 
 			// 处理该节点上的容器
@@ -1004,15 +1002,15 @@ func (rm *ResourceManager) onLeaderChange(oldLeader, newLeader *common.ClusterNo
 	if newLeader != nil && rm.clusterManager != nil {
 		rm.isLeader = rm.clusterManager.IsLeader()
 
-		rm.logger.Info("Leader changed",
+		rm.logger.Info("集群 leader 已更换",
 			zap.Bool("is_leader", rm.isLeader),
 			zap.String("new_leader", newLeader.ID.HostPortString()))
 
 		if rm.isLeader {
-			rm.logger.Info("Became cluster leader, taking over resource management")
+			rm.logger.Info("成为集群 leader，接管资源管理")
 			// 如果成为领导者，可以在这里初始化领导者特有的任务
 		} else {
-			rm.logger.Info("No longer leader, stepping down from resource management")
+			rm.logger.Info("不再担任集群 leader，停止资源管理")
 			// 如果不再是领导者，可以在这里清理领导者特有的任务
 		}
 	}
@@ -1025,14 +1023,14 @@ func (rm *ResourceManager) handleFailedNode(node *nodemanager.Node) {
 		container.Status = "FAILED"
 		container.State = "COMPLETE"
 
-		rm.logger.Warn("Container failed due to node failure",
+		rm.logger.Warn("容器因节点故障而失败",
 			zap.Any("container_id", container.ID),
 			zap.String("node", node.ID.HostPortString()))
 	}
 
 	// 通知调度器节点失败，可能需要重新调度应用
 	if rm.scheduler != nil {
-		rm.logger.Debug("Notifying scheduler of node failure",
+		rm.logger.Debug("通知调度程序节点故障",
 			zap.String("node", node.ID.HostPortString()))
 	}
 }
@@ -1047,9 +1045,9 @@ func (rm *ResourceManager) validateLeadership() error {
 	if rm.requiresLeadership() {
 		leader, exists := rm.clusterManager.GetLeader()
 		if exists {
-			return fmt.Errorf("operation requires leadership, current leader: %v", leader.ID.HostPortString())
+			return fmt.Errorf("操作需要 leadership, 当前 leader: %v", leader.ID.HostPortString())
 		}
-		return fmt.Errorf("operation requires leadership, no leader elected")
+		return fmt.Errorf("操作需要 leadership, 当前没有 leader")
 	}
 	return nil
 }
@@ -1064,7 +1062,7 @@ func (rm *ResourceManager) RegisterApplicationMaster(appID common.ApplicationID,
 	// 查找应用程序
 	app, exists := rm.applications[appID.String()]
 	if !exists {
-		return common.Resource{}, fmt.Errorf("application not found: %s", appID.String())
+		return common.Resource{}, fmt.Errorf("应用未找到: %s", appID.String())
 	}
 
 	// 更新应用程序的 AM 信息
@@ -1073,7 +1071,7 @@ func (rm *ResourceManager) RegisterApplicationMaster(appID common.ApplicationID,
 	app.TrackingURL = trackingURL
 	app.State = common.ApplicationStateRunning
 
-	rm.logger.Info("ApplicationMaster registered",
+	rm.logger.Info("ApplicationMaster 支持注册成功",
 		zap.String("app_id", appID.String()),
 		zap.String("host", host),
 		zap.Int32("rpc_port", rpcPort),
@@ -1081,22 +1079,23 @@ func (rm *ResourceManager) RegisterApplicationMaster(appID common.ApplicationID,
 
 	// 返回集群的最大资源容量
 	maxResource := common.Resource{
-		Memory: 16384, // 16GB，实际应该从集群配置获取
-		VCores: 16,    // 16核，实际应该从集群配置获取
+		Memory: 2048, // 2GB，实际应该从集群配置获取
+		VCores: 1,    // 1核，实际应该从集群配置获取
 	}
 
 	return maxResource, nil
 }
 
 // AllocateContainers 分配容器
-func (rm *ResourceManager) AllocateContainers(appID common.ApplicationID, asks []*common.ContainerRequest, releases []common.ContainerID, completed []*common.Container, progress float32) ([]*common.Container, []common.NodeReport, error) {
+func (rm *ResourceManager) AllocateContainers(appID common.ApplicationID, asks []*common.ContainerRequest, releases []common.ContainerID,
+	completed []*common.Container, progress float32) ([]*common.Container, []common.NodeReport, error) {
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
 
 	// 查找应用程序
 	app, exists := rm.applications[appID.String()]
 	if !exists {
-		return nil, nil, fmt.Errorf("application not found: %s", appID.String())
+		return nil, nil, fmt.Errorf("应用未找到: %s", appID.String())
 	}
 
 	// 更新应用程序进度
@@ -1138,7 +1137,7 @@ func (rm *ResourceManager) AllocateContainers(appID common.ApplicationID, asks [
 	// 处理释放的容器
 	for _, releaseID := range releases {
 		// 查找并释放容器
-		rm.logger.Info("Container released", zap.Any("container_id", releaseID))
+		rm.logger.Info("Container 已释放", zap.Any("container_id", releaseID))
 	}
 
 	// 生成节点报告
@@ -1165,7 +1164,7 @@ func (rm *ResourceManager) FinishApplicationMaster(appID common.ApplicationID, f
 
 	app, exists := rm.applications[appID.String()]
 	if !exists {
-		return fmt.Errorf("application not found: %s", appID.String())
+		return fmt.Errorf("应用未找到: %s", appID.String())
 	}
 
 	// 更新应用程序状态
@@ -1174,7 +1173,7 @@ func (rm *ResourceManager) FinishApplicationMaster(appID common.ApplicationID, f
 	app.State = common.ApplicationStateFinished
 	app.FinishTime = time.Now()
 
-	rm.logger.Info("ApplicationMaster finished",
+	rm.logger.Info("ApplicationMaster 已完成",
 		zap.String("app_id", appID.String()),
 		zap.String("final_status", finalStatus),
 		zap.String("diagnostics", diagnostics))
@@ -1189,7 +1188,7 @@ func (rm *ResourceManager) GetApplicationReport(appID common.ApplicationID) (*co
 
 	app, exists := rm.applications[appID.String()]
 	if !exists {
-		return nil, fmt.Errorf("application not found: %s", appID.String())
+		return nil, fmt.Errorf("应用未找到: %s", appID.String())
 	}
 
 	return &common.ApplicationReport{

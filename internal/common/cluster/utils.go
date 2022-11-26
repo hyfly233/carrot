@@ -46,27 +46,27 @@ func CreateLocalNode(nodeType common.NodeType, host string, port int32, metadata
 // ValidateClusterConfig 验证集群配置
 func ValidateClusterConfig(config common.ClusterConfig) error {
 	if config.Name == "" {
-		return fmt.Errorf("cluster name cannot be empty")
+		return fmt.Errorf("集群名称不能为空")
 	}
 
 	if config.MinNodes < 1 {
-		return fmt.Errorf("minimum nodes must be at least 1")
+		return fmt.Errorf("最小节点数必须至少为 1")
 	}
 
 	if config.MaxNodes < config.MinNodes {
-		return fmt.Errorf("maximum nodes must be greater than or equal to minimum nodes")
+		return fmt.Errorf("最大节点数必须大于或等于最小节点数")
 	}
 
 	if config.ElectionTimeout <= 0 {
-		return fmt.Errorf("election timeout must be positive")
+		return fmt.Errorf("选举超时必须为正数")
 	}
 
 	if config.HeartbeatInterval <= 0 {
-		return fmt.Errorf("heartbeat interval must be positive")
+		return fmt.Errorf("心跳间隔必须为正数")
 	}
 
 	if config.FailureDetectionWindow <= config.HeartbeatInterval {
-		return fmt.Errorf("failure detection window must be greater than heartbeat interval")
+		return fmt.Errorf("故障检测窗口必须大于心跳间隔")
 	}
 
 	validDiscoveryMethods := []string{"static", "dns", "etcd", "consul"}
@@ -78,7 +78,7 @@ func ValidateClusterConfig(config common.ClusterConfig) error {
 		}
 	}
 	if !validMethod {
-		return fmt.Errorf("invalid discovery method: %s", config.DiscoveryMethod)
+		return fmt.Errorf("无效的节点发现方法: %s", config.DiscoveryMethod)
 	}
 
 	return nil

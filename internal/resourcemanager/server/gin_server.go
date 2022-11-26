@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -49,12 +50,6 @@ func (s *GinServer) Start(port int) error {
 		c.Redirect(http.StatusMovedPermanently, "/swagger/index.html")
 	})
 
-	// 调试路由
-	s.engine.GET("/debug/routes", func(c *gin.Context) {
-		routes := s.engine.Routes()
-		c.JSON(http.StatusOK, gin.H{"routes": routes})
-	})
-
 	// API 路由组
 	v1 := s.engine.Group("/ws/v1")
 	{
@@ -91,9 +86,9 @@ func (s *GinServer) Start(port int) error {
 
 	// 在后台启动服务器
 	go func() {
-		s.logger.Info("Starting ResourceManager Gin HTTP server", zap.String("addr", s.server.Addr))
-		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			s.logger.Error("ResourceManager Gin HTTP server failed", zap.Error(err))
+		s.logger.Info("启动 ResourceManager Gin HTTP 服务器中", zap.String("addr", s.server.Addr))
+		if err := s.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			s.logger.Error("启动 ResourceManager Gin HTTP 服务器失败", zap.Error(err))
 		}
 	}()
 
@@ -109,7 +104,7 @@ func (s *GinServer) Stop() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	s.logger.Info("Stopping ResourceManager Gin HTTP server")
+	s.logger.Info("停止 ResourceManager Gin HTTP 服务器")
 	return s.server.Shutdown(ctx)
 }
 
@@ -262,7 +257,7 @@ func (s *GinServer) handleApplicationGet(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusNotFound, gin.H{"error": "Application not found"})
+	c.JSON(http.StatusNotFound, gin.H{"error": "应用未找到"})
 }
 
 // handleApplicationDelete 处理应用程序删除请求

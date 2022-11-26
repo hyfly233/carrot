@@ -1,9 +1,9 @@
 package server
 
 import (
-	"carrot/internal/common"
-	"context"
 	"net"
+
+	"carrot/internal/common"
 
 	"go.uber.org/zap"
 )
@@ -100,19 +100,6 @@ type GRPCServer interface {
 	RegisterService(serviceName string, service interface{})
 }
 
-// TCPServer TCP 服务器接口 (预留)
-type TCPServer interface {
-	common.Server
-	SetConnectionHandler(handler func(conn net.Conn))
-	GetConnectionCount() int
-}
-
-// UDPServer UDP 服务器接口 (预留)
-type UDPServer interface {
-	common.Server
-	SetPacketHandler(handler func(data []byte, addr net.Addr))
-}
-
 // 预留的 gRPC 服务器实现
 type grpcServer struct {
 	address string
@@ -157,111 +144,4 @@ func (s *grpcServer) RegisterService(serviceName string, service interface{}) {
 	// TODO: 实现服务注册
 	s.logger.Info("gRPC service registration not implemented yet",
 		zap.String("service", serviceName))
-}
-
-// 预留的 TCP 服务器实现
-type tcpServer struct {
-	address   string
-	logger    *zap.Logger
-	listener  net.Listener
-	ctx       context.Context
-	cancel    context.CancelFunc
-	connCount int
-	handler   func(conn net.Conn)
-}
-
-// NewTCPServer 创建新的 TCP 服务器 (预留)
-func NewTCPServer(logger *zap.Logger) TCPServer {
-	ctx, cancel := context.WithCancel(context.Background())
-	return &tcpServer{
-		logger: logger,
-		ctx:    ctx,
-		cancel: cancel,
-	}
-}
-
-func (s *tcpServer) Start(port int) error {
-	s.address = net.JoinHostPort("", string(rune(port)))
-	// TODO: 实现 TCP 服务器启动逻辑
-	s.logger.Info("TCP server start not implemented yet")
-	return ErrNotImplemented
-}
-
-func (s *tcpServer) Stop() error {
-	s.cancel()
-	if s.listener != nil {
-		return s.listener.Close()
-	}
-	return nil
-}
-
-func (s *tcpServer) GetType() common.ServerType {
-	return common.ServerTypeTCP
-}
-
-func (s *tcpServer) GetAddress() string {
-	return s.address
-}
-
-func (s *tcpServer) IsRunning() bool {
-	return s.listener != nil
-}
-
-func (s *tcpServer) SetConnectionHandler(handler func(conn net.Conn)) {
-	s.handler = handler
-}
-
-func (s *tcpServer) GetConnectionCount() int {
-	return s.connCount
-}
-
-// 预留的 UDP 服务器实现
-type udpServer struct {
-	address string
-	logger  *zap.Logger
-	conn    net.PacketConn
-	ctx     context.Context
-	cancel  context.CancelFunc
-	handler func(data []byte, addr net.Addr)
-}
-
-// NewUDPServer 创建新的 UDP 服务器 (预留)
-func NewUDPServer(logger *zap.Logger) UDPServer {
-	ctx, cancel := context.WithCancel(context.Background())
-	return &udpServer{
-		logger: logger,
-		ctx:    ctx,
-		cancel: cancel,
-	}
-}
-
-func (s *udpServer) Start(port int) error {
-	s.address = net.JoinHostPort("", string(rune(port)))
-	// TODO: 实现 UDP 服务器启动逻辑
-	s.logger.Info("UDP server start not implemented yet")
-	return ErrNotImplemented
-}
-
-func (s *udpServer) Stop() error {
-	s.cancel()
-	if s.conn != nil {
-		return s.conn.Close()
-	}
-	return nil
-}
-
-func (s *udpServer) GetType() common.ServerType {
-	return common.ServerTypeUDP
-}
-
-func (s *udpServer) GetAddress() string {
-	return s.address
-}
-
-func (s *udpServer) IsRunning() bool {
-	return s.conn != nil
-}
-
-func (s *udpServer) SetPacketHandler(handler func(data []byte, addr net.Addr)) {
-	s.handler = handler
 }

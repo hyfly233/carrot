@@ -280,7 +280,7 @@ func (s *ApplicationMasterGRPCServer) GetApplicationReport(ctx context.Context, 
 	// 调用 ApplicationMasterManager 获取应用程序报告
 	report, err := s.amManager.GetApplicationReport(appID)
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "application not found: %v", err)
+		return nil, status.Errorf(codes.NotFound, "应用未找到: %v", err)
 	}
 
 	return &ampb.GetApplicationReportResponse{

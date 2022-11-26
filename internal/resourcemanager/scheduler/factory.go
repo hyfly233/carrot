@@ -117,7 +117,7 @@ func (sa *SchedulerAdapter) Schedule(appInfo *ApplicationInfo) ([]*ContainerAllo
 			return result, nil
 		}
 	}
-	return nil, fmt.Errorf("no scheduler available")
+	return nil, fmt.Errorf("没有可用的调度器")
 }
 
 // 各个调度器的资源管理器适配器
@@ -210,12 +210,12 @@ func CreateScheduler(config *common.Config) (Scheduler, error) {
 
 	switch schedulerType {
 	case "fifo":
-		logger.Info("Creating FIFO scheduler")
+		logger.Info("创建 FIFO 调度器中")
 		adapter.fifoScheduler = fifo.NewFIFOScheduler()
 		return adapter, nil
 
 	case "capacity":
-		logger.Info("Creating Capacity scheduler")
+		logger.Info("创建 Capacity 调度器中")
 		var capacityConfig *capacity.CapacitySchedulerConfig
 		if config != nil && config.Scheduler.CapacityScheduler != nil {
 			// 转换配置
@@ -225,7 +225,7 @@ func CreateScheduler(config *common.Config) (Scheduler, error) {
 		return adapter, nil
 
 	case "fair":
-		logger.Info("Creating Fair scheduler")
+		logger.Info("创建 Fair 调度器中")
 		var fairConfig *fair.FairSchedulerConfig
 		if config != nil && config.Scheduler.FairScheduler != nil {
 			// 转换配置
@@ -235,7 +235,7 @@ func CreateScheduler(config *common.Config) (Scheduler, error) {
 		return adapter, nil
 
 	default:
-		return nil, fmt.Errorf("unsupported scheduler type: %s", schedulerType)
+		return nil, fmt.Errorf("不支持的调度器类型: %s", schedulerType)
 	}
 }
 
