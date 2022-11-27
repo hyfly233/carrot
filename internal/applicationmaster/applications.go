@@ -29,7 +29,7 @@ func NewSimpleApplication(am *ApplicationMaster, totalTasks int) *SimpleApplicat
 
 // Run 运行应用程序
 func (app *SimpleApplication) Run(ctx context.Context) error {
-	app.logger.Info("Starting simple application",
+	app.logger.Info("正在启动简单应用程序",
 		zap.Int("total_tasks", app.totalTasks))
 
 	// 第一步：请求容器
@@ -42,7 +42,7 @@ func (app *SimpleApplication) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to monitor tasks: %w", err)
 	}
 
-	app.logger.Info("Simple application completed successfully")
+	app.logger.Info("简单应用程序成功完成")
 	return nil
 }
 
@@ -61,7 +61,7 @@ func (app *SimpleApplication) requestContainers() error {
 	}
 
 	app.am.RequestContainers(requests)
-	app.logger.Info("Requested containers", zap.Int("count", len(requests)))
+	app.logger.Info("已请求容器", zap.Int("count", len(requests)))
 
 	return nil
 }
@@ -84,20 +84,20 @@ func (app *SimpleApplication) monitorTasks(ctx context.Context) error {
 			app.completedTasks = stats["completed"]
 
 			progress := float32(app.completedTasks) / float32(app.totalTasks)
-			app.logger.Info("Task progress",
+			app.logger.Info("任务进度",
 				zap.Int("completed", app.completedTasks),
 				zap.Int("total", app.totalTasks),
 				zap.Float32("progress", progress))
 
 			// 检查是否所有任务都已完成
 			if app.completedTasks >= app.totalTasks {
-				app.logger.Info("All tasks completed")
+				app.logger.Info("所有任务已完成")
 				return nil
 			}
 
 			// 检查是否有失败的容器需要重试
 			if stats["failed"] > 0 {
-				app.logger.Warn("Some containers failed",
+				app.logger.Warn("一些容器运行失败",
 					zap.Int("failed_count", stats["failed"]))
 				// 这里可以实现重试逻辑
 			}
@@ -174,7 +174,7 @@ func NewDistributedApplication(am *ApplicationMaster, numWorkers int) *Distribut
 
 // Run 运行分布式应用程序
 func (app *DistributedApplication) Run(ctx context.Context) error {
-	app.logger.Info("Starting distributed application",
+	app.logger.Info("正在启动分布式应用程序",
 		zap.Int("num_workers", len(app.workerTasks)))
 
 	// 第一阶段：启动主任务
@@ -197,7 +197,7 @@ func (app *DistributedApplication) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to monitor tasks: %w", err)
 	}
 
-	app.logger.Info("Distributed application completed successfully")
+	app.logger.Info("分布式应用程序成功完成")
 	return nil
 }
 
@@ -211,7 +211,7 @@ func (app *DistributedApplication) startMasterTask() error {
 	app.am.RequestContainers([]*common.ContainerRequest{request})
 	app.masterTask.Status = "REQUESTED"
 
-	app.logger.Info("Requested master container")
+	app.logger.Info("已请求主容器")
 	return nil
 }
 
@@ -232,7 +232,7 @@ func (app *DistributedApplication) waitForMasterContainer(ctx context.Context) e
 			stats := app.am.GetContainerStatistics()
 			if stats["allocated"] > 0 {
 				app.masterTask.Status = "RUNNING"
-				app.logger.Info("Master container allocated")
+				app.logger.Info("主容器已分配")
 				return nil
 			}
 		}
@@ -252,7 +252,7 @@ func (app *DistributedApplication) startWorkerTasks() error {
 	}
 
 	app.am.RequestContainers(requests)
-	app.logger.Info("Requested worker containers", zap.Int("count", len(requests)))
+	app.logger.Info("已请求工作容器", zap.Int("count", len(requests)))
 
 	return nil
 }
@@ -275,7 +275,7 @@ func (app *DistributedApplication) monitorAllTasks(ctx context.Context) error {
 			stats := app.am.GetContainerStatistics()
 			completed := stats["completed"]
 
-			app.logger.Info("Task progress",
+			app.logger.Info("任务进度",
 				zap.Int("completed", completed),
 				zap.Int("total", totalTasks),
 				zap.Int("running", stats["allocated"]),
@@ -283,13 +283,13 @@ func (app *DistributedApplication) monitorAllTasks(ctx context.Context) error {
 
 			// 检查是否所有任务都已完成
 			if completed >= totalTasks {
-				app.logger.Info("All tasks completed")
+				app.logger.Info("所有任务已完成")
 				return nil
 			}
 
 			// 检查失败情况
 			if stats["failed"] > 0 {
-				app.logger.Error("Some tasks failed", zap.Int("failed_count", stats["failed"]))
+				app.logger.Error("一些任务失败", zap.Int("failed_count", stats["failed"]))
 				// 在实际应用中，这里可能需要实现重试或故障恢复逻辑
 			}
 		}

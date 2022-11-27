@@ -40,7 +40,7 @@ func main() {
 	defer common.Sync()
 
 	logger := common.ComponentLogger("applicationmaster")
-	logger.Info("Starting ApplicationMaster",
+	logger.Info("正在启动 ApplicationMaster",
 		zap.String("config_file", *configFile),
 		zap.String("app_id", *appIDStr),
 		zap.String("attempt_id", *attemptIDStr),
@@ -50,13 +50,13 @@ func main() {
 	// 解析应用程序 ID
 	appID, err := parseApplicationID(*appIDStr)
 	if err != nil {
-		logger.Fatal("Invalid application ID", zap.Error(err))
+		logger.Fatal("无效的应用程序 ID", zap.Error(err))
 	}
 
 	// 解析应用程序尝试 ID
 	attemptID, err := parseApplicationAttemptID(*attemptIDStr)
 	if err != nil {
-		logger.Fatal("Invalid application attempt ID", zap.Error(err))
+		logger.Fatal("无效的应用程序尝试 ID", zap.Error(err))
 	}
 
 	// 生成跟踪 URL（如果未提供）
@@ -81,7 +81,7 @@ func main() {
 
 	// 启动 ApplicationMaster
 	if err := am.Start(); err != nil {
-		logger.Fatal("Failed to start ApplicationMaster", zap.Error(err))
+		logger.Fatal("启动 ApplicationMaster 失败", zap.Error(err))
 	}
 
 	// 创建上下文
@@ -103,14 +103,14 @@ func main() {
 			app := applicationmaster.NewDistributedApplication(am, config.ApplicationMaster.NumWorkers)
 			appErr = app.Run(ctx)
 		default:
-			logger.Error("Unknown application type", zap.String("type", config.ApplicationMaster.AppType))
+			logger.Error("未知的应用程序类型", zap.String("type", config.ApplicationMaster.AppType))
 			appErr = fmt.Errorf("unknown application type: %s", config.ApplicationMaster.AppType)
 		}
 
 		if appErr != nil {
-			logger.Error("Application failed", zap.Error(appErr))
+			logger.Error("应用程序运行失败", zap.Error(appErr))
 		} else {
-			logger.Info("Application completed successfully")
+			logger.Info("应用程序成功完成")
 		}
 
 		// 应用程序完成后发送信号
@@ -119,14 +119,14 @@ func main() {
 
 	// 等待信号
 	sig := <-sigChan
-	logger.Info("Received signal", zap.String("signal", sig.String()))
+	logger.Info("收到信号", zap.String("signal", sig.String()))
 
 	// 停止 ApplicationMaster
 	if err := am.Stop(); err != nil {
-		logger.Error("Failed to stop ApplicationMaster", zap.Error(err))
+		logger.Error("停止 ApplicationMaster 失败", zap.Error(err))
 	}
 
-	logger.Info("ApplicationMaster stopped")
+	logger.Info("ApplicationMaster 已停止")
 }
 
 // parseApplicationID 解析应用程序 ID

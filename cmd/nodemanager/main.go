@@ -36,14 +36,14 @@ func main() {
 	defer common.Sync()
 
 	logger := common.ComponentLogger("nodemanager")
-	logger.Info("Starting YARN NodeManager",
+	logger.Info("正在启动 YARN NodeManager",
 		zap.String("config_file", *configFile),
 		zap.Bool("development", *development))
 
 	// 调试：直接打印 gRPC URL
 	logger.Info("Debug: gRPC URL", zap.String("value", config.NodeManager.ResourceManagerGRPCURL), zap.Int("length", len(config.NodeManager.ResourceManagerGRPCURL)))
 
-	logger.Info("Configuration loaded",
+	logger.Info("配置已加载",
 		zap.String("cluster_name", config.Cluster.Name),
 		zap.Int("port", config.NodeManager.Port),
 		zap.String("rm_url", config.NodeManager.ResourceManagerURL),
@@ -73,10 +73,10 @@ func main() {
 
 	go func() {
 		<-sigChan
-		logger.Info("Received shutdown signal")
+		logger.Info("收到关闭信号")
 		cancel() // 取消context
 		if err := nm.Stop(); err != nil {
-			logger.Error("Error stopping NodeManager", zap.Error(err))
+			logger.Error("停止 NodeManager 出错", zap.Error(err))
 		}
 	}()
 
@@ -88,5 +88,5 @@ func main() {
 		}
 	}
 
-	logger.Info("NodeManager exited gracefully")
+	logger.Info("NodeManager 已优雅退出")
 }

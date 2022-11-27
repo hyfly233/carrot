@@ -82,7 +82,7 @@ func NewApplicationMaster(config *ApplicationMasterConfig) *ApplicationMaster {
 		am.rmGRPCClient = NewApplicationMasterGRPCClient(config.ApplicationID, config.RMGRPCAddress)
 		am.useGRPC = true
 	} else {
-		am.logger.Error("ResourceManager gRPC address is required")
+		am.logger.Error("需要提供 ResourceManager gRPC 地址")
 		am.useGRPC = false
 	}
 
@@ -91,7 +91,7 @@ func NewApplicationMaster(config *ApplicationMasterConfig) *ApplicationMaster {
 
 // Start 启动 ApplicationMaster
 func (am *ApplicationMaster) Start() error {
-	am.logger.Info("Starting ApplicationMaster",
+	am.logger.Info("正在启动 ApplicationMaster",
 		zap.Any("app_id", am.applicationID),
 		zap.Any("attempt_id", am.applicationAttemptID))
 
@@ -109,13 +109,13 @@ func (am *ApplicationMaster) Start() error {
 	// 启动应用程序逻辑
 	go am.runApplicationLogic()
 
-	am.logger.Info("ApplicationMaster started successfully")
+	am.logger.Info("ApplicationMaster 启动成功")
 	return nil
 }
 
 // Stop 停止 ApplicationMaster
 func (am *ApplicationMaster) Stop() error {
-	am.logger.Info("Stopping ApplicationMaster")
+	am.logger.Info("正在停止 ApplicationMaster")
 
 	// 发送停止信号
 	close(am.shutdownHook)
@@ -128,17 +128,17 @@ func (am *ApplicationMaster) Stop() error {
 
 	// 注销 ResourceManager
 	if err := am.unregisterFromRM(); err != nil {
-		am.logger.Error("Failed to unregister from ResourceManager", zap.Error(err))
+		am.logger.Error("从 ResourceManager 注销失败", zap.Error(err))
 	}
 
 	// 断开gRPC连接
 	if am.rmGRPCClient != nil {
 		if err := am.rmGRPCClient.Disconnect(); err != nil {
-			am.logger.Error("Failed to disconnect gRPC client", zap.Error(err))
+			am.logger.Error("断开 gRPC 客户端连接失败", zap.Error(err))
 		}
 	}
 
-	am.logger.Info("ApplicationMaster stopped")
+	am.logger.Info("ApplicationMaster 已停止")
 	return nil
 }
 
@@ -155,7 +155,7 @@ func (am *ApplicationMaster) registerWithRM() error {
 			return fmt.Errorf("failed to register via gRPC: %w", err)
 		}
 
-		am.logger.Info("Registered with ResourceManager via gRPC")
+		am.logger.Info("通过 gRPC 向 ResourceManager 注册成功")
 		return nil
 	}
 
@@ -165,7 +165,7 @@ func (am *ApplicationMaster) registerWithRM() error {
 		return err
 	}
 
-	am.logger.Info("Registered with ResourceManager",
+	am.logger.Info("向 ResourceManager 注册完成",
 		zap.String("queue", response.Queue),
 		zap.Int64("max_memory", response.MaximumResourceCapability.MemoryMb),
 		zap.Int32("max_vcores", response.MaximumResourceCapability.Vcores))
@@ -189,7 +189,7 @@ func (am *ApplicationMaster) startHeartbeat() {
 		select {
 		case <-ticker.C:
 			if err := am.sendHeartbeat(); err != nil {
-				am.logger.Error("Failed to send heartbeat", zap.Error(err))
+				am.logger.Error("发送心跳失败", zap.Error(err))
 			}
 		case <-am.ctx.Done():
 			return
@@ -273,7 +273,7 @@ func (am *ApplicationMaster) handleNewContainer(container *common.Container) {
 	containerKey := am.getContainerKey(container.ID)
 	am.allocatedContainers[containerKey] = container
 
-	am.logger.Info("Received new container",
+	am.logger.Info("收到新分配的容器",
 		zap.String("container_id", containerKey),
 		zap.String("node", container.NodeID.Host))
 
@@ -287,11 +287,11 @@ func (am *ApplicationMaster) handleCompletedContainer(container *common.Containe
 
 	if container.Status == "COMPLETE" {
 		am.completedContainers[containerKey] = container
-		am.logger.Info("Container completed successfully",
+		am.logger.Info("容器成功完成",
 			zap.String("container_id", containerKey))
 	} else {
 		am.failedContainers[containerKey] = container
-		am.logger.Error("Container failed",
+		am.logger.Error("容器运行失败",
 			zap.String("container_id", containerKey),
 			zap.String("status", container.Status))
 	}
@@ -302,7 +302,7 @@ func (am *ApplicationMaster) handleCompletedContainer(container *common.Containe
 
 // launchContainer 启动容器 (TODO: 重新实现使用 gRPC)
 func (am *ApplicationMaster) launchContainer(container *common.Container) {
-	am.logger.Info("Container launch requested but not implemented in gRPC mode",
+	am.logger.Info("请求启动容器，但 gRPC 模式下尚未实现",
 		zap.String("container_id", am.getContainerKey(container.ID)),
 		zap.String("node_id", fmt.Sprintf("%s:%d", container.NodeID.Host, container.NodeID.Port)))
 
@@ -316,7 +316,7 @@ func (am *ApplicationMaster) RequestContainers(requests []*common.ContainerReque
 
 	am.pendingRequests = append(am.pendingRequests, requests...)
 
-	am.logger.Info("Added container requests",
+	am.logger.Info("已添加容器请求",
 		zap.Int("count", len(requests)))
 }
 
@@ -333,7 +333,7 @@ func (am *ApplicationMaster) ReleaseContainer(containerID common.ContainerID) er
 	delete(am.allocatedContainers, containerKey)
 	am.mu.Unlock()
 
-	am.logger.Info("Container release requested but not implemented in gRPC mode",
+	am.logger.Info("请求释放容器，但 gRPC 模式下尚未实现",
 		zap.String("container_id", containerKey))
 
 	// TODO: 实现 gRPC 容器释放
@@ -346,7 +346,7 @@ func (am *ApplicationMaster) releaseAllContainers() {
 	am.mu.Lock()
 	defer am.mu.Unlock()
 
-	am.logger.Info("Release all containers requested but not implemented in gRPC mode",
+	am.logger.Info("请求释放所有容器，但 gRPC 模式下尚未实现",
 		zap.Int("container_count", len(am.allocatedContainers)))
 
 	// TODO: 实现 gRPC 容器批量释放
@@ -400,7 +400,7 @@ func (am *ApplicationMaster) checkContainerStatus() {
 	containerCount := len(am.allocatedContainers)
 	am.mu.RUnlock()
 
-	am.logger.Debug("Container status check requested but not implemented in gRPC mode",
+	am.logger.Debug("请求检查容器状态，但 gRPC 模式下尚未实现",
 		zap.Int("container_count", containerCount))
 
 	// TODO: 实现 gRPC 容器状态检查
@@ -425,7 +425,7 @@ func (am *ApplicationMaster) updateContainerState(containerID common.ContainerID
 
 // runApplicationLogic 运行应用程序逻辑
 func (am *ApplicationMaster) runApplicationLogic() {
-	am.logger.Info("Starting application logic")
+	am.logger.Info("正在启动应用程序逻辑")
 
 	// 示例：请求一些容器
 	requests := []*common.ContainerRequest{
@@ -465,7 +465,7 @@ func (am *ApplicationMaster) waitForCompletion() {
 	for {
 		select {
 		case <-timeout:
-			am.logger.Warn("Application timeout")
+			am.logger.Warn("应用程序超时")
 			return
 		case <-ticker.C:
 			am.mu.RLock()
@@ -475,7 +475,7 @@ func (am *ApplicationMaster) waitForCompletion() {
 			am.mu.RUnlock()
 
 			if len(am.allocatedContainers) == 0 && totalContainers > 0 {
-				am.logger.Info("All containers completed")
+				am.logger.Info("所有容器已完成")
 				return
 			}
 		case <-am.ctx.Done():
