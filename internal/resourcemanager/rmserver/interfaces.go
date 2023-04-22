@@ -1,4 +1,4 @@
-package server
+package rmserver
 
 import (
 	"carrot/internal/common"

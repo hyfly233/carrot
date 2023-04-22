@@ -22,7 +22,7 @@ cluster:
           role: "master"
       - host: "localhost"
         port: 8042
-        type: "nodemanager"
+        type: "rmnm"
         metadata:
           role: "worker"
 
@@ -54,7 +54,7 @@ log:
   development: false
   file_output:
     enabled: true
-    directory: "logs/nodemanager"
+    directory: "logs/rmnm"
     max_file_size: "100MB"
     max_backups: 168
     max_age: 7

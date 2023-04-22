@@ -1,4 +1,4 @@
-package server
+package rmserver
 
 import (
 	"context"
@@ -148,17 +148,17 @@ func NewResourceManagerGRPCServer(rm ResourceManagerInterface) *ResourceManagerG
 func (s *ResourceManagerGRPCServer) Start(port int) error {
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
-		return fmt.Errorf("failed to listen on port %d: %v", port, err)
+		return fmt.Errorf("端口监听失败 %d: %v", port, err)
 	}
 
 	s.listener = lis
 	s.grpcServer = grpc.NewServer()
 	rmpb.RegisterResourceManagerServiceServer(s.grpcServer, s)
 
-	log.Printf("ResourceManager gRPC server starting on port %d", port)
+	log.Printf("ResourceManager gRPC 服务器正在端口 %d 上启动", port)
 	err = s.grpcServer.Serve(lis)
 	if err != nil {
-		log.Printf("gRPC server error: %v", err)
+		log.Printf("ResourceManager gRPC 服务器错误: %v", err)
 	}
 	return err
 }
@@ -176,7 +176,7 @@ func (s *ResourceManagerGRPCServer) Stop() {
 // RegisterNode 节点注册
 func (s *ResourceManagerGRPCServer) RegisterNode(ctx context.Context, req *rmpb.RegisterNodeRequest) (*rmpb.RegisterNodeResponse, error) {
 	if req.NodeInfo == nil {
-		return nil, status.Error(codes.InvalidArgument, "node_info is required")
+		return nil, status.Error(codes.InvalidArgument, "node_info 是必需的")
 	}
 
 	// 转换为 common 包类型
@@ -195,7 +195,7 @@ func (s *ResourceManagerGRPCServer) RegisterNode(ctx context.Context, req *rmpb.
 	if err != nil {
 		return &rmpb.RegisterNodeResponse{
 			Success: false,
-			Message: fmt.Sprintf("Failed to register node: %v", err),
+			Message: fmt.Sprintf("节点注册失败: %v", err),
 		}, nil
 	}
 
@@ -210,7 +210,7 @@ func (s *ResourceManagerGRPCServer) RegisterNode(ctx context.Context, req *rmpb.
 
 	return &rmpb.RegisterNodeResponse{
 		Success:               true,
-		Message:               "Node registered successfully",
+		Message:               "节点注册成功",
 		NodeId:                req.NodeInfo.NodeId,
 		RegistrationTimestamp: time.Now().Unix(),
 	}, nil
@@ -219,7 +219,7 @@ func (s *ResourceManagerGRPCServer) RegisterNode(ctx context.Context, req *rmpb.
 // NodeHeartbeat 节点心跳
 func (s *ResourceManagerGRPCServer) NodeHeartbeat(ctx context.Context, req *rmpb.NodeHeartbeatRequest) (*rmpb.NodeHeartbeatResponse, error) {
 	if req.NodeId == "" {
-		return nil, status.Error(codes.InvalidArgument, "node_id is required")
+		return nil, status.Error(codes.InvalidArgument, "node_id 是必需的")
 	}
 
 	// 更新心跳信息
@@ -229,7 +229,7 @@ func (s *ResourceManagerGRPCServer) NodeHeartbeat(ctx context.Context, req *rmpb
 		s.mu.Unlock()
 		return &rmpb.NodeHeartbeatResponse{
 			Success:      false,
-			Message:      "Node not registered",
+			Message:      "节点未注册",
 			ShouldResync: true,
 		}, nil
 	}
@@ -274,13 +274,13 @@ func (s *ResourceManagerGRPCServer) NodeHeartbeat(ctx context.Context, req *rmpb
 	if err != nil {
 		return &rmpb.NodeHeartbeatResponse{
 			Success: false,
-			Message: fmt.Sprintf("Heartbeat processing failed: %v", err),
+			Message: fmt.Sprintf("心跳处理失败: %v", err),
 		}, nil
 	}
 
 	return &rmpb.NodeHeartbeatResponse{
 		Success:           true,
-		Message:           "Heartbeat processed successfully",
+		Message:           "心跳处理成功",
 		ContainerActions:  []*rmpb.ContainerAction{}, // 暂时返回空列表
 		ResponseId:        heartbeatInfo.SequenceID,
 		HeartbeatInterval: heartbeatInfo.Interval,

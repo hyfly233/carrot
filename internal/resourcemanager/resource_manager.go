@@ -10,10 +10,10 @@ import (
 
 	"carrot/internal/common"
 	"carrot/internal/common/cluster"
-	"carrot/internal/resourcemanager/applicationmanager"
-	"carrot/internal/resourcemanager/nodemanager"
+	"carrot/internal/resourcemanager/rmam"
+	"carrot/internal/resourcemanager/rmnm"
+	"carrot/internal/resourcemanager/rmserver"
 	"carrot/internal/resourcemanager/scheduler"
-	"carrot/internal/resourcemanager/server"
 
 	"go.uber.org/zap"
 )
@@ -21,15 +21,15 @@ import (
 // ResourceManager 资源管理器
 type ResourceManager struct {
 	mu               sync.RWMutex
-	applications     map[string]*applicationmanager.Application
-	nodes            map[string]*nodemanager.Node
+	applications     map[string]*rmam.Application
+	nodes            map[string]*rmnm.Node
 	scheduler        scheduler.Scheduler
 	appIDCounter     int32
 	clusterTimestamp int64
 	httpServer       *http.Server
-	ginServer        *server.GinServer                   // HTTP 服务器
-	grpcServer       *server.ResourceManagerGRPCServer   // NodeManager gRPC 服务器
-	amGRPCServer     *server.ApplicationMasterGRPCServer // ApplicationMaster gRPC 服务器
+	ginServer        *rmserver.GinServer                   // HTTP 服务器
+	grpcServer       *rmserver.ResourceManagerGRPCServer   // NodeManager gRPC 服务器
+	amGRPCServer     *rmserver.ApplicationMasterGRPCServer // ApplicationMaster gRPC 服务器
 	config           *common.Config
 	logger           *zap.Logger
 	ctx              context.Context
@@ -63,8 +63,8 @@ func NewResourceManager(config *common.Config) *ResourceManager {
 	}
 
 	rm := &ResourceManager{
-		applications:         make(map[string]*applicationmanager.Application),
-		nodes:                make(map[string]*nodemanager.Node),
+		applications:         make(map[string]*rmam.Application),
+		nodes:                make(map[string]*rmnm.Node),
 		clusterTimestamp:     time.Now().Unix(),
 		config:               config,
 		logger:               common.ComponentLogger(fmt.Sprintf("rm-%d", time.Now().Unix())),
@@ -100,61 +100,54 @@ func NewResourceManager(config *common.Config) *ResourceManager {
 	rm.logger.Info("调度器已初始化", zap.String("type", schedulerType))
 
 	// 初始化 HTTP 服务器
-	rm.ginServer = server.NewGinServer(rm, rm.logger)
+	rm.ginServer = rmserver.NewGinServer(rm, rm.logger)
 
 	// 初始化 gRPC 服务器
-	rm.grpcServer = server.NewResourceManagerGRPCServer(rm)
+	rm.grpcServer = rmserver.NewResourceManagerGRPCServer(rm)
 
 	// 初始化 ApplicationMaster gRPC 服务器
-	rm.amGRPCServer = server.NewApplicationMasterGRPCServer(rm)
+	rm.amGRPCServer = rmserver.NewApplicationMasterGRPCServer(rm)
 
 	return rm
 }
 
 // Start 启动资源管理器
 func (rm *ResourceManager) Start(httpPort, nmGRPCPort, amGRPCPort int) error {
-	rm.logger.Info("ResourceManager starting",
-		zap.Int("http_port", httpPort),
-		zap.Int("nm_grpc_port", nmGRPCPort),
-		zap.Int("am_grpc_port", amGRPCPort),
-		zap.Int64("cluster_timestamp", rm.clusterTimestamp),
-		zap.Duration("heartbeat_timeout", rm.nodeHeartbeatTimeout),
-		zap.Duration("monitor_interval", rm.nodeMonitorInterval))
 
 	// 启动集群管理器
 	if rm.clusterManager != nil {
 		if err := rm.startClusterManager(); err != nil {
-			rm.logger.Warn("Failed to start cluster manager", zap.Error(err))
+			rm.logger.Warn("无法启动集群管理器", zap.Error(err))
 		}
 	}
 
-	// 启动心跳监测
+	// 启动心跳监测，处理长时间未上报心跳的节点
 	go rm.startNodeMonitor()
 
 	// 启动 NodeManager gRPC 服务器
 	go func() {
-		rm.logger.Info("Starting NodeManager gRPC server", zap.Int("port", nmGRPCPort))
+		rm.logger.Info("启动 NodeManager gRPC 服务器", zap.Int("port", nmGRPCPort))
 		if err := rm.grpcServer.Start(nmGRPCPort); err != nil {
-			rm.logger.Error("Failed to start NodeManager gRPC server", zap.Error(err))
+			rm.logger.Error("启动 NodeManager gRPC rmserver 失败", zap.Error(err))
 		}
 	}()
 
 	// 启动 ApplicationMaster gRPC 服务器
 	go func() {
-		rm.logger.Info("Starting ApplicationMaster gRPC server", zap.Int("port", amGRPCPort))
+		rm.logger.Info("启动 ApplicationMaster gRPC 服务器", zap.Int("port", amGRPCPort))
 		if err := rm.amGRPCServer.Start(amGRPCPort); err != nil {
-			rm.logger.Error("Failed to start ApplicationMaster gRPC server", zap.Error(err))
+			rm.logger.Error("启动 ApplicationMaster gRPC 服务器失败", zap.Error(err))
 		}
 	}()
 
 	// 启动 HTTP 服务器
-	rm.logger.Info("Starting HTTP server", zap.Int("port", httpPort))
+	rm.logger.Info("启动 ResourceManager HTTP 服务器", zap.Int("port", httpPort))
 	return rm.ginServer.Start(httpPort)
 }
 
 // Stop 停止资源管理器
 func (rm *ResourceManager) Stop() error {
-	rm.logger.Info("Stopping ResourceManager")
+	rm.logger.Info("停止 ResourceManager 中")
 
 	// 停止集群管理器
 	rm.stopClusterManager()
@@ -243,7 +236,7 @@ func (rm *ResourceManager) SubmitApplication(ctx common.ApplicationSubmissionCon
 	}
 	rm.appIDCounter++
 
-	app := &applicationmanager.Application{
+	app := &rmam.Application{
 		ID:              appID,
 		Name:            ctx.ApplicationName,
 		Type:            ctx.ApplicationType,
@@ -254,7 +247,7 @@ func (rm *ResourceManager) SubmitApplication(ctx common.ApplicationSubmissionCon
 		Progress:        0.0,
 		AMContainerSpec: ctx.AMContainerSpec,
 		Resource:        ctx.Resource,
-		Attempts:        make([]*applicationmanager.ApplicationAttempt, 0),
+		Attempts:        make([]*rmam.ApplicationAttempt, 0),
 	}
 
 	rm.applications[rm.getAppKey(appID)] = app
@@ -265,7 +258,7 @@ func (rm *ResourceManager) SubmitApplication(ctx common.ApplicationSubmissionCon
 		AttemptID:     1,
 	}
 
-	attempt := &applicationmanager.ApplicationAttempt{
+	attempt := &rmam.ApplicationAttempt{
 		ID:        attemptID,
 		State:     common.ApplicationStateNew,
 		StartTime: time.Now(),
@@ -295,7 +288,7 @@ func (rm *ResourceManager) RegisterNode(nodeID common.NodeID, resource common.Re
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
 
-	node := &nodemanager.Node{
+	node := &rmnm.Node{
 		ID:                nodeID,
 		HTTPAddress:       httpAddress,
 		TotalResource:     resource,
@@ -430,7 +423,7 @@ func (rm *ResourceManager) GetClusterTimestamp() int64 {
 	return rm.clusterTimestamp
 }
 
-func (rm *ResourceManager) scheduleApplication(app *applicationmanager.Application) {
+func (rm *ResourceManager) scheduleApplication(app *rmam.Application) {
 	// 将应用程序信息转换为调度器可用的格式
 	appInfo := &scheduler.ApplicationInfo{
 		ID:         app.ID,
@@ -740,13 +733,13 @@ func (rm *ResourceManager) handleNodeHealth(w http.ResponseWriter, r *http.Reque
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		rm.logger.Error("Failed to encode node health response", zap.Error(err))
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		http.Error(w, "Internal rmserver error", http.StatusInternalServerError)
 	}
 }
 
 // startNodeMonitor 启动节点心跳监测
 func (rm *ResourceManager) startNodeMonitor() {
-	rm.logger.Info("Starting node heartbeat monitor",
+	rm.logger.Info("启动节点心跳监视器",
 		zap.Duration("check_interval", rm.nodeMonitorInterval),
 		zap.Duration("timeout_threshold", rm.nodeHeartbeatTimeout))
 
@@ -756,7 +749,7 @@ func (rm *ResourceManager) startNodeMonitor() {
 	for {
 		select {
 		case <-rm.ctx.Done():
-			rm.logger.Info("Node monitor stopped")
+			rm.logger.Info("节点心跳监视器停止")
 			return
 		case <-ticker.C:
 			rm.checkNodeHealth()
@@ -778,7 +771,7 @@ func (rm *ResourceManager) checkNodeHealth() {
 		if timeSinceLastHeartbeat > rm.nodeHeartbeatTimeout {
 			// 节点超时，标记为不健康
 			if node.State != "UNHEALTHY" {
-				rm.logger.Warn("Node heartbeat timeout, marking as unhealthy",
+				rm.logger.Warn("节点心跳超时，标记为不健康",
 					zap.String("node_id", nodeKey),
 					zap.String("node_host", node.ID.Host),
 					zap.Int32("node_port", node.ID.Port),
@@ -790,7 +783,7 @@ func (rm *ResourceManager) checkNodeHealth() {
 			}
 		} else if node.State == "UNHEALTHY" && timeSinceLastHeartbeat <= rm.nodeHeartbeatTimeout {
 			// 节点恢复心跳，标记为健康
-			rm.logger.Info("Node heartbeat recovered, marking as healthy",
+			rm.logger.Info("节点心跳恢复，标记为健康",
 				zap.String("node_id", nodeKey),
 				zap.String("node_host", node.ID.Host),
 				zap.Int32("node_port", node.ID.Port))
@@ -806,15 +799,15 @@ func (rm *ResourceManager) checkNodeHealth() {
 }
 
 // markNodeUnhealthy 标记节点为不健康状态
-func (rm *ResourceManager) markNodeUnhealthy(node *nodemanager.Node) {
+func (rm *ResourceManager) markNodeUnhealthy(node *rmnm.Node) {
 	node.State = "UNHEALTHY"
-	node.HealthReport = fmt.Sprintf("Node heartbeat timeout at %s", time.Now().Format(time.RFC3339))
+	node.HealthReport = fmt.Sprintf("节点于 %s 心跳超时", time.Now().Format(time.RFC3339))
 
 	// 将节点上的容器标记为失败/丢失
 	for _, container := range node.Containers {
 		if container.State == "RUNNING" {
 			container.State = "LOST"
-			rm.logger.Warn("Container lost due to node unhealthy",
+			rm.logger.Warn("由于节点不健康导致容器丢失",
 				zap.Any("container_id", container.ID),
 				zap.String("node_host", node.ID.Host))
 		}
@@ -822,18 +815,18 @@ func (rm *ResourceManager) markNodeUnhealthy(node *nodemanager.Node) {
 }
 
 // markNodeHealthy 标记节点为健康状态
-func (rm *ResourceManager) markNodeHealthy(node *nodemanager.Node) {
+func (rm *ResourceManager) markNodeHealthy(node *rmnm.Node) {
 	node.State = "RUNNING"
-	node.HealthReport = fmt.Sprintf("Node recovered at %s", time.Now().Format(time.RFC3339))
+	node.HealthReport = fmt.Sprintf("节点于 %s 恢复", time.Now().Format(time.RFC3339))
 }
 
 // notifySchedulerNodeChanges 通知调度器节点状态变化
 func (rm *ResourceManager) notifySchedulerNodeChanges(nodeKeys []string) {
-	// 这里可以通知调度器有节点状态变化
+	// todo 这里可以通知调度器有节点状态变化
 	// 调度器可以据此重新分配资源或处理失败的容器
 	if rm.scheduler != nil {
 		for _, nodeKey := range nodeKeys {
-			rm.logger.Debug("Notifying scheduler of node change",
+			rm.logger.Debug("通知调度程序节点变化",
 				zap.String("node_key", nodeKey))
 		}
 	}
@@ -1017,7 +1010,7 @@ func (rm *ResourceManager) onLeaderChange(oldLeader, newLeader *common.ClusterNo
 }
 
 // handleFailedNode 处理失败的节点
-func (rm *ResourceManager) handleFailedNode(node *nodemanager.Node) {
+func (rm *ResourceManager) handleFailedNode(node *rmnm.Node) {
 	// 标记节点上的所有容器为失败
 	for _, container := range node.Containers {
 		container.Status = "FAILED"

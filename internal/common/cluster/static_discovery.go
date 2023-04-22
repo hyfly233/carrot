@@ -158,7 +158,7 @@ func (sd *StaticDiscovery) parseNodeConfig(config map[string]interface{}) (*comm
 
 	nodeType, ok := config["type"].(string)
 	if !ok {
-		nodeType = "nodemanager" // 默认类型
+		nodeType = "rmnm" // 默认类型
 	}
 
 	node := &common.ClusterNode{

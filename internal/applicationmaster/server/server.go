@@ -38,7 +38,7 @@ func (sm *ServerManager) StartServer(serverType common.ServerType, port int) err
 		return ErrServerNotFound
 	}
 
-	sm.logger.Info("Starting server",
+	sm.logger.Info("Starting rmserver",
 		zap.String("type", string(serverType)),
 		zap.Int("port", port))
 
@@ -52,7 +52,7 @@ func (sm *ServerManager) StopServer(serverType common.ServerType) error {
 		return ErrServerNotFound
 	}
 
-	sm.logger.Info("Stopping server", zap.String("type", string(serverType)))
+	sm.logger.Info("Stopping rmserver", zap.String("type", string(serverType)))
 	return server.Stop()
 }
 
@@ -60,7 +60,7 @@ func (sm *ServerManager) StopServer(serverType common.ServerType) error {
 func (sm *ServerManager) StartAllServers(basePorts map[common.ServerType]int) error {
 	for serverType, port := range basePorts {
 		if err := sm.StartServer(serverType, port); err != nil {
-			sm.logger.Error("Failed to start server",
+			sm.logger.Error("Failed to start rmserver",
 				zap.String("type", string(serverType)),
 				zap.Error(err))
 			return err
@@ -74,7 +74,7 @@ func (sm *ServerManager) StopAllServers() error {
 	var lastErr error
 	for serverType := range sm.servers {
 		if err := sm.StopServer(serverType); err != nil {
-			sm.logger.Error("Failed to stop server",
+			sm.logger.Error("Failed to stop rmserver",
 				zap.String("type", string(serverType)),
 				zap.Error(err))
 			lastErr = err
@@ -117,13 +117,13 @@ func NewGRPCServer(logger *zap.Logger) GRPCServer {
 func (s *grpcServer) Start(port int) error {
 	s.address = net.JoinHostPort("", string(rune(port)))
 	// TODO: 实现 gRPC 服务器启动逻辑
-	s.logger.Info("gRPC server start not implemented yet")
+	s.logger.Info("gRPC rmserver start not implemented yet")
 	return ErrNotImplemented
 }
 
 func (s *grpcServer) Stop() error {
 	// TODO: 实现 gRPC 服务器停止逻辑
-	s.logger.Info("gRPC server stop not implemented yet")
+	s.logger.Info("gRPC rmserver stop not implemented yet")
 	return ErrNotImplemented
 }
 

@@ -28,7 +28,7 @@ fi
 
 # 启动 NodeManager
 echo "启动 NodeManager..."
-./bin/nodemanager -port 8042 -host localhost -rm-url http://localhost:8088 -memory 4096 -vcores 4 > $TEST_DIR/logs/nm.log 2>&1 &
+./bin/rmnm -port 8042 -host localhost -rm-url http://localhost:8088 -memory 4096 -vcores 4 > $TEST_DIR/logs/nm.log 2>&1 &
 NM_PID=$!
 echo "NodeManager PID: $NM_PID"
 

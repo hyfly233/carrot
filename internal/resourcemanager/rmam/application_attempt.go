@@ -1,4 +1,4 @@
-package applicationmanager
+package rmam
 
 import (
 	"carrot/internal/common"

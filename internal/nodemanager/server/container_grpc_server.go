@@ -37,7 +37,7 @@ func (s *ContainerManagerGRPCServer) StartGRPCServer(port int) error {
 	s.server = grpc.NewServer()
 	cmpb.RegisterContainerManagerServiceServer(s.server, s)
 
-	log.Printf("Container Manager gRPC server starting on port %d", port)
+	log.Printf("Container Manager gRPC rmserver starting on port %d", port)
 	return s.server.Serve(lis)
 }
 

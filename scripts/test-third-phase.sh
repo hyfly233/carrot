@@ -12,7 +12,7 @@ echo "=========================================="
 # 构建所有组件
 echo "构建项目组件..."
 go build -o bin/resourcemanager ./cmd/resourcemanager
-go build -o bin/nodemanager ./cmd/nodemanager
+go build -o bin/rmnm ./cmd/rmnm
 go build -o bin/applicationmaster ./cmd/applicationmaster
 
 # 启动 ResourceManager
@@ -23,7 +23,7 @@ sleep 3
 
 # 启动 NodeManager
 echo "启动 NodeManager..."
-./bin/nodemanager --config=configs/nodemanager.yaml &
+./bin/rmnm --config=configs/rmnm.yaml &
 NM_PID=$!
 sleep 2
 
@@ -53,10 +53,10 @@ echo "=========================================="
 # 使用 grpcurl 测试 ApplicationMaster gRPC 服务 (如果安装了的话)
 if command -v grpcurl &> /dev/null; then
     echo "使用 grpcurl 测试 ApplicationMaster gRPC 服务..."
-    
+
     # 列出服务
     grpcurl -plaintext localhost:9089 list || echo "无法连接到 ApplicationMaster gRPC 服务"
-    
+
     # 测试 GetClusterMetrics
     grpcurl -plaintext -d '{}' localhost:9089 applicationmaster.ApplicationMasterService/GetClusterMetrics || echo "GetClusterMetrics 调用失败"
 else
@@ -107,7 +107,7 @@ func main() {
     fmt.Printf("  活跃节点: %d\n", resp.ClusterMetrics.ActiveNodes)
     fmt.Printf("  总节点数: %d\n", resp.ClusterMetrics.TotalNodes)
     fmt.Printf("  可用虚拟核心: %d\n", resp.ClusterMetrics.AvailableVirtualCores)
-    
+
     fmt.Println("✅ ApplicationMaster gRPC 通信测试成功!")
 }
 EOF

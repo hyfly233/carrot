@@ -148,7 +148,7 @@ func (c *resourceManagerServiceClient) GetClusterMetrics(ctx context.Context, in
 	return out, nil
 }
 
-// ResourceManagerServiceServer is the server API for ResourceManagerService service.
+// ResourceManagerServiceServer is the rmserver API for ResourceManagerService service.
 // All implementations must embed UnimplementedResourceManagerServiceServer
 // for forward compatibility.
 //

@@ -102,7 +102,7 @@ func (c *applicationMasterServiceClient) GetClusterMetrics(ctx context.Context, 
 	return out, nil
 }
 
-// ApplicationMasterServiceServer is the server API for ApplicationMasterService service.
+// ApplicationMasterServiceServer is the rmserver API for ApplicationMasterService service.
 // All implementations must embed UnimplementedApplicationMasterServiceServer
 // for forward compatibility.
 //

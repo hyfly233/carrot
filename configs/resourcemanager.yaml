@@ -22,7 +22,7 @@ cluster:
           role: "master"
       - host: "localhost"
         port: 8042
-        type: "nodemanager"
+        type: "rmnm"
         metadata:
           role: "worker"
 

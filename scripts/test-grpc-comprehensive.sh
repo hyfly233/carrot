@@ -7,14 +7,14 @@ set -e
 
 echo "=========================================="
 echo "YARN gRPC 迁移综合测试"
-echo "第二阶段: ResourceManager ↔ NodeManager"  
+echo "第二阶段: ResourceManager ↔ NodeManager"
 echo "第三阶段: ApplicationMaster ↔ ResourceManager"
 echo "=========================================="
 
 # 构建所有组件
 echo "构建项目组件..."
 go build -o bin/resourcemanager ./cmd/resourcemanager
-go build -o bin/nodemanager ./cmd/nodemanager
+go build -o bin/rmnm ./cmd/rmnm
 go build -o bin/applicationmaster ./cmd/applicationmaster
 
 # 启动 ResourceManager (支持双gRPC端口)
@@ -25,7 +25,7 @@ sleep 3
 
 # 启动 NodeManager (使用gRPC通信)
 echo "启动 NodeManager (HTTP:8042, gRPC:9080, 连接RM-gRPC:9088)..."
-./bin/nodemanager --config=configs/nodemanager.yaml &
+./bin/rmnm --config=configs/rmnm.yaml &
 NM_PID=$!
 sleep 3
 
@@ -107,7 +107,7 @@ func main() {
     if err != nil {
         log.Printf("注册失败: %v", err)
     } else {
-        fmt.Printf("   ✅ 注册成功, 队列: %s, 最大资源: %dMB/%dVCores\n", 
+        fmt.Printf("   ✅ 注册成功, 队列: %s, 最大资源: %dMB/%dVCores\n",
             regResp.Queue, regResp.MaximumResourceCapability.MemoryMb, regResp.MaximumResourceCapability.Vcores)
     }
 
@@ -201,7 +201,7 @@ echo "🎉 YARN gRPC 迁移第二、三阶段全部完成并测试通过!"
 echo ""
 echo "系统架构："
 echo "  ResourceManager:"
-echo "    - HTTP 服务: 8088 (Web UI + REST API)"  
+echo "    - HTTP 服务: 8088 (Web UI + REST API)"
 echo "    - NodeManager gRPC: 9088 (第二阶段)"
 echo "    - ApplicationMaster gRPC: 9089 (第三阶段)"
 echo "  NodeManager:"

@@ -103,7 +103,7 @@ func (c *containerManagerServiceClient) ListContainers(ctx context.Context, in *
 	return out, nil
 }
 
-// ContainerManagerServiceServer is the server API for ContainerManagerService service.
+// ContainerManagerServiceServer is the rmserver API for ContainerManagerService service.
 // All implementations must embed UnimplementedContainerManagerServiceServer
 // for forward compatibility.
 //

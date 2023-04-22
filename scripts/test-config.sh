@@ -17,7 +17,7 @@ echo
 # 测试 NodeManager
 echo "2. 测试 NodeManager 配置文件加载..."
 echo "启动 NodeManager 并检查前几行输出："
-./bin/nodemanager -config=configs/nodemanager.yaml -dev=true 2>&1 | head -3 &
+./bin/rmnm -config=configs/rmnm.yaml -dev=true 2>&1 | head -3 &
 NM_PID=$!
 sleep 2
 kill $NM_PID 2>/dev/null

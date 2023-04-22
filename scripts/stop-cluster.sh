@@ -20,15 +20,15 @@ else
 fi
 
 # Stop NodeManager
-if [ -f logs/nodemanager.pid ]; then
-    NM_PID=$(cat logs/nodemanager.pid)
+if [ -f logs/rmnm.pid ]; then
+    NM_PID=$(cat logs/rmnm.pid)
     if kill -0 $NM_PID 2>/dev/null; then
         echo "Stopping NodeManager (PID: $NM_PID)..."
         kill $NM_PID
-        rm logs/nodemanager.pid
+        rm logs/rmnm.pid
     else
         echo "NodeManager not running"
-        rm -f logs/nodemanager.pid
+        rm -f logs/rmnm.pid
     fi
 else
     echo "NodeManager PID file not found"

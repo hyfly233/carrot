@@ -119,7 +119,7 @@ fi
 
 # 启动 NodeManager
 echo -e "\n${BLUE}启动 NodeManager...${NC}"
-./bin/nodemanager -port 8042 -host localhost -rm-url http://localhost:8088 -memory 4096 -vcores 4 > $DEBUG_DIR/logs/nm.log 2>&1 &
+./bin/rmnm -port 8042 -host localhost -rm-url http://localhost:8088 -memory 4096 -vcores 4 > $DEBUG_DIR/logs/nm.log 2>&1 &
 NM_PID=$!
 echo $NM_PID > $DEBUG_DIR/nm.pid
 echo "NodeManager PID: $NM_PID"

@@ -1,4 +1,4 @@
-package nodemanager
+package rmnm
 
 import (
 	"context"

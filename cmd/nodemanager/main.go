@@ -18,7 +18,7 @@ import (
 
 func main() {
 	var (
-		configFile  = flag.String("config", "configs/nodemanager.yaml", "Configuration file path")
+		configFile  = flag.String("config", "configs/rmnm.yaml", "Configuration file path")
 		development = flag.Bool("dev", false, "Enable development mode")
 	)
 	flag.Parse()
@@ -35,7 +35,7 @@ func main() {
 	}
 	defer common.Sync()
 
-	logger := common.ComponentLogger("nodemanager")
+	logger := common.ComponentLogger("rmnm")
 	logger.Info("正在启动 YARN NodeManager",
 		zap.String("config_file", *configFile),
 		zap.Bool("development", *development))

@@ -90,9 +90,9 @@ func (s *HTTPServer) Start(port int) error {
 
 	// 在后台启动服务器
 	go func() {
-		s.logger.Info("Starting ApplicationMaster HTTP server", zap.String("addr", s.server.Addr))
+		s.logger.Info("Starting ApplicationMaster HTTP rmserver", zap.String("addr", s.server.Addr))
 		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			s.logger.Error("ApplicationMaster HTTP server failed", zap.Error(err))
+			s.logger.Error("ApplicationMaster HTTP rmserver failed", zap.Error(err))
 		}
 	}()
 
@@ -108,7 +108,7 @@ func (s *HTTPServer) Stop() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	s.logger.Info("Stopping ApplicationMaster HTTP server")
+	s.logger.Info("Stopping ApplicationMaster HTTP rmserver")
 	return s.server.Shutdown(ctx)
 }
 

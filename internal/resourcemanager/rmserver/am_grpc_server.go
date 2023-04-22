@@ -1,4 +1,4 @@
-package server
+package rmserver
 
 import (
 	"context"
@@ -56,7 +56,7 @@ func (s *ApplicationMasterGRPCServer) Start(port int) error {
 	ampb.RegisterApplicationMasterServiceServer(s.server, s)
 
 	s.running = true
-	log.Printf("ApplicationMaster gRPC server starting on port %d", port)
+	log.Printf("ApplicationMaster gRPC rmserver starting on port %d", port)
 
 	return s.server.Serve(lis)
 }
@@ -66,7 +66,7 @@ func (s *ApplicationMasterGRPCServer) Stop() {
 	if s.server != nil {
 		s.running = false
 		s.server.GracefulStop()
-		log.Printf("ApplicationMaster gRPC server stopped")
+		log.Printf("ApplicationMaster gRPC rmserver stopped")
 	}
 }
 

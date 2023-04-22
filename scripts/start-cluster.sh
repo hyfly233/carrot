@@ -14,7 +14,7 @@ fi
 
 if [ ! -f "bin/nodemanager" ]; then
     echo "Building NodeManager..."
-    go build -o bin/nodemanager cmd/nodemanager/main.go
+    go build -o bin/rmnm cmd/rmnm/main.go
 fi
 
 # 检查配置文件是否存在
@@ -43,9 +43,9 @@ sleep 3
 
 # 启动 NodeManager
 echo "Starting NodeManager..."
-nohup ./bin/nodemanager -config="configs/nodemanager.yaml" > logs/nodemanager.log 2>&1 &
+nohup ./bin/rmnm -config="configs/nodemanager.yaml" > logs/rmnm.log 2>&1 &
 NM_PID=$!
-echo $NM_PID > logs/nodemanager.pid
+echo $NM_PID > logs/rmnm.pid
 echo "NodeManager started with PID: $NM_PID"
 
 # 等待服务稳定

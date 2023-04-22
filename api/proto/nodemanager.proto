@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package carrot.nodemanager.v1;
 
-option go_package = "carrot/api/proto/nodemanager";
+option go_package = "carrot/api/proto/rmnm";
 
 import "google/protobuf/timestamp.proto";
 

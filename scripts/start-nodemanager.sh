@@ -14,6 +14,6 @@ if [ ! -f "$CONFIG_FILE" ]; then
 fi
 
 # 启动 NodeManager
-./bin/nodemanager -config="$CONFIG_FILE" -dev=false
+./bin/rmnm -config="$CONFIG_FILE" -dev=false
 
 echo "NodeManager stopped."
