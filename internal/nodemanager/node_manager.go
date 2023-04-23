@@ -1,7 +1,6 @@
 package nodemanager
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -55,14 +54,12 @@ func (nm *NodeManager) Start(port int) error {
 	// 初始化 gRPC 客户端
 	grpcClient := NewGRPCClient(nm.nodeID.HostPortString(), nm.resourceManagerGRPCURL)
 	if err := grpcClient.Connect(); err != nil {
-		nm.logger.Warn("Failed to connect to RM via gRPC, falling back to HTTP", zap.Error(err))
-	} else {
-		nm.grpcClient = grpcClient
+		nm.logger.Warn("无法通过 gRPC 连接到 RM", zap.Error(err))
 	}
 
 	// 注册到 ResourceManager
 	if err := nm.registerWithRM(); err != nil {
-		return fmt.Errorf("failed to register with RM: %v", err)
+		return fmt.Errorf("无法在 RM 注册: %v", err)
 	}
 
 	// 启动 HTTP 服务器
@@ -177,58 +174,29 @@ func (nm *NodeManager) GetContainerStatus(containerID common.ContainerID) (*cont
 }
 
 func (nm *NodeManager) registerWithRM() error {
-	// 优先尝试 gRPC
-	if nm.grpcClient != nil && nm.grpcClient.connected {
-		nodeInfo := &NodeInfo{
-			NodeID:    nm.nodeID.HostPortString(),
-			Hostname:  nm.nodeID.Host,
-			IPAddress: nm.nodeID.Host,
-			Port:      int(nm.nodeID.Port),
-			RackName:  "default-rack",
-			Labels:    []string{},
-		}
-
-		capability := &ResourceCapability{
-			MemoryMB: nm.totalResource.Memory,
-			VCores:   int(nm.totalResource.VCores),
-		}
-
-		httpAddress := fmt.Sprintf("http://%s:%d", nm.nodeID.Host, nm.nodeID.Port)
-
-		err := nm.grpcClient.RegisterNode(nodeInfo, capability, httpAddress)
-		if err != nil {
-			nm.logger.Warn("gRPC registration failed, falling back to HTTP", zap.Error(err))
-		} else {
-			nm.logger.Info("Successfully registered with RM via gRPC")
-			return nil
-		}
+	nodeInfo := &NodeInfo{
+		NodeID:    nm.nodeID.HostPortString(),
+		Hostname:  nm.nodeID.Host,
+		IPAddress: nm.nodeID.Host,
+		Port:      int(nm.nodeID.Port),
+		RackName:  "default-rack",
+		Labels:    []string{},
 	}
 
-	// 回退到 HTTP
-	registrationData := map[string]interface{}{
-		"node_id":      nm.nodeID,
-		"resource":     nm.totalResource,
-		"http_address": fmt.Sprintf("http://%s:%d", nm.nodeID.Host, nm.nodeID.Port),
+	capability := &ResourceCapability{
+		MemoryMB: nm.totalResource.Memory,
+		VCores:   int(nm.totalResource.VCores),
 	}
 
-	jsonData, err := json.Marshal(registrationData)
+	httpAddress := fmt.Sprintf("http://%s:%d", nm.nodeID.Host, nm.nodeID.Port)
+
+	err := nm.grpcClient.RegisterNode(nodeInfo, capability, httpAddress)
 	if err != nil {
-		return err
+		nm.logger.Warn("gRPC 注册失败", zap.Error(err))
 	}
-
-	url := nm.resourceManagerURL + "/ws/v1/cluster/nodes/register"
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		return fmt.Errorf("failed to register with RM: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("registration failed with status: %d", resp.StatusCode)
-	}
-
-	nm.logger.Info("Successfully registered with RM via HTTP")
+	nm.logger.Info("已通过 gRPC 成功向 RM 注册")
 	return nil
+
 }
 
 func (nm *NodeManager) startHeartbeat() {
@@ -261,55 +229,30 @@ func (nm *NodeManager) sendHeartbeat() {
 	nm.mu.RUnlock()
 
 	// 尝试使用 gRPC 发送心跳
-	if nm.grpcClient != nil && nm.grpcClient.connected {
-		usage := &ResourceUsage{
-			MemoryMB: int64(usedResource.Memory),
-			VCores:   int(usedResource.VCores),
-		}
+	usage := &ResourceUsage{
+		MemoryMB: usedResource.Memory,
+		VCores:   int(usedResource.VCores),
+	}
 
-		containerStatuses := make([]*ContainerStatus, len(containers))
-		for i, container := range containers {
-			containerStatuses[i] = &ContainerStatus{
-				ContainerID: fmt.Sprintf("container_%d_%d_%d",
-					container.ID.ApplicationAttemptID.ApplicationID.ClusterTimestamp,
-					container.ID.ApplicationAttemptID.ApplicationID.ID,
-					container.ID.ContainerID),
-				ApplicationID: fmt.Sprintf("application_%d_%d",
-					container.ID.ApplicationAttemptID.ApplicationID.ClusterTimestamp,
-					container.ID.ApplicationAttemptID.ApplicationID.ID),
-				State:    container.State,
-				ExitCode: 0,
-			}
-		}
-
-		if _, err := nm.grpcClient.SendHeartbeat(usage, containerStatuses); err != nil {
-			nm.logger.Warn("gRPC heartbeat failed, falling back to HTTP", zap.Error(err))
-		} else {
-			return // gRPC 心跳成功，直接返回
+	containerStatuses := make([]*ContainerStatus, len(containers))
+	for i, container := range containers {
+		containerStatuses[i] = &ContainerStatus{
+			ContainerID: fmt.Sprintf("container_%d_%d_%d",
+				container.ID.ApplicationAttemptID.ApplicationID.ClusterTimestamp,
+				container.ID.ApplicationAttemptID.ApplicationID.ID,
+				container.ID.ContainerID),
+			ApplicationID: fmt.Sprintf("application_%d_%d",
+				container.ID.ApplicationAttemptID.ApplicationID.ClusterTimestamp,
+				container.ID.ApplicationAttemptID.ApplicationID.ID),
+			State:    container.State,
+			ExitCode: 0,
 		}
 	}
 
-	// 回退到 HTTP 心跳
-	heartbeatData := map[string]interface{}{
-		"node_id":       nm.nodeID,
-		"used_resource": usedResource,
-		"containers":    containers,
+	if _, err := nm.grpcClient.SendHeartbeat(usage, containerStatuses); err != nil {
+		nm.logger.Warn("gRPC 心跳失败", zap.Error(err))
 	}
-
-	jsonData, err := json.Marshal(heartbeatData)
-	if err != nil {
-		nm.logger.Error("Failed to marshal heartbeat data", zap.Error(err))
-		return
-	}
-
-	_, err = http.Post(
-		nm.resourceManagerURL+"/ws/v1/cluster/nodes/heartbeat",
-		"application/json",
-		bytes.NewBuffer(jsonData),
-	)
-	if err != nil {
-		nm.logger.Error("Failed to send heartbeat", zap.Error(err))
-	}
+	return // gRPC 心跳成功，直接返回
 }
 
 func (nm *NodeManager) launchContainer(container *containermanager.Container) error {

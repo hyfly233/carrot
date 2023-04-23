@@ -119,7 +119,7 @@ func (nt *NodeTracker) RegisterNode(nodeID common.NodeID, resource common.Resour
 
 	nt.nodes[nodeKey] = node
 
-	nt.logger.Info("Node registered",
+	nt.logger.Info("节点已注册",
 		zap.String("node_id", nodeKey),
 		zap.String("http_address", httpAddress),
 		zap.Int64("memory", resource.Memory),

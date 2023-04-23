@@ -51,9 +51,6 @@ func main() {
 		zap.Int64("memory", config.NodeManager.ContainerMemoryLimitMB),
 		zap.Int32("vcores", config.NodeManager.ContainerVCoresLimit))
 
-	// 调试：直接打印 gRPC URL
-	logger.Info("Debug: gRPC URL", zap.String("value", config.NodeManager.ResourceManagerGRPCURL), zap.Int("length", len(config.NodeManager.ResourceManagerGRPCURL)))
-
 	nodeID := common.NodeID{
 		Host: config.NodeManager.Address,
 		Port: int32(config.NodeManager.Port),
@@ -84,7 +81,7 @@ func main() {
 	if err := nm.Start(config.NodeManager.Port); err != nil {
 		// 只有在不是正常关闭的情况下才记录错误
 		if !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("Failed to start NodeManager: %v", err)
+			log.Fatalf("启动 NodeManager 失败: %v", err)
 		}
 	}
 

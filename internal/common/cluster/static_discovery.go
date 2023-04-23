@@ -84,7 +84,7 @@ func (sd *StaticDiscovery) RegisterNode(node *common.ClusterNode) error {
 	sd.nodes[nodeID] = node
 	sd.nodesMutex.Unlock()
 
-	sd.logger.Info("Node registered", zap.String("node", nodeID))
+	sd.logger.Info("节点已注册", zap.String("node", nodeID))
 
 	// 通知观察者
 	sd.notifyWatchers()

@@ -531,7 +531,7 @@ func (hm *HeartbeatManager) registerNode() error {
 		},
 	})
 
-	hm.logger.Info("Node registered successfully",
+	hm.logger.Info("节点已注册 successfully",
 		zap.String("node_id", hm.config.NodeID),
 		zap.Duration("heartbeat_interval", hm.config.Interval))
 

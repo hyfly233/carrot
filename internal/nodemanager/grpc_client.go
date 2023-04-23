@@ -35,14 +35,14 @@ func NewGRPCClient(nodeID, rmAddress string) *GRPCClient {
 func (c *GRPCClient) Connect() error {
 	conn, err := grpc.Dial(c.rmAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return fmt.Errorf("failed to connect to ResourceManager: %v", err)
+		return fmt.Errorf("无法连接到 ResourceManager: %v", err)
 	}
 
 	c.conn = conn
 	c.client = rmpb.NewResourceManagerServiceClient(conn)
 	c.connected = true
 
-	log.Printf("Connected to ResourceManager at %s", c.rmAddress)
+	log.Printf("连接到 ResourceManager %s", c.rmAddress)
 	return nil
 }
 
@@ -90,7 +90,7 @@ func (c *GRPCClient) RegisterNode(nodeInfo *NodeInfo, capability *ResourceCapabi
 		return fmt.Errorf("node registration failed: %s", resp.Message)
 	}
 
-	log.Printf("Node registered successfully: %s", resp.Message)
+	log.Printf("节点已注册 successfully: %s", resp.Message)
 	return nil
 }
 

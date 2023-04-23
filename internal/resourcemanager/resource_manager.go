@@ -300,7 +300,7 @@ func (rm *ResourceManager) RegisterNode(nodeID common.NodeID, resource common.Re
 	}
 
 	rm.nodes[rm.getNodeKey(nodeID)] = node
-	rm.logger.Info("Node registered",
+	rm.logger.Info("节点已注册",
 		zap.String("host", nodeID.Host),
 		zap.Int32("port", nodeID.Port))
 

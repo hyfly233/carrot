@@ -297,7 +297,7 @@ func (hc *DefaultHealthChecker) checkClusterNodesHealth() {
 		// 检查节点是否响应
 		lastHeartbeat := node.LastHeartbeat
 		if time.Since(lastHeartbeat) > hc.config.FailureDetectionWindow {
-			hc.logger.Warn("Node appears to be down",
+			hc.logger.Warn("节点似乎已关闭",
 				zap.String("node", nodeID),
 				zap.Duration("since_last_heartbeat", time.Since(lastHeartbeat)))
 

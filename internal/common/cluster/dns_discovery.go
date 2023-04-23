@@ -111,7 +111,7 @@ func (dd *DNSDiscovery) RegisterNode(node *common.ClusterNode) error {
 	dd.nodes[nodeID] = node
 	dd.nodesMutex.Unlock()
 
-	dd.logger.Info("Node registered", zap.String("node", nodeID))
+	dd.logger.Info("节点已注册", zap.String("node", nodeID))
 
 	// 通知观察者
 	dd.notifyWatchers()
