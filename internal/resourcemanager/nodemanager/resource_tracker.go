@@ -1,4 +1,4 @@
-package rmnm
+package nodemanager
 
 import (
 	"fmt"

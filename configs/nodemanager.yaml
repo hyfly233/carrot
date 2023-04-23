@@ -22,14 +22,14 @@ cluster:
           role: "master"
       - host: "localhost"
         port: 8042
-        type: "rmnm"
+        type: "nodemanager"
         metadata:
           role: "worker"
 
 # NodeManager 配置
 nodemanager:
   port: 8042
-  address: "0.0.0.0"
+  address: "127.0.0.1"
   resourcemanager_url: "http://localhost:8088"
   resourcemanager_grpc_url: "localhost:9088"
   heartbeat_interval: 3s
@@ -54,7 +54,7 @@ log:
   development: false
   file_output:
     enabled: true
-    directory: "logs/rmnm"
+    directory: "logs/nodemanager"
     max_file_size: "100MB"
     max_backups: 168
     max_age: 7

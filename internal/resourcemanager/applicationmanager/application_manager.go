@@ -1,4 +1,4 @@
-package rmam
+package applicationmanager
 
 import (
 	"context"
