@@ -10,8 +10,8 @@ import (
 
 	"carrot/internal/common"
 	"carrot/internal/common/cluster"
-	"carrot/internal/resourcemanager/applicationmanager"
-	"carrot/internal/resourcemanager/nodemanager"
+	"carrot/internal/resourcemanager/rmapplication"
+	"carrot/internal/resourcemanager/rmnode"
 	"carrot/internal/resourcemanager/rmserver"
 	"carrot/internal/resourcemanager/scheduler"
 
@@ -21,8 +21,8 @@ import (
 // ResourceManager 资源管理器
 type ResourceManager struct {
 	mu               sync.RWMutex
-	applications     map[string]*applicationmanager.Application
-	nodes            map[string]*nodemanager.Node
+	applications     map[string]*rmapplication.Application
+	nodes            map[string]*rmnode.Node
 	scheduler        scheduler.Scheduler
 	appIDCounter     int32
 	clusterTimestamp int64
@@ -63,8 +63,8 @@ func NewResourceManager(config *common.Config) *ResourceManager {
 	}
 
 	rm := &ResourceManager{
-		applications:         make(map[string]*applicationmanager.Application),
-		nodes:                make(map[string]*nodemanager.Node),
+		applications:         make(map[string]*rmapplication.Application),
+		nodes:                make(map[string]*rmnode.Node),
 		clusterTimestamp:     time.Now().Unix(),
 		config:               config,
 		logger:               common.ComponentLogger(fmt.Sprintf("rm-%d", time.Now().Unix())),
@@ -236,7 +236,7 @@ func (rm *ResourceManager) SubmitApplication(ctx common.ApplicationSubmissionCon
 	}
 	rm.appIDCounter++
 
-	app := &applicationmanager.Application{
+	app := &rmapplication.Application{
 		ID:              appID,
 		Name:            ctx.ApplicationName,
 		Type:            ctx.ApplicationType,
@@ -247,7 +247,7 @@ func (rm *ResourceManager) SubmitApplication(ctx common.ApplicationSubmissionCon
 		Progress:        0.0,
 		AMContainerSpec: ctx.AMContainerSpec,
 		Resource:        ctx.Resource,
-		Attempts:        make([]*applicationmanager.ApplicationAttempt, 0),
+		Attempts:        make([]*rmapplication.ApplicationAttempt, 0),
 	}
 
 	rm.applications[rm.getAppKey(appID)] = app
@@ -258,7 +258,7 @@ func (rm *ResourceManager) SubmitApplication(ctx common.ApplicationSubmissionCon
 		AttemptID:     1,
 	}
 
-	attempt := &applicationmanager.ApplicationAttempt{
+	attempt := &rmapplication.ApplicationAttempt{
 		ID:        attemptID,
 		State:     common.ApplicationStateNew,
 		StartTime: time.Now(),
@@ -288,7 +288,7 @@ func (rm *ResourceManager) RegisterNode(nodeID common.NodeID, resource common.Re
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
 
-	node := &nodemanager.Node{
+	node := &rmnode.Node{
 		ID:                nodeID,
 		HTTPAddress:       httpAddress,
 		TotalResource:     resource,
@@ -423,7 +423,7 @@ func (rm *ResourceManager) GetClusterTimestamp() int64 {
 	return rm.clusterTimestamp
 }
 
-func (rm *ResourceManager) scheduleApplication(app *applicationmanager.Application) {
+func (rm *ResourceManager) scheduleApplication(app *rmapplication.Application) {
 	// 将应用程序信息转换为调度器可用的格式
 	appInfo := &scheduler.ApplicationInfo{
 		ID:         app.ID,
@@ -799,7 +799,7 @@ func (rm *ResourceManager) checkNodeHealth() {
 }
 
 // markNodeUnhealthy 标记节点为不健康状态
-func (rm *ResourceManager) markNodeUnhealthy(node *nodemanager.Node) {
+func (rm *ResourceManager) markNodeUnhealthy(node *rmnode.Node) {
 	node.State = "UNHEALTHY"
 	node.HealthReport = fmt.Sprintf("节点于 %s 心跳超时", time.Now().Format(time.RFC3339))
 
@@ -815,7 +815,7 @@ func (rm *ResourceManager) markNodeUnhealthy(node *nodemanager.Node) {
 }
 
 // markNodeHealthy 标记节点为健康状态
-func (rm *ResourceManager) markNodeHealthy(node *nodemanager.Node) {
+func (rm *ResourceManager) markNodeHealthy(node *rmnode.Node) {
 	node.State = "RUNNING"
 	node.HealthReport = fmt.Sprintf("节点于 %s 恢复", time.Now().Format(time.RFC3339))
 }
@@ -1010,7 +1010,7 @@ func (rm *ResourceManager) onLeaderChange(oldLeader, newLeader *common.ClusterNo
 }
 
 // handleFailedNode 处理失败的节点
-func (rm *ResourceManager) handleFailedNode(node *nodemanager.Node) {
+func (rm *ResourceManager) handleFailedNode(node *rmnode.Node) {
 	// 标记节点上的所有容器为失败
 	for _, container := range node.Containers {
 		container.Status = "FAILED"

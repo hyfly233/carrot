@@ -102,7 +102,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: carrot/resourcemanager,carrot/nodemanager
+          images: carrot/resourcemanager,carrot/rmnode
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -123,5 +123,5 @@ jobs:
           context: .
           file: ./deployments/docker/Dockerfile.nm
           push: true
-          tags: carrot/nodemanager:latest
+          tags: carrot/rmnode:latest
           platforms: linux/amd64,linux/arm64

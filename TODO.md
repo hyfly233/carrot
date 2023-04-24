@@ -116,7 +116,7 @@ make build
 ./bin/resourcemanager -config configs/resourcemanager.yaml
 
 # 启动 NodeManager (使用 gRPC 连接)
-./bin/nodemanager -config configs/nodemanager.yaml
+./bin/rmnode -config configs/rmnode.yaml
 
 # 启动 ApplicationMaster (可选择 HTTP 或 gRPC)
 ./bin/applicationmaster -config configs/applicationmaster.yaml --use-grpc=true
