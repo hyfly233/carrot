@@ -315,7 +315,7 @@ func (cm *ContainerManager) startContainerAsync(containerInfo *ContainerInfo) {
 			zap.String("container_id", containerKey),
 			zap.Error(err))
 		cm.updateContainerState(containerInfo, ContainerStateExitedWithFailure)
-		containerInfo.Diagnostics = fmt.Sprintf("Resource allocation failed: %v", err)
+		containerInfo.Diagnostics = fmt.Sprintf("Resource 分配失败: %v", err)
 		return
 	}
 

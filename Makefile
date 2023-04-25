@@ -191,7 +191,7 @@ release: clean test build
 # Swagger 文档生成
 swagger:
 	@echo "Generating Swagger documentation..."
-	@command -v swag >/dev/null 2>&1 || { echo >&2 "swag is required but not installed. Installing..."; go install github.com/swaggo/swag/cmd/swag@latest; }
+	@command -v swag >/dev/null 2>&1 || { echo >&2 "swag 是必需的 but not installed. Installing..."; go install github.com/swaggo/swag/cmd/swag@latest; }
 	swag init -g cmd/resourcemanager/main.go -o docs --parseDependency
 	@echo "Swagger documentation generated!"
 

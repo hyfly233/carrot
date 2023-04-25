@@ -49,14 +49,14 @@ func NewApplicationMasterGRPCServer(amManager ApplicationMasterManager) *Applica
 func (s *ApplicationMasterGRPCServer) Start(port int) error {
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
-		return fmt.Errorf("failed to listen on port %d: %v", port, err)
+		return fmt.Errorf("ApplicationMasterGRPCServer 端口监听失败 %d: %v", port, err)
 	}
 
 	s.server = grpc.NewServer()
 	ampb.RegisterApplicationMasterServiceServer(s.server, s)
 
 	s.running = true
-	log.Printf("ApplicationMaster gRPC rmserver starting on port %d", port)
+	log.Printf("ApplicationMaster gRPC 服务器正在端口 %d 上启动 ", port)
 
 	return s.server.Serve(lis)
 }
@@ -66,14 +66,14 @@ func (s *ApplicationMasterGRPCServer) Stop() {
 	if s.server != nil {
 		s.running = false
 		s.server.GracefulStop()
-		log.Printf("ApplicationMaster gRPC rmserver stopped")
+		log.Printf("ApplicationMaster gRPC 服务器停止")
 	}
 }
 
 // RegisterApplicationMaster 注册 ApplicationMaster
 func (s *ApplicationMasterGRPCServer) RegisterApplicationMaster(ctx context.Context, req *ampb.RegisterApplicationMasterRequest) (*ampb.RegisterApplicationMasterResponse, error) {
 	if req.Host == "" {
-		return nil, status.Error(codes.InvalidArgument, "host is required")
+		return nil, status.Error(codes.InvalidArgument, "host 是必需的")
 	}
 
 	// TODO: 从上下文或其他方式获取应用程序 ID
@@ -91,7 +91,7 @@ func (s *ApplicationMasterGRPCServer) RegisterApplicationMaster(ctx context.Cont
 		req.TrackingUrl,
 	)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to register ApplicationMaster: %v", err)
+		return nil, status.Errorf(codes.Internal, "无法注册 ApplicationMaster: %v", err)
 	}
 
 	// 初始化分配计数器
@@ -176,7 +176,7 @@ func (s *ApplicationMasterGRPCServer) Allocate(ctx context.Context, req *ampb.Al
 		req.Progress,
 	)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "allocation failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "分配失败: %v", err)
 	}
 
 	// 转换响应
@@ -269,7 +269,7 @@ func (s *ApplicationMasterGRPCServer) FinishApplicationMaster(ctx context.Contex
 // GetApplicationReport 获取应用程序报告
 func (s *ApplicationMasterGRPCServer) GetApplicationReport(ctx context.Context, req *ampb.GetApplicationReportRequest) (*ampb.GetApplicationReportResponse, error) {
 	if req.ApplicationId == nil {
-		return nil, status.Error(codes.InvalidArgument, "application_id is required")
+		return nil, status.Error(codes.InvalidArgument, "application_id 是必需的")
 	}
 
 	appID := common.ApplicationID{
@@ -318,7 +318,7 @@ func (s *ApplicationMasterGRPCServer) GetClusterMetrics(ctx context.Context, req
 	// 调用 ApplicationMasterManager 获取集群指标
 	metrics, err := s.amManager.GetClusterMetrics()
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get cluster metrics: %v", err)
+		return nil, status.Errorf(codes.Internal, "无法获取集群指标: %v", err)
 	}
 
 	return &ampb.GetClusterMetricsResponse{

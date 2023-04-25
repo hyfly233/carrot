@@ -363,15 +363,15 @@ func (am *ApplicationManager) GetCurrentApplicationAttempt(appID common.Applicat
 // validateSubmissionContext 验证应用程序提交上下文
 func (am *ApplicationManager) validateSubmissionContext(ctx common.ApplicationSubmissionContext) error {
 	if ctx.ApplicationName == "" {
-		return fmt.Errorf("application name is required")
+		return fmt.Errorf("application name 是必需的")
 	}
 
 	if ctx.ApplicationType == "" {
-		return fmt.Errorf("application type is required")
+		return fmt.Errorf("application type 是必需的")
 	}
 
 	if ctx.Queue == "" {
-		return fmt.Errorf("queue is required")
+		return fmt.Errorf("queue 是必需的")
 	}
 
 	if ctx.Resource.Memory <= 0 {

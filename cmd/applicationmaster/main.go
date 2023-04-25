@@ -132,7 +132,7 @@ func main() {
 // parseApplicationID 解析应用程序 ID
 func parseApplicationID(idStr string) (*common.ApplicationID, error) {
 	if idStr == "" {
-		return nil, fmt.Errorf("application ID is required")
+		return nil, fmt.Errorf("application ID 是必需的")
 	}
 
 	parts := strings.Split(idStr, "_")
@@ -159,7 +159,7 @@ func parseApplicationID(idStr string) (*common.ApplicationID, error) {
 // parseApplicationAttemptID 解析应用程序尝试 ID
 func parseApplicationAttemptID(idStr string) (*common.ApplicationAttemptID, error) {
 	if idStr == "" {
-		return nil, fmt.Errorf("application attempt ID is required")
+		return nil, fmt.Errorf("application attempt ID 是必需的")
 	}
 
 	parts := strings.Split(idStr, "_")

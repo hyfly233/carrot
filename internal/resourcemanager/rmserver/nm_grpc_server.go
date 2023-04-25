@@ -327,7 +327,7 @@ func (s *ResourceManagerGRPCServer) GetNodes(ctx context.Context, req *rmpb.GetN
 // SubmitApplication 提交应用程序
 func (s *ResourceManagerGRPCServer) SubmitApplication(ctx context.Context, req *rmpb.SubmitApplicationRequest) (*rmpb.SubmitApplicationResponse, error) {
 	if req.ApplicationContext == nil {
-		return nil, status.Error(codes.InvalidArgument, "application_context is required")
+		return nil, status.Error(codes.InvalidArgument, "application_context 是必需的")
 	}
 
 	// 转换为 common 包类型

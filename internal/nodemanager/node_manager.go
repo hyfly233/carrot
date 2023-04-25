@@ -405,7 +405,7 @@ func (nm *NodeManager) handleContainer(w http.ResponseWriter, r *http.Request) {
 	containerIDStr := vars["containerId"]
 
 	if containerIDStr == "" {
-		http.Error(w, "Container ID is required", http.StatusBadRequest)
+		http.Error(w, "Container ID 是必需的", http.StatusBadRequest)
 		return
 	}
 

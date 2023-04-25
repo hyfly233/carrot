@@ -135,7 +135,7 @@ func (c *ApplicationMasterGRPCClient) Allocate(ask []*common.ContainerRequest, r
 
 	resp, err := c.client.Allocate(ctx, req)
 	if err != nil {
-		return nil, fmt.Errorf("allocation failed: %v", err)
+		return nil, fmt.Errorf("分配失败: %v", err)
 	}
 
 	// 转换响应
