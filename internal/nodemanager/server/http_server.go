@@ -74,9 +74,9 @@ func (s *HTTPServer) Start(port int) error {
 
 	// 在后台启动服务器
 	go func() {
-		s.logger.Info("Starting NodeManager HTTP rmserver", zap.String("addr", s.server.Addr))
+		s.logger.Info("Starting NodeManager HTTP server", zap.String("addr", s.server.Addr))
 		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			s.logger.Error("NodeManager HTTP rmserver failed", zap.Error(err))
+			s.logger.Error("NodeManager HTTP server failed", zap.Error(err))
 		}
 	}()
 
@@ -92,7 +92,7 @@ func (s *HTTPServer) Stop() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	s.logger.Info("Stopping NodeManager HTTP rmserver")
+	s.logger.Info("Stopping NodeManager HTTP server")
 	return s.server.Shutdown(ctx)
 }
 

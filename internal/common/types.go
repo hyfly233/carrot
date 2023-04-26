@@ -94,7 +94,7 @@ type NodeType string
 
 const (
 	NodeTypeResourceManager   NodeType = "resourcemanager"
-	NodeTypeNodeManager       NodeType = "rmnode"
+	NodeTypeNodeManager       NodeType = "node"
 	NodeTypeApplicationMaster NodeType = "applicationmaster"
 )
 

@@ -1,4 +1,4 @@
-package nodemanager
+package client
 
 import (
 	"context"
@@ -59,7 +59,7 @@ func (c *GRPCClient) Disconnect() error {
 // RegisterNode 向 ResourceManager 注册节点
 func (c *GRPCClient) RegisterNode(nodeInfo *NodeInfo, capability *ResourceCapability, httpAddress string) error {
 	if !c.connected {
-		return fmt.Errorf("not connected to ResourceManager")
+		return fmt.Errorf("无法连接到 RM")
 	}
 
 	req := &rmpb.RegisterNodeRequest{
@@ -97,7 +97,7 @@ func (c *GRPCClient) RegisterNode(nodeInfo *NodeInfo, capability *ResourceCapabi
 // SendHeartbeat 发送心跳到 ResourceManager
 func (c *GRPCClient) SendHeartbeat(usedResources *ResourceUsage, containerStatuses []*ContainerStatus) (*HeartbeatResponse, error) {
 	if !c.connected {
-		return nil, fmt.Errorf("not connected to ResourceManager")
+		return nil, fmt.Errorf("无法连接到 RM")
 	}
 
 	// 转换容器状态

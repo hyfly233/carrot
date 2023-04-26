@@ -168,7 +168,7 @@ YARN 系统 gRPC 迁移项目已成功完成第二阶段和第三阶段的开发
 
 2. **启动 NodeManager**
    ```bash
-   ./bin/rmnode --config=configs/rmnode.yaml
+   ./bin/node --config=configs/node.yaml
    ```
 
 3. **启动 ApplicationMaster** (可选)

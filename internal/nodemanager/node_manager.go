@@ -1,6 +1,7 @@
 package nodemanager
 
 import (
+	"carrot/internal/nodemanager/client"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -24,7 +25,7 @@ type NodeManager struct {
 	nodeID                 common.NodeID
 	resourceManagerURL     string
 	resourceManagerGRPCURL string
-	grpcClient             *GRPCClient
+	grpcClient             *client.GRPCClient
 	totalResource          common.Resource
 	usedResource           common.Resource
 	containers             map[string]*containermanager.Container
@@ -52,7 +53,7 @@ func NewNodeManager(nodeID common.NodeID, totalResource common.Resource, rmURL, 
 // Start 启动节点管理器
 func (nm *NodeManager) Start(port int) error {
 	// 初始化 gRPC 客户端
-	grpcClient := NewGRPCClient(nm.nodeID.HostPortString(), nm.resourceManagerGRPCURL)
+	grpcClient := client.NewGRPCClient(nm.nodeID.HostPortString(), nm.resourceManagerGRPCURL)
 	if err := grpcClient.Connect(); err != nil {
 		nm.logger.Warn("无法通过 gRPC 连接到 RM", zap.Error(err))
 	}
@@ -174,7 +175,7 @@ func (nm *NodeManager) GetContainerStatus(containerID common.ContainerID) (*cont
 }
 
 func (nm *NodeManager) registerWithRM() error {
-	nodeInfo := &NodeInfo{
+	nodeInfo := &client.NodeInfo{
 		NodeID:    nm.nodeID.HostPortString(),
 		Hostname:  nm.nodeID.Host,
 		IPAddress: nm.nodeID.Host,
@@ -183,7 +184,7 @@ func (nm *NodeManager) registerWithRM() error {
 		Labels:    []string{},
 	}
 
-	capability := &ResourceCapability{
+	capability := &client.ResourceCapability{
 		MemoryMB: nm.totalResource.Memory,
 		VCores:   int(nm.totalResource.VCores),
 	}
@@ -229,14 +230,14 @@ func (nm *NodeManager) sendHeartbeat() {
 	nm.mu.RUnlock()
 
 	// 尝试使用 gRPC 发送心跳
-	usage := &ResourceUsage{
+	usage := &client.ResourceUsage{
 		MemoryMB: usedResource.Memory,
 		VCores:   int(usedResource.VCores),
 	}
 
-	containerStatuses := make([]*ContainerStatus, len(containers))
+	containerStatuses := make([]*client.ContainerStatus, len(containers))
 	for i, container := range containers {
-		containerStatuses[i] = &ContainerStatus{
+		containerStatuses[i] = &client.ContainerStatus{
 			ContainerID: fmt.Sprintf("container_%d_%d_%d",
 				container.ID.ApplicationAttemptID.ApplicationID.ClusterTimestamp,
 				container.ID.ApplicationAttemptID.ApplicationID.ID,

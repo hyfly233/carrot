@@ -1,4 +1,4 @@
-package applicationmaster
+package client
 
 import (
 	"context"
@@ -58,7 +58,7 @@ func (c *ApplicationMasterGRPCClient) Disconnect() error {
 // RegisterApplicationMaster 注册 ApplicationMaster
 func (c *ApplicationMasterGRPCClient) RegisterApplicationMaster(host string, rpcPort int32, trackingURL string) (*ampb.RegisterApplicationMasterResponse, error) {
 	if !c.connected {
-		return nil, fmt.Errorf("not connected to ResourceManager")
+		return nil, fmt.Errorf("无法连接到 RM")
 	}
 
 	req := &ampb.RegisterApplicationMasterRequest{
@@ -75,7 +75,7 @@ func (c *ApplicationMasterGRPCClient) RegisterApplicationMaster(host string, rpc
 		return nil, fmt.Errorf("failed to register ApplicationMaster: %v", err)
 	}
 
-	log.Printf("ApplicationMaster registered successfully")
+	log.Printf("ApplicationMaster 注册成功")
 
 	// 直接返回 protobuf 响应
 	return resp, nil
@@ -84,7 +84,7 @@ func (c *ApplicationMasterGRPCClient) RegisterApplicationMaster(host string, rpc
 // Allocate 发送资源分配请求
 func (c *ApplicationMasterGRPCClient) Allocate(ask []*common.ContainerRequest, release []common.ContainerID, completedContainers []*common.Container, progress float32) (*ampb.AllocateResponse, error) {
 	if !c.connected {
-		return nil, fmt.Errorf("not connected to ResourceManager")
+		return nil, fmt.Errorf("无法连接到 RM")
 	}
 
 	// 转换容器请求
@@ -190,7 +190,7 @@ func (c *ApplicationMasterGRPCClient) Allocate(ask []*common.ContainerRequest, r
 // FinishApplicationMaster 完成 ApplicationMaster
 func (c *ApplicationMasterGRPCClient) FinishApplicationMaster(finalStatus string, diagnostics string, trackingURL string) (*ampb.FinishApplicationMasterResponse, error) {
 	if !c.connected {
-		return nil, fmt.Errorf("not connected to ResourceManager")
+		return nil, fmt.Errorf("无法连接到 RM")
 	}
 
 	req := &ampb.FinishApplicationMasterRequest{
@@ -215,7 +215,7 @@ func (c *ApplicationMasterGRPCClient) FinishApplicationMaster(finalStatus string
 // GetApplicationReport 获取应用程序报告
 func (c *ApplicationMasterGRPCClient) GetApplicationReport() (*common.ApplicationReport, error) {
 	if !c.connected {
-		return nil, fmt.Errorf("not connected to ResourceManager")
+		return nil, fmt.Errorf("无法连接到 RM")
 	}
 
 	req := &ampb.GetApplicationReportRequest{
@@ -257,7 +257,7 @@ func (c *ApplicationMasterGRPCClient) GetApplicationReport() (*common.Applicatio
 // GetClusterMetrics 获取集群指标
 func (c *ApplicationMasterGRPCClient) GetClusterMetrics() (*ampb.GetClusterMetricsResponse, error) {
 	if !c.connected {
-		return nil, fmt.Errorf("not connected to ResourceManager")
+		return nil, fmt.Errorf("无法连接到 RM")
 	}
 
 	req := &ampb.GetClusterMetricsRequest{}

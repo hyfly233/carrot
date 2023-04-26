@@ -10,10 +10,10 @@ import (
 
 	"carrot/internal/common"
 	"carrot/internal/common/cluster"
-	"carrot/internal/resourcemanager/rmapplication"
-	"carrot/internal/resourcemanager/rmnode"
-	"carrot/internal/resourcemanager/rmserver"
+	"carrot/internal/resourcemanager/application"
+	"carrot/internal/resourcemanager/node"
 	"carrot/internal/resourcemanager/scheduler"
+	"carrot/internal/resourcemanager/server"
 
 	"go.uber.org/zap"
 )
@@ -21,15 +21,15 @@ import (
 // ResourceManager 资源管理器
 type ResourceManager struct {
 	mu               sync.RWMutex
-	applications     map[string]*rmapplication.Application
-	nodes            map[string]*rmnode.Node
+	applications     map[string]*application.Application
+	nodes            map[string]*node.Node
 	scheduler        scheduler.Scheduler
 	appIDCounter     int32
 	clusterTimestamp int64
 	httpServer       *http.Server
-	ginServer        *rmserver.GinServer                   // HTTP 服务器
-	grpcServer       *rmserver.ResourceManagerGRPCServer   // NodeManager gRPC 服务器
-	amGRPCServer     *rmserver.ApplicationMasterGRPCServer // ApplicationMaster gRPC 服务器
+	ginServer        *server.GinServer                   // HTTP 服务器
+	grpcServer       *server.ResourceManagerGRPCServer   // NodeManager gRPC 服务器
+	amGRPCServer     *server.ApplicationMasterGRPCServer // ApplicationMaster gRPC 服务器
 	config           *common.Config
 	logger           *zap.Logger
 	ctx              context.Context
@@ -63,8 +63,8 @@ func NewResourceManager(config *common.Config) *ResourceManager {
 	}
 
 	rm := &ResourceManager{
-		applications:         make(map[string]*rmapplication.Application),
-		nodes:                make(map[string]*rmnode.Node),
+		applications:         make(map[string]*application.Application),
+		nodes:                make(map[string]*node.Node),
 		clusterTimestamp:     time.Now().Unix(),
 		config:               config,
 		logger:               common.ComponentLogger(fmt.Sprintf("rm-%d", time.Now().Unix())),
@@ -100,13 +100,13 @@ func NewResourceManager(config *common.Config) *ResourceManager {
 	rm.logger.Info("调度器已初始化", zap.String("type", schedulerType))
 
 	// 初始化 HTTP 服务器
-	rm.ginServer = rmserver.NewGinServer(rm, rm.logger)
+	rm.ginServer = server.NewGinServer(rm, rm.logger)
 
 	// 初始化 gRPC 服务器
-	rm.grpcServer = rmserver.NewResourceManagerGRPCServer(rm)
+	rm.grpcServer = server.NewResourceManagerGRPCServer(rm)
 
 	// 初始化 ApplicationMaster gRPC 服务器
-	rm.amGRPCServer = rmserver.NewApplicationMasterGRPCServer(rm)
+	rm.amGRPCServer = server.NewApplicationMasterGRPCServer(rm)
 
 	return rm
 }
@@ -128,7 +128,7 @@ func (rm *ResourceManager) Start(httpPort, nmGRPCPort, amGRPCPort int) error {
 	go func() {
 		rm.logger.Info("启动 NodeManager gRPC 服务器", zap.Int("port", nmGRPCPort))
 		if err := rm.grpcServer.Start(nmGRPCPort); err != nil {
-			rm.logger.Error("启动 NodeManager gRPC rmserver 失败", zap.Error(err))
+			rm.logger.Error("启动 NodeManager gRPC server 失败", zap.Error(err))
 		}
 	}()
 
@@ -236,7 +236,7 @@ func (rm *ResourceManager) SubmitApplication(ctx common.ApplicationSubmissionCon
 	}
 	rm.appIDCounter++
 
-	app := &rmapplication.Application{
+	app := &application.Application{
 		ID:              appID,
 		Name:            ctx.ApplicationName,
 		Type:            ctx.ApplicationType,
@@ -247,7 +247,7 @@ func (rm *ResourceManager) SubmitApplication(ctx common.ApplicationSubmissionCon
 		Progress:        0.0,
 		AMContainerSpec: ctx.AMContainerSpec,
 		Resource:        ctx.Resource,
-		Attempts:        make([]*rmapplication.ApplicationAttempt, 0),
+		Attempts:        make([]*application.ApplicationAttempt, 0),
 	}
 
 	rm.applications[rm.getAppKey(appID)] = app
@@ -258,7 +258,7 @@ func (rm *ResourceManager) SubmitApplication(ctx common.ApplicationSubmissionCon
 		AttemptID:     1,
 	}
 
-	attempt := &rmapplication.ApplicationAttempt{
+	attempt := &application.ApplicationAttempt{
 		ID:        attemptID,
 		State:     common.ApplicationStateNew,
 		StartTime: time.Now(),
@@ -288,7 +288,7 @@ func (rm *ResourceManager) RegisterNode(nodeID common.NodeID, resource common.Re
 	rm.mu.Lock()
 	defer rm.mu.Unlock()
 
-	node := &rmnode.Node{
+	node := &node.Node{
 		ID:                nodeID,
 		HTTPAddress:       httpAddress,
 		TotalResource:     resource,
@@ -423,7 +423,7 @@ func (rm *ResourceManager) GetClusterTimestamp() int64 {
 	return rm.clusterTimestamp
 }
 
-func (rm *ResourceManager) scheduleApplication(app *rmapplication.Application) {
+func (rm *ResourceManager) scheduleApplication(app *application.Application) {
 	// 将应用程序信息转换为调度器可用的格式
 	appInfo := &scheduler.ApplicationInfo{
 		ID:         app.ID,
@@ -733,7 +733,7 @@ func (rm *ResourceManager) handleNodeHealth(w http.ResponseWriter, r *http.Reque
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		rm.logger.Error("Failed to encode node health response", zap.Error(err))
-		http.Error(w, "Internal rmserver error", http.StatusInternalServerError)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
 }
 
@@ -799,7 +799,7 @@ func (rm *ResourceManager) checkNodeHealth() {
 }
 
 // markNodeUnhealthy 标记节点为不健康状态
-func (rm *ResourceManager) markNodeUnhealthy(node *rmnode.Node) {
+func (rm *ResourceManager) markNodeUnhealthy(node *node.Node) {
 	node.State = "UNHEALTHY"
 	node.HealthReport = fmt.Sprintf("节点于 %s 心跳超时", time.Now().Format(time.RFC3339))
 
@@ -815,7 +815,7 @@ func (rm *ResourceManager) markNodeUnhealthy(node *rmnode.Node) {
 }
 
 // markNodeHealthy 标记节点为健康状态
-func (rm *ResourceManager) markNodeHealthy(node *rmnode.Node) {
+func (rm *ResourceManager) markNodeHealthy(node *node.Node) {
 	node.State = "RUNNING"
 	node.HealthReport = fmt.Sprintf("节点于 %s 恢复", time.Now().Format(time.RFC3339))
 }
@@ -1010,7 +1010,7 @@ func (rm *ResourceManager) onLeaderChange(oldLeader, newLeader *common.ClusterNo
 }
 
 // handleFailedNode 处理失败的节点
-func (rm *ResourceManager) handleFailedNode(node *rmnode.Node) {
+func (rm *ResourceManager) handleFailedNode(node *node.Node) {
 	// 标记节点上的所有容器为失败
 	for _, container := range node.Containers {
 		container.Status = "FAILED"

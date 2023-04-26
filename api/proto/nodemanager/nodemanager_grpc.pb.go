@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v4.25.3
-// source: api/proto/rmnode.proto
+// source: api/proto/node.proto
 
 package nodemanager
 
@@ -19,9 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	NodeManagerService_RegisterNode_FullMethodName  = "/carrot.rmnode.v1.NodeManagerService/RegisterNode"
-	NodeManagerService_Heartbeat_FullMethodName     = "/carrot.rmnode.v1.NodeManagerService/Heartbeat"
-	NodeManagerService_GetNodeStatus_FullMethodName = "/carrot.rmnode.v1.NodeManagerService/GetNodeStatus"
+	NodeManagerService_RegisterNode_FullMethodName  = "/carrot.node.v1.NodeManagerService/RegisterNode"
+	NodeManagerService_Heartbeat_FullMethodName     = "/carrot.node.v1.NodeManagerService/Heartbeat"
+	NodeManagerService_GetNodeStatus_FullMethodName = "/carrot.node.v1.NodeManagerService/GetNodeStatus"
 )
 
 // NodeManagerServiceClient is the client API for NodeManagerService service.
@@ -76,7 +76,7 @@ func (c *nodeManagerServiceClient) GetNodeStatus(ctx context.Context, in *GetNod
 	return out, nil
 }
 
-// NodeManagerServiceServer is the rmserver API for NodeManagerService service.
+// NodeManagerServiceServer is the server API for NodeManagerService service.
 // All implementations must embed UnimplementedNodeManagerServiceServer
 // for forward compatibility.
 //
@@ -186,7 +186,7 @@ func _NodeManagerService_GetNodeStatus_Handler(srv interface{}, ctx context.Cont
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var NodeManagerService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "carrot.rmnode.v1.NodeManagerService",
+	ServiceName: "carrot.node.v1.NodeManagerService",
 	HandlerType: (*NodeManagerServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -203,5 +203,5 @@ var NodeManagerService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "api/proto/rmnode.proto",
+	Metadata: "api/proto/node.proto",
 }

@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.8
 // 	protoc        v4.25.3
-// source: api/proto/rmnode.proto
+// source: api/proto/node.proto
 
 package nodemanager
 
@@ -584,7 +584,7 @@ type GetNodeStatusResponse struct {
 	UsedResources     *ResourceUsage         `protobuf:"bytes,3,opt,name=used_resources,json=usedResources,proto3" json:"used_resources,omitempty"`
 	ContainerStatuses []*ContainerStatus     `protobuf:"bytes,4,rep,name=container_statuses,json=containerStatuses,proto3" json:"container_statuses,omitempty"`
 	HealthStatus      *HealthStatus          `protobuf:"bytes,5,opt,name=health_status,json=healthStatus,proto3" json:"health_status,omitempty"`
-	State             NodeState              `protobuf:"varint,6,opt,name=state,proto3,enum=carrot.rmnode.v1.NodeState" json:"state,omitempty"`
+	State             NodeState              `protobuf:"varint,6,opt,name=state,proto3,enum=carrot.node.v1.NodeState" json:"state,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -889,7 +889,7 @@ type ContainerStatus struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ContainerId   string                 `protobuf:"bytes,1,opt,name=container_id,json=containerId,proto3" json:"container_id,omitempty"`
 	ApplicationId string                 `protobuf:"bytes,2,opt,name=application_id,json=applicationId,proto3" json:"application_id,omitempty"`
-	State         ContainerState         `protobuf:"varint,3,opt,name=state,proto3,enum=carrot.rmnode.v1.ContainerState" json:"state,omitempty"`
+	State         ContainerState         `protobuf:"varint,3,opt,name=state,proto3,enum=carrot.node.v1.ContainerState" json:"state,omitempty"`
 	ExitCode      int32                  `protobuf:"varint,4,opt,name=exit_code,json=exitCode,proto3" json:"exit_code,omitempty"`
 	Diagnostics   string                 `protobuf:"bytes,5,opt,name=diagnostics,proto3" json:"diagnostics,omitempty"`
 	ResourceUsage *ResourceUsage         `protobuf:"bytes,6,opt,name=resource_usage,json=resourceUsage,proto3" json:"resource_usage,omitempty"`
@@ -989,7 +989,7 @@ func (x *ContainerStatus) GetFinishTime() *timestamppb.Timestamp {
 type ContainerAction struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ContainerId   string                 `protobuf:"bytes,1,opt,name=container_id,json=containerId,proto3" json:"container_id,omitempty"`
-	Action        ActionType             `protobuf:"varint,2,opt,name=action,proto3,enum=carrot.rmnode.v1.ActionType" json:"action,omitempty"`
+	Action        ActionType             `protobuf:"varint,2,opt,name=action,proto3,enum=carrot.node.v1.ActionType" json:"action,omitempty"`
 	Reason        string                 `protobuf:"bytes,3,opt,name=reason,proto3" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1049,7 +1049,7 @@ func (x *ContainerAction) GetReason() string {
 // 健康状态
 type HealthStatus struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	State            HealthState            `protobuf:"varint,1,opt,name=state,proto3,enum=carrot.rmnode.v1.HealthState" json:"state,omitempty"`
+	State            HealthState            `protobuf:"varint,1,opt,name=state,proto3,enum=carrot.node.v1.HealthState" json:"state,omitempty"`
 	LastHealthReport string                 `protobuf:"bytes,2,opt,name=last_health_report,json=lastHealthReport,proto3" json:"last_health_report,omitempty"`
 	LastHealthUpdate *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=last_health_update,json=lastHealthUpdate,proto3" json:"last_health_update,omitempty"`
 	HealthChecks     []*HealthCheck         `protobuf:"bytes,4,rep,name=health_checks,json=healthChecks,proto3" json:"health_checks,omitempty"`
@@ -1119,7 +1119,7 @@ func (x *HealthStatus) GetHealthChecks() []*HealthCheck {
 type HealthCheck struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	State         HealthState            `protobuf:"varint,2,opt,name=state,proto3,enum=carrot.rmnode.v1.HealthState" json:"state,omitempty"`
+	State         HealthState            `protobuf:"varint,2,opt,name=state,proto3,enum=carrot.node.v1.HealthState" json:"state,omitempty"`
 	Message       string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
 	Timestamp     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1188,10 +1188,10 @@ var File_api_proto_nodemanager_proto protoreflect.FileDescriptor
 
 const file_api_proto_nodemanager_proto_rawDesc = "" +
 	"\n" +
-	"\x1bapi/proto/rmnode.proto\x12\x15carrot.rmnode.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xcc\x01\n" +
+	"\x1bapi/proto/node.proto\x12\x15carrot.node.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xcc\x01\n" +
 	"\x13RegisterNodeRequest\x12<\n" +
-	"\tnode_info\x18\x01 \x01(\v2\x1f.carrot.rmnode.v1.NodeInfoR\bnodeInfo\x12T\n" +
-	"\x10total_capability\x18\x02 \x01(\v2).carrot.rmnode.v1.ResourceCapabilityR\x0ftotalCapability\x12!\n" +
+	"\tnode_info\x18\x01 \x01(\v2\x1f.carrot.node.v1.NodeInfoR\bnodeInfo\x12T\n" +
+	"\x10total_capability\x18\x02 \x01(\v2).carrot.node.v1.ResourceCapabilityR\x0ftotalCapability\x12!\n" +
 	"\fhttp_address\x18\x03 \x01(\tR\vhttpAddress\"\x81\x01\n" +
 	"\x14RegisterNodeResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
@@ -1199,26 +1199,26 @@ const file_api_proto_nodemanager_proto_rawDesc = "" +
 	"\x16registration_timestamp\x18\x03 \x01(\x03R\x15registrationTimestamp\"\xd3\x02\n" +
 	"\x10HeartbeatRequest\x12\x17\n" +
 	"\anode_id\x18\x01 \x01(\tR\x06nodeId\x12K\n" +
-	"\x0eused_resources\x18\x02 \x01(\v2$.carrot.rmnode.v1.ResourceUsageR\rusedResources\x12U\n" +
-	"\x12container_statuses\x18\x03 \x03(\v2&.carrot.rmnode.v1.ContainerStatusR\x11containerStatuses\x128\n" +
+	"\x0eused_resources\x18\x02 \x01(\v2$.carrot.node.v1.ResourceUsageR\rusedResources\x12U\n" +
+	"\x12container_statuses\x18\x03 \x03(\v2&.carrot.node.v1.ContainerStatusR\x11containerStatuses\x128\n" +
 	"\ttimestamp\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12H\n" +
-	"\rhealth_status\x18\x05 \x01(\v2#.carrot.rmnode.v1.HealthStatusR\fhealthStatus\"\xec\x01\n" +
+	"\rhealth_status\x18\x05 \x01(\v2#.carrot.node.v1.HealthStatusR\fhealthStatus\"\xec\x01\n" +
 	"\x11HeartbeatResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12S\n" +
-	"\x11container_actions\x18\x03 \x03(\v2&.carrot.rmnode.v1.ContainerActionR\x10containerActions\x12\x1f\n" +
+	"\x11container_actions\x18\x03 \x03(\v2&.carrot.node.v1.ContainerActionR\x10containerActions\x12\x1f\n" +
 	"\vresponse_id\x18\x04 \x01(\x03R\n" +
 	"responseId\x12-\n" +
 	"\x12heartbeat_interval\x18\x05 \x01(\x05R\x11heartbeatInterval\"/\n" +
 	"\x14GetNodeStatusRequest\x12\x17\n" +
 	"\anode_id\x18\x01 \x01(\tR\x06nodeId\"\xd1\x03\n" +
 	"\x15GetNodeStatusResponse\x12<\n" +
-	"\tnode_info\x18\x01 \x01(\v2\x1f.carrot.rmnode.v1.NodeInfoR\bnodeInfo\x12T\n" +
-	"\x10total_capability\x18\x02 \x01(\v2).carrot.rmnode.v1.ResourceCapabilityR\x0ftotalCapability\x12K\n" +
-	"\x0eused_resources\x18\x03 \x01(\v2$.carrot.rmnode.v1.ResourceUsageR\rusedResources\x12U\n" +
-	"\x12container_statuses\x18\x04 \x03(\v2&.carrot.rmnode.v1.ContainerStatusR\x11containerStatuses\x12H\n" +
-	"\rhealth_status\x18\x05 \x01(\v2#.carrot.rmnode.v1.HealthStatusR\fhealthStatus\x126\n" +
-	"\x05state\x18\x06 \x01(\x0e2 .carrot.rmnode.v1.NodeStateR\x05state\"\xa7\x01\n" +
+	"\tnode_info\x18\x01 \x01(\v2\x1f.carrot.node.v1.NodeInfoR\bnodeInfo\x12T\n" +
+	"\x10total_capability\x18\x02 \x01(\v2).carrot.node.v1.ResourceCapabilityR\x0ftotalCapability\x12K\n" +
+	"\x0eused_resources\x18\x03 \x01(\v2$.carrot.node.v1.ResourceUsageR\rusedResources\x12U\n" +
+	"\x12container_statuses\x18\x04 \x03(\v2&.carrot.node.v1.ContainerStatusR\x11containerStatuses\x12H\n" +
+	"\rhealth_status\x18\x05 \x01(\v2#.carrot.node.v1.HealthStatusR\fhealthStatus\x126\n" +
+	"\x05state\x18\x06 \x01(\x0e2 .carrot.node.v1.NodeStateR\x05state\"\xa7\x01\n" +
 	"\bNodeInfo\x12\x17\n" +
 	"\anode_id\x18\x01 \x01(\tR\x06nodeId\x12\x1a\n" +
 	"\bhostname\x18\x02 \x01(\tR\bhostname\x12\x1d\n" +
@@ -1230,14 +1230,14 @@ const file_api_proto_nodemanager_proto_rawDesc = "" +
 	"\x12ResourceCapability\x12\x1b\n" +
 	"\tmemory_mb\x18\x01 \x01(\x03R\bmemoryMb\x12\x16\n" +
 	"\x06vcores\x18\x02 \x01(\x05R\x06vcores\x12o\n" +
-	"\x12extended_resources\x18\x03 \x03(\v2@.carrot.rmnode.v1.ResourceCapability.ExtendedResourcesEntryR\x11extendedResources\x1aD\n" +
+	"\x12extended_resources\x18\x03 \x03(\v2@.carrot.node.v1.ResourceCapability.ExtendedResourcesEntryR\x11extendedResources\x1aD\n" +
 	"\x16ExtendedResourcesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\x03R\x05value:\x028\x01\"\xd4\x02\n" +
 	"\rResourceUsage\x12\x1b\n" +
 	"\tmemory_mb\x18\x01 \x01(\x03R\bmemoryMb\x12\x16\n" +
 	"\x06vcores\x18\x02 \x01(\x05R\x06vcores\x12j\n" +
-	"\x12extended_resources\x18\x03 \x03(\v2;.carrot.rmnode.v1.ResourceUsage.ExtendedResourcesEntryR\x11extendedResources\x12*\n" +
+	"\x12extended_resources\x18\x03 \x03(\v2;.carrot.node.v1.ResourceUsage.ExtendedResourcesEntryR\x11extendedResources\x12*\n" +
 	"\x11cpu_usage_percent\x18\x04 \x01(\x01R\x0fcpuUsagePercent\x120\n" +
 	"\x14memory_usage_percent\x18\x05 \x01(\x01R\x12memoryUsagePercent\x1aD\n" +
 	"\x16ExtendedResourcesEntry\x12\x10\n" +
@@ -1246,26 +1246,26 @@ const file_api_proto_nodemanager_proto_rawDesc = "" +
 	"\x0fContainerStatus\x12!\n" +
 	"\fcontainer_id\x18\x01 \x01(\tR\vcontainerId\x12%\n" +
 	"\x0eapplication_id\x18\x02 \x01(\tR\rapplicationId\x12;\n" +
-	"\x05state\x18\x03 \x01(\x0e2%.carrot.rmnode.v1.ContainerStateR\x05state\x12\x1b\n" +
+	"\x05state\x18\x03 \x01(\x0e2%.carrot.node.v1.ContainerStateR\x05state\x12\x1b\n" +
 	"\texit_code\x18\x04 \x01(\x05R\bexitCode\x12 \n" +
 	"\vdiagnostics\x18\x05 \x01(\tR\vdiagnostics\x12K\n" +
-	"\x0eresource_usage\x18\x06 \x01(\v2$.carrot.rmnode.v1.ResourceUsageR\rresourceUsage\x129\n" +
+	"\x0eresource_usage\x18\x06 \x01(\v2$.carrot.node.v1.ResourceUsageR\rresourceUsage\x129\n" +
 	"\n" +
 	"start_time\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x12;\n" +
 	"\vfinish_time\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"finishTime\"\x87\x01\n" +
 	"\x0fContainerAction\x12!\n" +
 	"\fcontainer_id\x18\x01 \x01(\tR\vcontainerId\x129\n" +
-	"\x06action\x18\x02 \x01(\x0e2!.carrot.rmnode.v1.ActionTypeR\x06action\x12\x16\n" +
+	"\x06action\x18\x02 \x01(\x0e2!.carrot.node.v1.ActionTypeR\x06action\x12\x16\n" +
 	"\x06reason\x18\x03 \x01(\tR\x06reason\"\x89\x02\n" +
 	"\fHealthStatus\x128\n" +
-	"\x05state\x18\x01 \x01(\x0e2\".carrot.rmnode.v1.HealthStateR\x05state\x12,\n" +
+	"\x05state\x18\x01 \x01(\x0e2\".carrot.node.v1.HealthStateR\x05state\x12,\n" +
 	"\x12last_health_report\x18\x02 \x01(\tR\x10lastHealthReport\x12H\n" +
 	"\x12last_health_update\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x10lastHealthUpdate\x12G\n" +
-	"\rhealth_checks\x18\x04 \x03(\v2\".carrot.rmnode.v1.HealthCheckR\fhealthChecks\"\xaf\x01\n" +
+	"\rhealth_checks\x18\x04 \x03(\v2\".carrot.node.v1.HealthCheckR\fhealthChecks\"\xaf\x01\n" +
 	"\vHealthCheck\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x128\n" +
-	"\x05state\x18\x02 \x01(\x0e2\".carrot.rmnode.v1.HealthStateR\x05state\x12\x18\n" +
+	"\x05state\x18\x02 \x01(\x0e2\".carrot.node.v1.HealthStateR\x05state\x12\x18\n" +
 	"\amessage\x18\x03 \x01(\tR\amessage\x128\n" +
 	"\ttimestamp\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp*\xbd\x01\n" +
 	"\x0eContainerState\x12\x1f\n" +
@@ -1297,9 +1297,9 @@ const file_api_proto_nodemanager_proto_rawDesc = "" +
 	"\x0fNODE_STATE_LOST\x10\x06\x12\x17\n" +
 	"\x13NODE_STATE_REBOOTED\x10\a2\xc9\x02\n" +
 	"\x12NodeManagerService\x12g\n" +
-	"\fRegisterNode\x12*.carrot.rmnode.v1.RegisterNodeRequest\x1a+.carrot.rmnode.v1.RegisterNodeResponse\x12^\n" +
-	"\tHeartbeat\x12'.carrot.rmnode.v1.HeartbeatRequest\x1a(.carrot.rmnode.v1.HeartbeatResponse\x12j\n" +
-	"\rGetNodeStatus\x12+.carrot.rmnode.v1.GetNodeStatusRequest\x1a,.carrot.rmnode.v1.GetNodeStatusResponseB\x1eZ\x1ccarrot/api/proto/nodemanagerb\x06proto3"
+	"\fRegisterNode\x12*.carrot.node.v1.RegisterNodeRequest\x1a+.carrot.node.v1.RegisterNodeResponse\x12^\n" +
+	"\tHeartbeat\x12'.carrot.node.v1.HeartbeatRequest\x1a(.carrot.node.v1.HeartbeatResponse\x12j\n" +
+	"\rGetNodeStatus\x12+.carrot.node.v1.GetNodeStatusRequest\x1a,.carrot.node.v1.GetNodeStatusResponseB\x1eZ\x1ccarrot/api/proto/nodemanagerb\x06proto3"
 
 var (
 	file_api_proto_nodemanager_proto_rawDescOnce sync.Once
@@ -1316,59 +1316,59 @@ func file_api_proto_nodemanager_proto_rawDescGZIP() []byte {
 var file_api_proto_nodemanager_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
 var file_api_proto_nodemanager_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_api_proto_nodemanager_proto_goTypes = []any{
-	(ContainerState)(0),           // 0: carrot.rmnode.v1.ContainerState
-	(ActionType)(0),               // 1: carrot.rmnode.v1.ActionType
-	(HealthState)(0),              // 2: carrot.rmnode.v1.HealthState
-	(NodeState)(0),                // 3: carrot.rmnode.v1.NodeState
-	(*RegisterNodeRequest)(nil),   // 4: carrot.rmnode.v1.RegisterNodeRequest
-	(*RegisterNodeResponse)(nil),  // 5: carrot.rmnode.v1.RegisterNodeResponse
-	(*HeartbeatRequest)(nil),      // 6: carrot.rmnode.v1.HeartbeatRequest
-	(*HeartbeatResponse)(nil),     // 7: carrot.rmnode.v1.HeartbeatResponse
-	(*GetNodeStatusRequest)(nil),  // 8: carrot.rmnode.v1.GetNodeStatusRequest
-	(*GetNodeStatusResponse)(nil), // 9: carrot.rmnode.v1.GetNodeStatusResponse
-	(*NodeInfo)(nil),              // 10: carrot.rmnode.v1.NodeInfo
-	(*ResourceCapability)(nil),    // 11: carrot.rmnode.v1.ResourceCapability
-	(*ResourceUsage)(nil),         // 12: carrot.rmnode.v1.ResourceUsage
-	(*ContainerStatus)(nil),       // 13: carrot.rmnode.v1.ContainerStatus
-	(*ContainerAction)(nil),       // 14: carrot.rmnode.v1.ContainerAction
-	(*HealthStatus)(nil),          // 15: carrot.rmnode.v1.HealthStatus
-	(*HealthCheck)(nil),           // 16: carrot.rmnode.v1.HealthCheck
-	nil,                           // 17: carrot.rmnode.v1.ResourceCapability.ExtendedResourcesEntry
-	nil,                           // 18: carrot.rmnode.v1.ResourceUsage.ExtendedResourcesEntry
+	(ContainerState)(0),           // 0: carrot.node.v1.ContainerState
+	(ActionType)(0),               // 1: carrot.node.v1.ActionType
+	(HealthState)(0),              // 2: carrot.node.v1.HealthState
+	(NodeState)(0),                // 3: carrot.node.v1.NodeState
+	(*RegisterNodeRequest)(nil),   // 4: carrot.node.v1.RegisterNodeRequest
+	(*RegisterNodeResponse)(nil),  // 5: carrot.node.v1.RegisterNodeResponse
+	(*HeartbeatRequest)(nil),      // 6: carrot.node.v1.HeartbeatRequest
+	(*HeartbeatResponse)(nil),     // 7: carrot.node.v1.HeartbeatResponse
+	(*GetNodeStatusRequest)(nil),  // 8: carrot.node.v1.GetNodeStatusRequest
+	(*GetNodeStatusResponse)(nil), // 9: carrot.node.v1.GetNodeStatusResponse
+	(*NodeInfo)(nil),              // 10: carrot.node.v1.NodeInfo
+	(*ResourceCapability)(nil),    // 11: carrot.node.v1.ResourceCapability
+	(*ResourceUsage)(nil),         // 12: carrot.node.v1.ResourceUsage
+	(*ContainerStatus)(nil),       // 13: carrot.node.v1.ContainerStatus
+	(*ContainerAction)(nil),       // 14: carrot.node.v1.ContainerAction
+	(*HealthStatus)(nil),          // 15: carrot.node.v1.HealthStatus
+	(*HealthCheck)(nil),           // 16: carrot.node.v1.HealthCheck
+	nil,                           // 17: carrot.node.v1.ResourceCapability.ExtendedResourcesEntry
+	nil,                           // 18: carrot.node.v1.ResourceUsage.ExtendedResourcesEntry
 	(*timestamppb.Timestamp)(nil), // 19: google.protobuf.Timestamp
 }
 var file_api_proto_nodemanager_proto_depIdxs = []int32{
-	10, // 0: carrot.rmnode.v1.RegisterNodeRequest.node_info:type_name -> carrot.rmnode.v1.NodeInfo
-	11, // 1: carrot.rmnode.v1.RegisterNodeRequest.total_capability:type_name -> carrot.rmnode.v1.ResourceCapability
-	12, // 2: carrot.rmnode.v1.HeartbeatRequest.used_resources:type_name -> carrot.rmnode.v1.ResourceUsage
-	13, // 3: carrot.rmnode.v1.HeartbeatRequest.container_statuses:type_name -> carrot.rmnode.v1.ContainerStatus
-	19, // 4: carrot.rmnode.v1.HeartbeatRequest.timestamp:type_name -> google.protobuf.Timestamp
-	15, // 5: carrot.rmnode.v1.HeartbeatRequest.health_status:type_name -> carrot.rmnode.v1.HealthStatus
-	14, // 6: carrot.rmnode.v1.HeartbeatResponse.container_actions:type_name -> carrot.rmnode.v1.ContainerAction
-	10, // 7: carrot.rmnode.v1.GetNodeStatusResponse.node_info:type_name -> carrot.rmnode.v1.NodeInfo
-	11, // 8: carrot.rmnode.v1.GetNodeStatusResponse.total_capability:type_name -> carrot.rmnode.v1.ResourceCapability
-	12, // 9: carrot.rmnode.v1.GetNodeStatusResponse.used_resources:type_name -> carrot.rmnode.v1.ResourceUsage
-	13, // 10: carrot.rmnode.v1.GetNodeStatusResponse.container_statuses:type_name -> carrot.rmnode.v1.ContainerStatus
-	15, // 11: carrot.rmnode.v1.GetNodeStatusResponse.health_status:type_name -> carrot.rmnode.v1.HealthStatus
-	3,  // 12: carrot.rmnode.v1.GetNodeStatusResponse.state:type_name -> carrot.rmnode.v1.NodeState
-	17, // 13: carrot.rmnode.v1.ResourceCapability.extended_resources:type_name -> carrot.rmnode.v1.ResourceCapability.ExtendedResourcesEntry
-	18, // 14: carrot.rmnode.v1.ResourceUsage.extended_resources:type_name -> carrot.rmnode.v1.ResourceUsage.ExtendedResourcesEntry
-	0,  // 15: carrot.rmnode.v1.ContainerStatus.state:type_name -> carrot.rmnode.v1.ContainerState
-	12, // 16: carrot.rmnode.v1.ContainerStatus.resource_usage:type_name -> carrot.rmnode.v1.ResourceUsage
-	19, // 17: carrot.rmnode.v1.ContainerStatus.start_time:type_name -> google.protobuf.Timestamp
-	19, // 18: carrot.rmnode.v1.ContainerStatus.finish_time:type_name -> google.protobuf.Timestamp
-	1,  // 19: carrot.rmnode.v1.ContainerAction.action:type_name -> carrot.rmnode.v1.ActionType
-	2,  // 20: carrot.rmnode.v1.HealthStatus.state:type_name -> carrot.rmnode.v1.HealthState
-	19, // 21: carrot.rmnode.v1.HealthStatus.last_health_update:type_name -> google.protobuf.Timestamp
-	16, // 22: carrot.rmnode.v1.HealthStatus.health_checks:type_name -> carrot.rmnode.v1.HealthCheck
-	2,  // 23: carrot.rmnode.v1.HealthCheck.state:type_name -> carrot.rmnode.v1.HealthState
-	19, // 24: carrot.rmnode.v1.HealthCheck.timestamp:type_name -> google.protobuf.Timestamp
-	4,  // 25: carrot.rmnode.v1.NodeManagerService.RegisterNode:input_type -> carrot.rmnode.v1.RegisterNodeRequest
-	6,  // 26: carrot.rmnode.v1.NodeManagerService.Heartbeat:input_type -> carrot.rmnode.v1.HeartbeatRequest
-	8,  // 27: carrot.rmnode.v1.NodeManagerService.GetNodeStatus:input_type -> carrot.rmnode.v1.GetNodeStatusRequest
-	5,  // 28: carrot.rmnode.v1.NodeManagerService.RegisterNode:output_type -> carrot.rmnode.v1.RegisterNodeResponse
-	7,  // 29: carrot.rmnode.v1.NodeManagerService.Heartbeat:output_type -> carrot.rmnode.v1.HeartbeatResponse
-	9,  // 30: carrot.rmnode.v1.NodeManagerService.GetNodeStatus:output_type -> carrot.rmnode.v1.GetNodeStatusResponse
+	10, // 0: carrot.node.v1.RegisterNodeRequest.node_info:type_name -> carrot.node.v1.NodeInfo
+	11, // 1: carrot.node.v1.RegisterNodeRequest.total_capability:type_name -> carrot.node.v1.ResourceCapability
+	12, // 2: carrot.node.v1.HeartbeatRequest.used_resources:type_name -> carrot.node.v1.ResourceUsage
+	13, // 3: carrot.node.v1.HeartbeatRequest.container_statuses:type_name -> carrot.node.v1.ContainerStatus
+	19, // 4: carrot.node.v1.HeartbeatRequest.timestamp:type_name -> google.protobuf.Timestamp
+	15, // 5: carrot.node.v1.HeartbeatRequest.health_status:type_name -> carrot.node.v1.HealthStatus
+	14, // 6: carrot.node.v1.HeartbeatResponse.container_actions:type_name -> carrot.node.v1.ContainerAction
+	10, // 7: carrot.node.v1.GetNodeStatusResponse.node_info:type_name -> carrot.node.v1.NodeInfo
+	11, // 8: carrot.node.v1.GetNodeStatusResponse.total_capability:type_name -> carrot.node.v1.ResourceCapability
+	12, // 9: carrot.node.v1.GetNodeStatusResponse.used_resources:type_name -> carrot.node.v1.ResourceUsage
+	13, // 10: carrot.node.v1.GetNodeStatusResponse.container_statuses:type_name -> carrot.node.v1.ContainerStatus
+	15, // 11: carrot.node.v1.GetNodeStatusResponse.health_status:type_name -> carrot.node.v1.HealthStatus
+	3,  // 12: carrot.node.v1.GetNodeStatusResponse.state:type_name -> carrot.node.v1.NodeState
+	17, // 13: carrot.node.v1.ResourceCapability.extended_resources:type_name -> carrot.node.v1.ResourceCapability.ExtendedResourcesEntry
+	18, // 14: carrot.node.v1.ResourceUsage.extended_resources:type_name -> carrot.node.v1.ResourceUsage.ExtendedResourcesEntry
+	0,  // 15: carrot.node.v1.ContainerStatus.state:type_name -> carrot.node.v1.ContainerState
+	12, // 16: carrot.node.v1.ContainerStatus.resource_usage:type_name -> carrot.node.v1.ResourceUsage
+	19, // 17: carrot.node.v1.ContainerStatus.start_time:type_name -> google.protobuf.Timestamp
+	19, // 18: carrot.node.v1.ContainerStatus.finish_time:type_name -> google.protobuf.Timestamp
+	1,  // 19: carrot.node.v1.ContainerAction.action:type_name -> carrot.node.v1.ActionType
+	2,  // 20: carrot.node.v1.HealthStatus.state:type_name -> carrot.node.v1.HealthState
+	19, // 21: carrot.node.v1.HealthStatus.last_health_update:type_name -> google.protobuf.Timestamp
+	16, // 22: carrot.node.v1.HealthStatus.health_checks:type_name -> carrot.node.v1.HealthCheck
+	2,  // 23: carrot.node.v1.HealthCheck.state:type_name -> carrot.node.v1.HealthState
+	19, // 24: carrot.node.v1.HealthCheck.timestamp:type_name -> google.protobuf.Timestamp
+	4,  // 25: carrot.node.v1.NodeManagerService.RegisterNode:input_type -> carrot.node.v1.RegisterNodeRequest
+	6,  // 26: carrot.node.v1.NodeManagerService.Heartbeat:input_type -> carrot.node.v1.HeartbeatRequest
+	8,  // 27: carrot.node.v1.NodeManagerService.GetNodeStatus:input_type -> carrot.node.v1.GetNodeStatusRequest
+	5,  // 28: carrot.node.v1.NodeManagerService.RegisterNode:output_type -> carrot.node.v1.RegisterNodeResponse
+	7,  // 29: carrot.node.v1.NodeManagerService.Heartbeat:output_type -> carrot.node.v1.HeartbeatResponse
+	9,  // 30: carrot.node.v1.NodeManagerService.GetNodeStatus:output_type -> carrot.node.v1.GetNodeStatusResponse
 	28, // [28:31] is the sub-list for method output_type
 	25, // [25:28] is the sub-list for method input_type
 	25, // [25:25] is the sub-list for extension type_name

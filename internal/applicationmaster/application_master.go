@@ -1,6 +1,7 @@
 package applicationmaster
 
 import (
+	"carrot/internal/applicationmaster/client"
 	"context"
 	"fmt"
 	"sync"
@@ -17,7 +18,7 @@ type ApplicationMaster struct {
 	mu                   sync.RWMutex
 	applicationID        common.ApplicationID
 	applicationAttemptID common.ApplicationAttemptID
-	rmGRPCClient         *ApplicationMasterGRPCClient
+	rmGRPCClient         *client.ApplicationMasterGRPCClient
 	// nmClients            map[string]*ContainerManagerGRPCClient // TODO: 重新实现容器管理gRPC客户端
 	containers          map[string]*common.Container
 	pendingRequests     []*common.ContainerRequest
@@ -79,7 +80,7 @@ func NewApplicationMaster(config *ApplicationMasterConfig) *ApplicationMaster {
 
 	// 创建 gRPC 客户端
 	if config.RMGRPCAddress != "" {
-		am.rmGRPCClient = NewApplicationMasterGRPCClient(config.ApplicationID, config.RMGRPCAddress)
+		am.rmGRPCClient = client.NewApplicationMasterGRPCClient(config.ApplicationID, config.RMGRPCAddress)
 		am.useGRPC = true
 	} else {
 		am.logger.Error("需要提供 ResourceManager gRPC 地址")

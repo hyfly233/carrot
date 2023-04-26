@@ -1,4 +1,4 @@
-package rmserver
+package server
 
 import (
 	"context"
@@ -99,7 +99,7 @@ func (s *ApplicationMasterGRPCServer) RegisterApplicationMaster(ctx context.Cont
 	s.allocateCounters[appID.String()] = 0
 	s.mu.Unlock()
 
-	log.Printf("ApplicationMaster registered: %s at %s:%d", appID.String(), req.Host, req.RpcPort)
+	log.Printf("ApplicationMaster 已注册: %s at %s:%d", appID.String(), req.Host, req.RpcPort)
 
 	return &ampb.RegisterApplicationMasterResponse{
 		MaximumResourceCapability: &ampb.Resource{

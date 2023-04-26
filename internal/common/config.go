@@ -14,7 +14,7 @@ import (
 type Config struct {
 	Cluster           ClusterConfig           `yaml:"cluster"`
 	ResourceManager   ResourceManagerConfig   `yaml:"resourcemanager"`
-	NodeManager       NodeManagerConfig       `yaml:"rmnode"`
+	NodeManager       NodeManagerConfig       `yaml:"node"`
 	ApplicationMaster ApplicationMasterConfig `yaml:"applicationmaster"`
 	Scheduler         SchedulerConfig         `yaml:"scheduler"`
 	Security          SecurityConfig          `yaml:"security"`

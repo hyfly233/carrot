@@ -1,4 +1,4 @@
-package rmserver
+package server
 
 import (
 	"context"

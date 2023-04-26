@@ -4,13 +4,13 @@ import "errors"
 
 var (
 	// ErrServerNotFound 服务器未找到错误
-	ErrServerNotFound = errors.New("rmserver not found")
+	ErrServerNotFound = errors.New("server not found")
 
 	// ErrServerAlreadyRunning 服务器已在运行错误
-	ErrServerAlreadyRunning = errors.New("rmserver already running")
+	ErrServerAlreadyRunning = errors.New("server already running")
 
 	// ErrServerNotRunning 服务器未运行错误
-	ErrServerNotRunning = errors.New("rmserver not running")
+	ErrServerNotRunning = errors.New("server not running")
 
 	// ErrInvalidPort 无效端口错误
 	ErrInvalidPort = errors.New("invalid port")
@@ -19,5 +19,5 @@ var (
 	ErrNotImplemented = errors.New("not implemented")
 
 	// ErrInvalidServerType 无效服务器类型错误
-	ErrInvalidServerType = errors.New("invalid rmserver type")
+	ErrInvalidServerType = errors.New("invalid server type")
 )
