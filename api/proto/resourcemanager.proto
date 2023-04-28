@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package carrot.resourcemanager.v1;
+package carrot.resourcemanager;
 
 option go_package = "carrot/api/proto/resourcemanager";
 

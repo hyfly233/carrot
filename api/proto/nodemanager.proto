@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package carrot.nodemanager.v1;
+package carrot.nodemanager;
 
 option go_package = "carrot/api/proto/nodemanager";
 
