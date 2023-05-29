@@ -85,5 +85,5 @@ func main() {
 		}
 	}
 
-	logger.Info("NodeManager 已优雅退出")
+	logger.Info("NodeManager 已退出")
 }

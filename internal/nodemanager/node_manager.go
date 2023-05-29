@@ -53,8 +53,8 @@ func NewNodeManager(nodeID common.NodeID, totalResource common.Resource, rmURL, 
 // Start 启动节点管理器
 func (nm *NodeManager) Start(port int) error {
 	// 初始化 gRPC 客户端
-	grpcClient := client.NewGRPCClient(nm.nodeID.HostPortString(), nm.resourceManagerGRPCURL)
-	if err := grpcClient.Connect(); err != nil {
+	nm.grpcClient = client.NewGRPCClient(nm.nodeID.HostPortString(), nm.resourceManagerGRPCURL)
+	if err := nm.grpcClient.Connect(); err != nil {
 		nm.logger.Warn("无法通过 gRPC 连接到 RM", zap.Error(err))
 	}
 
@@ -253,7 +253,6 @@ func (nm *NodeManager) sendHeartbeat() {
 	if _, err := nm.grpcClient.SendHeartbeat(usage, containerStatuses); err != nil {
 		nm.logger.Warn("gRPC 心跳失败", zap.Error(err))
 	}
-	return // gRPC 心跳成功，直接返回
 }
 
 func (nm *NodeManager) launchContainer(container *containermanager.Container) error {
