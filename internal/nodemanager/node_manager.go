@@ -1,7 +1,6 @@
 package nodemanager
 
 import (
-	"carrot/internal/nodemanager/client"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -13,6 +12,7 @@ import (
 	"time"
 
 	"carrot/internal/common"
+	"carrot/internal/nodemanager/client"
 	"carrot/internal/nodemanager/containermanager"
 
 	"github.com/gorilla/mux"
